@@ -1,7 +1,8 @@
 /* 奶蛙 · 角色：3D PNG 主形象 + 染色 PNG 棋子（ball/bust/body）
  * NaiwaFrog.png / html / load / spritePng  -> 全身/头 PNG
  * NaiwaFrog.piece / pieceUrl / pieceSprite -> 彩色棋子（3D 头染色）
- * NaiwaFrog.svg / bust / ball              -> 旧矢量兜底（尽量别用）
+ * NaiwaFrog.slicePath / sliceImage         -> 切奶蛙切片 PNG
+ * NaiwaFrog.svg / bust / ball              -> 旧矢量兜底（大厅/游戏请用 piece）
  */
 (function (root) {
   'use strict';
@@ -367,6 +368,9 @@
   /* ---------- 染色 PNG 棋子（merge/match3/2048/snake…） ---------- */
   var COLOR_KEY = {
     '#F7C32B': 'gold', '#f7c32b': 'gold',
+    '#FFD83D': 'gold', '#ffd83d': 'gold',
+    '#FFE27A': 'amber', '#ffe27a': 'amber',
+    '#FFD84A': 'amber', '#ffd84a': 'amber',
     '#8FD14F': 'green', '#8fd14f': 'green',
     '#FF9F43': 'orange', '#ff9f43': 'orange',
     '#FF7BAC': 'pink', '#ff7bac': 'pink',
@@ -413,12 +417,29 @@
     return im;
   }
 
+  /* 切奶蛙切片：L/R/T/B + 四角 */
+  function slicePath(o) {
+    o = o || {};
+    var key = colorKey(o.color);
+    var part = (o.part || 'L').toUpperCase();
+    return '/assets/frog/pieces/slices/' + key + '-' + part + '.png';
+  }
+  function sliceUrl(o) { return slicePath(o); }
+  function sliceImage(o, cb) {
+    var src = slicePath(o);
+    var im = pieceImgCache[src];
+    if (!im) { im = new Image(); im.decoding = 'async'; im.src = src; pieceImgCache[src] = im; }
+    if (cb) { if (im.complete && im.naturalWidth) cb(im); else im.addEventListener('load', function () { cb(im); }); }
+    return im;
+  }
+
   var COLORS = ['#F7C32B', '#8FD14F', '#FF9F43', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF6B5E', '#3ED3B5'];
 
   root.NaiwaFrog = {
     svg: svg, bust: bust, ball: ball, sprite: sprite, spritePng: spritePng,
     url: url, image: image, load: load, png: png, html: html,
     piece: piece, pieceUrl: pieceUrl, piecePath: piecePath, pieceSprite: pieceSprite, pieceImage: pieceImage, colorKey: colorKey,
+    slicePath: slicePath, sliceUrl: sliceUrl, sliceImage: sliceImage,
     ASSET: ASSET, ASSET_SM: ASSET_SM, poseKey: poseKey,
     COLORS: COLORS, pal: pal, mix: mix
   };
