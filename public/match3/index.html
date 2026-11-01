@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！奶蛙小游戏之奶蛙消消乐。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -17,16 +17,16 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">点选一只，再点相邻的交换；也可以直接拖动</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var N = 7, TYPES = 6, MOVES0 = 25, COLORS = ['#F7C32B', '#8FD14F', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF9F43'], MOODS = ['laugh', 'neutral', 'wow', 'neutral', 'laugh', 'wow'];
   var CS = 52, PAD = 10, W = N * CS + PAD * 2, H = W + 0;
-  var spr = COLORS.map(function (c, i) { return F.sprite(F.ball({ color: c, mood: MOODS[i] }), CS * 1.12, CS * 1.12); });
-  var sprHi = COLORS.map(function (c, i) { return F.sprite(F.ball({ color: c, mood: 'laugh' }), CS * 1.12, CS * 1.12); });
+  var spr = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: MOODS[i] }, CS * 1.15, CS * 1.15); });
+  var sprHi = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: 'laugh' }, CS * 1.15, CS * 1.15); });
   var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, goal, freeze = 0;
-  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻的两只奶蛙，横竖连成 3 只及以上就会消除。25 步内拿高分，连锁越多越高！', onStart: reset });
+  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖连成 3 只及以上消除。限 25 步；连锁有顿帧与震动，连消越高分越多！', onStart: reset });
   function rnd() { return Math.floor(Math.random() * TYPES); }
   function reset() {
     cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
@@ -115,7 +115,7 @@
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
     if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
-    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255,255,255,.7)'); g.addColorStop(1, 'rgba(255,240,190,.85)'); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 6; rr(c, 3, 3, W - 6, H - 6, 24); c.stroke();
+    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#ffe9c8'); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
     for (var r = 0; r < N; r++) for (var cc = 0; cc < N; cc++) { c.fillStyle = (r + cc) % 2 ? 'rgba(247,195,43,.18)' : 'rgba(124,201,62,.16)'; rr(c, PAD + cc * CS + 2, PAD + r * CS + 2, CS - 4, CS - 4, 12); c.fill(); }
     if (!cells) { c.restore(); return; }
     c.save(); c.beginPath(); rr(c, PAD - 4, PAD - 4, N * CS + 8, N * CS + 8, 18); c.clip();
@@ -125,7 +125,7 @@
       var sc = cl.sc * (sel_ ? 1.12 + Math.sin(t / 120) * .03 : 1) * (hn ? 1 + Math.sin(t / 150) * .07 : 1);
       var px = PAD + cl.x + CS / 2, py = PAD + cl.y + CS / 2; c.globalAlpha = cl.a == null ? 1 : cl.a;
       if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = '#7CC93E'; c.lineWidth = 3; c.stroke(); }
-      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .52, sz, sz); c.filter = 'none'; c.restore(); c.globalAlpha = 1;
+      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .5, sz, sz); c.filter = 'none'; c.restore(); c.globalAlpha = 1;
     }
     c.restore(); fx.draw(c); c.restore();
   }

@@ -1,4 +1,4 @@
-/* 奶蛙合集 · 公共运行时：音效 / 粒子 / 存档 / 游戏壳 */
+/* 奶蛙合集 · 公共运行时：音效 / 粒子 / 存档 / 游戏壳 · PNG pieces v3 */
 (function (root) {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -55,7 +55,14 @@
     start: function () { [0, 4, 7].forEach(function (k, i) { tone(SCALE[k + 2], .12, 'triangle', .26, null, i * .07); }); }
   };
   ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) { root.addEventListener(ev, function () { if (!muted) ctx(); }, { passive: true }); });
-  function vib(n) { try { if (!muted && navigator.vibrate) navigator.vibrate(n); } catch (e) {} }
+  var canVib = null;
+  function vib(n) {
+    try {
+      if (muted) return;
+      if (canVib === null) { try { canVib = !!(navigator.vibrate && navigator.vibrate(0) !== false); } catch (e) { canVib = false; } }
+      if (canVib && navigator.vibrate) navigator.vibrate(n);
+    } catch (e) {}
+  }
 
   /* ---------- 粒子 ---------- */
   function FX() { this.p = []; }

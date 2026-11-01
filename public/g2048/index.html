@@ -9,14 +9,14 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙 2048 · 奶蛙小游戏"><meta property="og:description" content="滑动合并相同的奶蛙，冲击 2048！奶蛙小游戏之奶蛙 2048。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 <style>
-.board { position: relative; width: min(100%, 440px); aspect-ratio: 1; border-radius: 24px; padding: 2.8%; background: linear-gradient(180deg, #d99a12, #c98a07); box-shadow: 0 8px 0 #9a6700, 0 18px 30px rgba(120, 80, 0, .3), inset 0 3px 0 rgba(255, 255, 255, .3); touch-action: none; }
+.board { position: relative; width: min(100%, 440px); aspect-ratio: 1; border-radius: 24px; padding: 2.8%; background: linear-gradient(180deg, #f0c86a, #e0a83a); box-shadow: 0 6px 0 #b88418, 0 16px 36px rgba(126,84,44,.22), inset 0 2px 0 rgba(255,255,255,.45); touch-action: none; border: 1.5px solid rgba(26,22,18,.12); }
 .cells, .tiles { position: absolute; inset: 2.8%; }
 .cell { position: absolute; width: 22.4%; height: 22.4%; border-radius: 16%; background: rgba(255, 240, 190, .32); box-shadow: inset 0 3px 6px rgba(120, 70, 0, .35); }
 .tile { position: absolute; width: 22.4%; height: 22.4%; transition: transform .12s cubic-bezier(.3, .9, .4, 1); will-change: transform; }
 .tile > div { position: absolute; inset: 0; border-radius: 16%; display: grid; place-items: center; font-weight: 900; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .18); overflow: hidden; box-shadow: inset 0 4px 0 rgba(255, 255, 255, .5), inset 0 -5px 0 rgba(0, 0, 0, .12), 0 4px 0 rgba(0, 0, 0, .18); }
-.tile > div img { position: absolute; left: 50%; top: 30%; width: 50%; transform: translate(-50%, -50%); opacity: .9; }
+.tile > div img { position: absolute; left: 50%; top: 28%; width: 58%; transform: translate(-50%, -50%); opacity: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.12)); }
 .tile > div span { position: relative; z-index: 2; line-height: 1; transform: translateY(26%); }
 .tile.new > div { animation: tnew .2s cubic-bezier(.3, 1.7, .5, 1); }
 .tile.merged > div { animation: tmerge .22s cubic-bezier(.3, 1.8, .5, 1); }
@@ -30,12 +30,12 @@
   <main class="nw-stage"><div class="board" id="board"><div class="cells" id="cells"></div><div class="tiles" id="tiles"></div></div></main>
   <p class="nw-hint">上下左右滑动，相同的奶蛙会合并</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, N = 4, grid, tiles, uid = 0, busy = false, won = false, keepGoing = false;
   var COL = { 2: ['#fff1c2', '#8a6a20', '#F7C32B'], 4: ['#ffe38a', '#8a6a20', '#F7C32B'], 8: ['#ffb86a', '#fff', '#FF9F43'], 16: ['#ff9a5a', '#fff', '#FF9F43'], 32: ['#ff7a5a', '#fff', '#FF6B5E'], 64: ['#ff5a6a', '#fff', '#FF7BAC'], 128: ['#8fd14f', '#fff', '#8FD14F'], 256: ['#3ed3b5', '#fff', '#3ED3B5'], 512: ['#5cc8f2', '#fff', '#5CC8F2'], 1024: ['#b28dff', '#fff', '#B28DFF'], 2048: ['#ffd23f', '#fff', '#F7C32B'] };
-  var faces = {}; function face(v) { if (!faces[v]) { var c = COL[v] || COL[2048]; faces[v] = F.url(F.ball({ color: c[2], mood: v >= 128 ? 'laugh' : (v >= 16 ? 'wow' : 'neutral'), crown: v >= 2048 })); } return faces[v]; }
+  var faces = {}; function face(v) { if (!faces[v]) { var c = COL[v] || COL[2048]; faces[v] = F.pieceUrl({ shape: 'bust', color: c[2], mood: v >= 128 ? 'laugh' : (v >= 16 ? 'wow' : 'neutral') }); } return faces[v]; }
   var boardEl = document.getElementById('board'), cellsEl = document.getElementById('cells'), tilesEl = document.getElementById('tiles');
   for (var i = 0; i < 16; i++) { var d = document.createElement('div'); d.className = 'cell'; d.style.left = (i % 4) * 25.6 + '%'; d.style.top = Math.floor(i / 4) * 25.6 + '%'; cellsEl.appendChild(d); }
   var fx = new NW.FX(), ov = NW.overlay(boardEl);

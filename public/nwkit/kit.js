@@ -14,11 +14,11 @@
     outBack: function (t) { var s = 1.70158; t -= 1; return t * t * ((s + 1) * t + s) + 1; },
     outElastic: function (t) { if (t === 0 || t === 1) return t; return Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * (2 * Math.PI / 3)) + 1; }
   };
-  /* 蛙头像：缓存 Image，未加载完时跳过绘制 */
+  /* 蛙头像：3D 染色 PNG */
   var cache = {};
   K.bust = function (color, mood) {
-    var k = color + '|' + (mood || 'neutral');
-    if (!cache[k]) cache[k] = NaiwaFrog.image(NaiwaFrog.bust({ color: color, mood: mood || 'neutral' }));
+    var k = 'bust|' + color + '|' + (mood || 'neutral');
+    if (!cache[k]) cache[k] = NaiwaFrog.pieceImage({ shape: 'bust', color: color, mood: mood || 'neutral' });
     return cache[k];
   };
   K.drawBust = function (c, color, mood, x, y, size, rot) {
@@ -26,14 +26,22 @@
     if (rot) { c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(im, -size / 2, -size / 2, size, size); c.restore(); }
     else c.drawImage(im, x - size / 2, y - size / 2, size, size);
   };
-  K.body = function (color, mood, h) { // 整只蛙：金色用 3D PNG，其它色仍用 SVG
-    var k = 'B' + color + mood + h;
+  K.body = function (color, mood, h) {
+    var gold = !color || color === '#F7C32B' || String(color).toLowerCase() === '#f7c32b';
+    var k = 'B|' + color + '|' + (mood || 'neutral') + '|' + (gold ? 'png' : 'tint');
     if (!cache[k]) {
-      var gold = !color || color === '#F7C32B' || color.toLowerCase() === '#f7c32b';
-      if (gold) cache[k] = NaiwaFrog.load({ pose: 'stand', mood: mood || 'neutral' });
-      else cache[k] = NaiwaFrog.image(NaiwaFrog.svg({ color: color, mood: mood || 'neutral', pose: 'stand', width: Math.round(h * .72) }));
+      if (gold) cache[k] = NaiwaFrog.load({ pose: (mood === 'laugh' || mood === 'cackle') ? 'stand' : 'stand', mood: mood || 'neutral' });
+      else cache[k] = NaiwaFrog.pieceImage({ shape: 'body', color: color, mood: mood || 'neutral' });
+      /* laugh gold full body */
+      if (gold && (mood === 'laugh' || mood === 'cackle')) cache[k] = NaiwaFrog.load({ mood: 'laugh' });
     }
     return cache[k];
+  };
+  K.drawBody = function (c, color, mood, x, y, h, rot) {
+    var im = K.body(color, mood, h); if (!(im.complete && im.naturalWidth)) return;
+    var w = h * (im.naturalWidth / im.naturalHeight);
+    if (rot) { c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(im, -w / 2, -h / 2, w, h); c.restore(); }
+    else c.drawImage(im, x - w / 2, y - h / 2, w, h);
   };
   K.preload = function (colors, moods) { colors.forEach(function (c) { moods.forEach(function (m) { K.bust(c, m); }); }); };
 
@@ -72,9 +80,10 @@
       }
       requestAnimationFrame(frame);
     };
-    S.panel = function (c, top, bot) { // 背景面板
-      var g = c.createLinearGradient(0, 0, 0, o.H); g.addColorStop(0, top || '#bfeaff'); g.addColorStop(1, bot || '#e9f9d0');
+    S.panel = function (c, top, bot) {
+      var g = c.createLinearGradient(0, 0, 0, o.H); g.addColorStop(0, top || '#fff7ec'); g.addColorStop(1, bot || '#ffe8c2');
       c.fillStyle = g; K.rr(c, 0, 0, o.W, o.H, 22); c.fill();
+      c.strokeStyle = 'rgba(26,22,18,.12)'; c.lineWidth = 1.5; K.rr(c, 1, 1, o.W - 2, o.H - 2, 21); c.stroke();
     };
     return S;
   };

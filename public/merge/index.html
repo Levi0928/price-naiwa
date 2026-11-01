@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！奶蛙小游戏之合成大奶蛙。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -17,7 +17,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">按住左右拖动瞄准，松手投放 · 两个相同的会合成更大的</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -25,10 +25,10 @@
   var R = [17, 23, 30, 38, 47, 57, 68, 80, 94];
   var COL = ['#FF7BAC', '#FF6B5E', '#B28DFF', '#FF9F43', '#5CC8F2', '#3ED3B5', '#8FD14F', '#FFB830', '#F7C32B'];
   var MOOD = ['neutral', 'wow', 'neutral', 'laugh', 'neutral', 'wow', 'laugh', 'neutral', 'laugh'];
-  var spr = R.map(function (r, i) { var sz = r * 2 * 100 / 90; return F.sprite(F.ball({ color: COL[i], mood: MOOD[i], crown: i === 8 }), sz, sz); });
+  var spr = R.map(function (r, i) { var sz = Math.max(48, r * 2.35); return F.pieceSprite({ shape: 'ball', color: COL[i], mood: MOOD[i] }, sz, sz); });
   var fx = new NW.FX(), view = { s: 1, dpr: 1 };
   var balls = [], cur = 0, nxt = 0, aimX = W / 2, canDrop = true, dropT = 0, dangerT = 0, shakeT = 0, shakeA = 0, uid = 0, chain = 0, chainT = 0, held = false, flash = 0, hitstop = 0;
-  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', rules: '拖动瞄准、松手投放。两个相同的奶蛙相撞会合成更大一号，合出金色皇冠奶蛙！别让它们堆过红线。', onStart: reset });
+  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', rules: '拖动瞄准、松手投放。两个相同奶蛙相撞合成更大一号。投放冷却约 0.36 秒；越过红线且停住约 1.5 秒判负。合出最大金色奶蛙！', onStart: reset });
   function rnd(not) { var w = [.28, .24, .20, .16, .12], v; for (var t = 0; t < 6; t++) { var r = Math.random(), s = 0; v = 4; for (var i = 0; i < 5; i++) { s += w[i]; if (r < s) { v = i; break; } } if (v !== not) break; } return v; }
   function reset() { balls = []; fx.p = []; cur = rnd(); nxt = rnd(cur); canDrop = true; dangerT = 0; chain = 0; flash = 0; hitstop = 0; G.setScore(0, false); }
   function resize() { var o = NW.fit(cv, box, W / H, 520); view.dpr = o.dpr; view.s = cv.width / W; }
@@ -96,15 +96,16 @@
   }
   function drawBall(c, b, x, y, sc) {
     var s = spr[b.lv], sz = s.__w, k = b.sq || 0, pp = 1 + .28 * (b.pop || 0);
-    c.save(); c.translate(x, y); c.scale(sc * pp, sc * pp); c.rotate(b.sa || 0); c.scale(1 - k, 1 + .85 * k); c.rotate(-(b.sa || 0)); c.drawImage(s, -sz * .5, -sz * .52, sz, sz); c.restore();
+    c.save(); c.translate(x, y); c.scale(sc * pp, sc * pp); c.rotate(b.sa || 0); c.scale(1 - k, 1 + .85 * k); c.rotate(-(b.sa || 0)); c.drawImage(s, -sz * .5, -sz * .5, sz, sz); c.restore();
   }
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H);
     c.save(); if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * shakeA * shakeT * 2, (Math.random() - .5) * shakeA * shakeT * 2); }
     // 罐子背景
-    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,246,200,.85)');
+    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#fff0d4');
     c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill();
-    c.strokeStyle = '#fff'; c.lineWidth = 6; rr(c, 3, 3, W - 6, H - 6, 24); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, 8, 8, W - 16, H - 16, 22); c.fill();
+    c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
     // 危险线
     var flash = dangerT > 0 ? (Math.sin(t / 90) > 0 ? 1 : .35) : .55;
     c.strokeStyle = 'rgba(255,90,90,' + flash + ')'; c.lineWidth = 3; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(WALL, DANGER); c.lineTo(W - WALL, DANGER); c.stroke(); c.setLineDash([]);
@@ -121,9 +122,9 @@
     for (var i = 0; i < balls.length; i++) { var b = balls[i]; c.fillStyle = 'rgba(90,60,0,.1)'; c.beginPath(); c.ellipse(b.x, Math.min(FLOOR + 2, b.y + b.r * .96), b.r * .8, b.r * .1, 0, 0, 6.3); c.fill(); }
     for (i = 0; i < balls.length; i++) { b = balls[i]; drawBall(c, b, b.x, b.y, b.grow); }
     // 下一个
-    c.fillStyle = 'rgba(255,255,255,.85)'; rr(c, W - 78, 12, 64, 74, 16); c.fill();
-    c.fillStyle = '#8a7440'; c.font = '800 11px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'center'; c.fillText('下一个', W - 46, 30);
-    var sn = spr[nxt], k = 34 / R[nxt]; c.save(); c.translate(W - 46, 60); c.scale(Math.min(1, k) , Math.min(1, k)); c.drawImage(sn, -sn.__w * .5, -sn.__w * .52, sn.__w, sn.__w); c.restore();
+    c.fillStyle = 'rgba(255,255,255,.78)'; rr(c, W - 82, 10, 70, 78, 16); c.fill(); c.strokeStyle = 'rgba(26,22,18,.12)'; c.lineWidth = 1.5; rr(c, W - 82, 10, 70, 78, 16); c.stroke();
+    c.fillStyle = '#4a3325'; c.font = '800 11px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'center'; c.fillText('下一个', W - 47, 28);
+    var sn = spr[nxt], k = 34 / R[nxt]; c.save(); c.translate(W - 46, 60); c.scale(Math.min(1, k) , Math.min(1, k)); c.drawImage(sn, -sn.__w * .5, -sn.__w * .5, sn.__w, sn.__w); c.restore();
     fx.draw(c); c.restore();
     if (flash > 0) { c.globalAlpha = Math.min(1, flash * .35); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
   }

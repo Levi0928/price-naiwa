@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
 <title>狂笑点按 · 奶蛙小游戏</title>
-<meta name="description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！奶蛙小游戏之狂笑点按。">
+<meta name="description" content="60 秒内点奶蛙，连击倍率最高 ×5！奶蛙小游戏之狂笑点按。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 <style>
-.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #8fdcff 0%, #c9f0ff 55%, #e7f8c8 100%); box-shadow: 0 14px 30px rgba(120, 90, 0, .22), 0 0 0 4px #fff; touch-action: manipulation; }
+.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fff7ec 0%, #ffe9c2 45%, #fff1c8 100%); box-shadow: 0 14px 36px rgba(126,84,44,.18), 0 0 0 1.5px rgba(26,22,18,.12); touch-action: manipulation; }
 .scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
 .scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -40,7 +40,7 @@
   </main>
   <p class="nw-hint" id="hint">用力点奶蛙！点得越快，连击越高</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -50,8 +50,8 @@
     F.html({ mood: 'laugh', className: 'm-laugh', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
     F.html({ mood: 'laugh', className: 'm-cackle', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scale(1.04)' }) +
     F.html({ pose: 'peace', className: 'm-peace', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
-  var fx = new NW.FX(), ov = NW.overlay(scene), DUR = 30;
-  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '30 秒内疯狂点奶蛙！连击越高得分越多，笑意槽满了进入 2 倍狂笑模式。', onStart: reset });
+  var fx = new NW.FX(), ov = NW.overlay(scene), DUR = 60;
+  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '60 秒内点奶蛙！连挠越高倍率越高（最高 ×5）。笑意槽满进入 FEVER 狂笑约 6 秒。', onStart: reset });
   var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1;
   function reset() { left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); upd(); }
   function setM(m) { scene.dataset.m = m; }
@@ -60,9 +60,9 @@
     var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (!G.running) { NW.sfx.tap(); setM('laugh'); squash(); clearTimeout(laughT); laughT = setTimeout(function () { setM('idle'); }, 700); return; }
     var now = performance.now(); combo = (now - lastTap < 650) ? combo + 1 : 1; lastTap = now; maxCombo = Math.max(maxCombo, combo); taps++;
-    var mult = 1 + Math.floor(combo / 8), pts = mult * (frenzy > 0 ? 2 : 1);
+    var mult = Math.min(5, 1 + Math.floor(combo / 5)), pts = mult * (frenzy > 0 ? 2 : 1);
     G.setScore(G.score + pts);
-    meter += frenzy > 0 ? 0 : 5.5; if (meter >= 100 && frenzy <= 0) { frenzy = 5; meter = 100; NW.sfx.win(); NW.shake(scene, 12, 400); fx.burst(ov.w / 2, ov.h * .4, { count: 40, speed: 420, size: 10 }); fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 40, color: '#ff4a2a', life: 1.3 }); }
+    meter += frenzy > 0 ? 0 : 5.5; if (meter >= 100 && frenzy <= 0) { frenzy = 6.2; meter = 100; NW.sfx.win(); NW.shake(scene, 12, 400); fx.burst(ov.w / 2, ov.h * .4, { count: 40, speed: 420, size: 10 }); fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 40, color: '#ff4a2a', life: 1.3 }); }
     setM(frenzy > 0 ? 'peace' : (combo > 12 ? 'cackle' : 'laugh')); clearTimeout(laughT); laughT = setTimeout(function () { setM(frenzy > 0 ? 'peace' : 'idle'); }, 420);
     squash(); NW.sfx.ha(hahaN++ % 6); NW.vib(12);
     fx.burst(x, y, { count: 7 + Math.min(10, combo), speed: 260 });
@@ -79,10 +79,10 @@
     var dt = Math.min(.05, (t - lt) / 1000); lt = t;
     if (G.running) {
       left -= dt; G.setExtra(Math.max(0, Math.ceil(left)));
-      if (frenzy > 0) { frenzy -= dt; meter = Math.max(0, frenzy / 5 * 100); if (frenzy <= 0) { frenzy = 0; meter = 0; setM('idle'); } upd(); }
+      if (frenzy > 0) { frenzy -= dt; meter = Math.max(0, frenzy / 6.2 * 100); if (frenzy <= 0) { frenzy = 0; meter = 0; setM('idle'); } upd(); }
       else if (meter > 0) { meter = Math.max(0, meter - dt * 6); upd(); }
       if (combo > 0 && performance.now() - lastTap > 650) { combo = 0; $('#cb').classList.remove('on'); }
-      if (left <= 0) { left = 0; setM('laugh'); G.over('30 秒内点了 ' + taps + ' 下，最高连击 ×' + maxCombo); }
+      if (left <= 0) { left = 0; setM('laugh'); G.over('60 秒内点了 ' + taps + ' 下，最高连击 ×' + maxCombo); }
     }
     fx.update(dt); ov.ctx.setTransform(ov.dpr, 0, 0, ov.dpr, 0, 0); ov.ctx.clearRect(0, 0, ov.w, ov.h); fx.draw(ov.ctx);
     requestAnimationFrame(loop);

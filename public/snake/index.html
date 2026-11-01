@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙贪吃蛇 · 奶蛙小游戏"><meta property="og:description" content="控制奶蛙一路吃苍蝇，越长越长！奶蛙小游戏之贪吃蛇。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -17,16 +17,16 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">在屏幕上滑动转向，吃到苍蝇就会变长</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var C = 15, R = 17, CS = 28, W = C * CS, H = R * CS, view = { s: 1 };
-  var head = { n: F.sprite(F.bust({ mood: 'neutral', size: 120 }), CS * 1.9, CS * 1.9), w: F.sprite(F.bust({ mood: 'wow', size: 120 }), CS * 1.9, CS * 1.9), l: F.sprite(F.bust({ mood: 'laugh', size: 120 }), CS * 1.9, CS * 1.9) };
-  var bodyS = [F.sprite(F.ball({ color: '#F7C32B', mood: 'neutral' }), CS * 1.15, CS * 1.15)];
+  var head = { n: F.pieceSprite({ shape: 'bust', color: '#F7C32B', mood: 'neutral' }, CS * 1.95, CS * 1.95), w: F.pieceSprite({ shape: 'bust', color: '#F7C32B', mood: 'wow' }, CS * 1.95, CS * 1.95), l: F.pieceSprite({ shape: 'bust', color: '#F7C32B', mood: 'laugh' }, CS * 1.95, CS * 1.95) };
+  var bodyS = [F.pieceSprite({ shape: 'ball', color: '#F7C32B', mood: 'neutral' }, CS * 1.2, CS * 1.2)];
   var fx = new NW.FX(), snake, dir, ndir, queue, food, tickT, speed, eatenT = 0, shakeT = 0, flies = 0, dead = false, prog = 0;
   var G = NW.mount({ key: 'snake', title: '奶蛙贪吃蛇', scoreLabel: '分数', rules: '在屏幕上滑动控制方向。吃到苍蝇身体会变长，别撞墙，也别咬到自己！', onStart: reset });
-  function reset() { snake = [{ x: 7, y: 8 }, { x: 6, y: 8 }, { x: 5, y: 8 }]; snake.forEach(function (s) { s.px = s.x; s.py = s.y; }); dir = { x: 1, y: 0 }; ndir = dir; queue = []; speed = .15; tickT = 0; flies = 0; dead = false; prog = 0; G.setScore(0, false); spawn(); }
+  function reset() { snake = [{ x: 7, y: 8 }, { x: 6, y: 8 }, { x: 5, y: 8 }]; snake.forEach(function (s) { s.px = s.x; s.py = s.y; }); dir = { x: 1, y: 0 }; ndir = dir; queue = []; speed = .14; tickT = 0; flies = 0; dead = false; prog = 0; G.setScore(0, false); spawn(); }
   function spawn() { var o; do { o = { x: Math.floor(Math.random() * C), y: Math.floor(Math.random() * R) }; } while (snake.some(function (s) { return s.x === o.x && s.y === o.y; })); food = o; }
   function resize() { NW.fit(cv, box, W / H, 480); view.s = cv.width / W; } window.addEventListener('resize', resize); resize();
   function turn(d) { var base = queue.length ? queue[queue.length - 1] : dir; if (d.x === -base.x && d.y === -base.y) return; if (d.x === base.x && d.y === base.y) return; if (queue.length < 2) queue.push(d); }
@@ -40,7 +40,7 @@
     var willEat = nx === food.x && ny === food.y, body = willEat ? snake : snake.slice(0, -1);
     if (nx < 0 || ny < 0 || nx >= C || ny >= R || body.some(function (s) { return s.x === nx && s.y === ny; })) return die(nx, ny);
     snake.forEach(function (s) { s.px = s.x; s.py = s.y; }); snake.unshift({ x: nx, y: ny, px: h.x, py: h.y }); snake[1].px = snake[1].x; snake[1].py = snake[1].y;
-    if (willEat) { flies++; var pts = 10 + Math.min(40, flies * 2); G.setScore(G.score + pts); eatenT = .35; NW.sfx.eat(); NW.vib(8); var fx_ = food.x * CS + CS / 2, fy_ = food.y * CS + CS / 2; fx.burst(fx_, fy_, { count: 12, speed: 200, colors: ['#F7C32B', '#8FD14F', '#fff'], size: 6 }); fx.text(fx_, fy_ - 10, '+' + pts, { size: 20, color: '#e8a000' }); if (flies % 5 === 0) { fx.text(W / 2, H * .3, flies + ' 只苍蝇！', { size: 30, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(3); } speed = Math.max(.07, .15 - flies * .0035); spawn(); }
+    if (willEat) { flies++; var pts = 10 + Math.min(40, flies * 2); G.setScore(G.score + pts); eatenT = .35; NW.sfx.eat(); NW.vib(8); var fx_ = food.x * CS + CS / 2, fy_ = food.y * CS + CS / 2; fx.burst(fx_, fy_, { count: 12, speed: 200, colors: ['#F7C32B', '#8FD14F', '#fff'], size: 6 }); fx.text(fx_, fy_ - 10, '+' + pts, { size: 20, color: '#e8a000' }); if (flies % 5 === 0) { fx.text(W / 2, H * .3, flies + ' 只苍蝇！', { size: 30, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(3); } speed = Math.max(.065, .14 - flies * .0038); spawn(); }
     else snake.pop();
     prog = 0;
   }
@@ -57,7 +57,7 @@
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
     if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 14 * shakeT, (Math.random() - .5) * 14 * shakeT); }
     c.save(); rr(c, 0, 0, W, H, 22); c.clip();
-    for (var y = 0; y < R; y++) for (var x = 0; x < C; x++) { c.fillStyle = (x + y) % 2 ? '#b9e68a' : '#a9dd78'; c.fillRect(x * CS, y * CS, CS, CS); }
+    for (var y = 0; y < R; y++) for (var x = 0; x < C; x++) { c.fillStyle = (x + y) % 2 ? '#c8eb9a' : '#b6e085'; c.fillRect(x * CS, y * CS, CS, CS); }
     var vg = c.createRadialGradient(W / 2, H / 2, W * .3, W / 2, H / 2, W * .85); vg.addColorStop(0, 'rgba(255,255,255,0)'); vg.addColorStop(1, 'rgba(60,120,20,.28)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
     if (snake) {
       if (food) fly(c, food.x * CS + CS / 2, food.y * CS + CS / 2, t);

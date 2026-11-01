@@ -1,9 +1,7 @@
-/* 奶蛙 · 角色：3D PNG 主形象 + 原创矢量棋子（bust/ball）
- * NaiwaFrog.png({pose,mood,sm})          -> PNG 路径
- * NaiwaFrog.html({pose,mood,width,className,style,anim,sm}) -> <img>
- * NaiwaFrog.load(opts|url, cb)           -> Image
- * NaiwaFrog.spritePng(src, w, h)         -> canvas 精灵
- * NaiwaFrog.svg / bust / ball            -> 彩色棋子仍用矢量
+/* 奶蛙 · 角色：3D PNG 主形象 + 染色 PNG 棋子（ball/bust/body）
+ * NaiwaFrog.png / html / load / spritePng  -> 全身/头 PNG
+ * NaiwaFrog.piece / pieceUrl / pieceSprite -> 彩色棋子（3D 头染色）
+ * NaiwaFrog.svg / bust / ball              -> 旧矢量兜底（尽量别用）
  */
 (function (root) {
   'use strict';
@@ -365,11 +363,62 @@
     return im;
   }
 
+
+  /* ---------- 染色 PNG 棋子（merge/match3/2048/snake…） ---------- */
+  var COLOR_KEY = {
+    '#F7C32B': 'gold', '#f7c32b': 'gold',
+    '#8FD14F': 'green', '#8fd14f': 'green',
+    '#FF9F43': 'orange', '#ff9f43': 'orange',
+    '#FF7BAC': 'pink', '#ff7bac': 'pink',
+    '#5CC8F2': 'blue', '#5cc8f2': 'blue',
+    '#B28DFF': 'purple', '#b28dff': 'purple',
+    '#FF6B5E': 'red', '#ff6b5e': 'red',
+    '#3ED3B5': 'teal', '#3ed3b5': 'teal',
+    '#FFB830': 'amber', '#ffb830': 'amber'
+  };
+  function colorKey(c) {
+    if (!c) return 'gold';
+    var k = COLOR_KEY[c] || COLOR_KEY[String(c).toLowerCase()];
+    if (k) return k;
+    var t = hex2rgb(c), best = 'gold', bd = 1e9;
+    Object.keys(COLOR_KEY).forEach(function (h) {
+      if (h.charAt(0) !== '#') return;
+      var o = hex2rgb(h), d = Math.abs(o[0] - t[0]) + Math.abs(o[1] - t[1]) + Math.abs(o[2] - t[2]);
+      if (d < bd) { bd = d; best = COLOR_KEY[h]; }
+    });
+    return best;
+  }
+  function piecePath(o) {
+    o = o || {};
+    var shape = o.shape || 'ball';
+    var mood = o.mood || 'neutral';
+    var key = colorKey(o.color);
+    var moodTag = '';
+    if (mood === 'laugh' || mood === 'cackle') moodTag = '-laugh';
+    else if (mood === 'wow') moodTag = '-wow';
+    if (shape === 'body') return '/assets/frog/pieces/body-' + key + '.png';
+    return '/assets/frog/pieces/' + shape + '-' + key + moodTag + '.png';
+  }
+  function pieceUrl(o) { return piecePath(o); }
+  function piece(o) { return piecePath(o); }
+  function pieceSprite(o, w, h) {
+    return spritePng(piecePath(o), w || 96, h || w || 96);
+  }
+  var pieceImgCache = {};
+  function pieceImage(o, cb) {
+    var src = piecePath(o);
+    var im = pieceImgCache[src];
+    if (!im) { im = new Image(); im.decoding = 'async'; im.src = src; pieceImgCache[src] = im; }
+    if (cb) { if (im.complete && im.naturalWidth) cb(im); else im.addEventListener('load', function () { cb(im); }); }
+    return im;
+  }
+
   var COLORS = ['#F7C32B', '#8FD14F', '#FF9F43', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF6B5E', '#3ED3B5'];
 
   root.NaiwaFrog = {
     svg: svg, bust: bust, ball: ball, sprite: sprite, spritePng: spritePng,
     url: url, image: image, load: load, png: png, html: html,
+    piece: piece, pieceUrl: pieceUrl, piecePath: piecePath, pieceSprite: pieceSprite, pieceImage: pieceImage, colorKey: colorKey,
     ASSET: ASSET, ASSET_SM: ASSET_SM, poseKey: poseKey,
     COLORS: COLORS, pal: pal, mix: mix
   };

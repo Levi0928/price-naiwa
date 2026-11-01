@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙跳一跳 · 奶蛙小游戏"><meta property="og:description" content="按住蓄力，松手起跳，落在平台中心有加分！奶蛙小游戏之奶蛙跳一跳。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=png3">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -17,7 +17,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">按住屏幕蓄力，松手起跳；落在中心有加分</p>
 </div>
-<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
+<script src="/assets/frog.js?v=png3"></script><script src="/assets/nw.js?v=png3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -26,7 +26,7 @@
   var sprN = F.spritePng(F.png({ pose: 'stand' }), FW, FH), sprC = F.spritePng(F.png({ pose: 'stand' }), FW, FH), sprL = F.spritePng(F.png({ mood: 'laugh' }), FW, FH);
   var PC = [['#8FD14F', '#6BAE2E'], ['#5CC8F2', '#3A9FCC'], ['#FF9F43', '#D97A1C'], ['#FF7BAC', '#D95A8A'], ['#B28DFF', '#8B66D9'], ['#F7C32B', '#D39F0E']];
   var fx = new NW.FX(), plats, frog, cam, camT, charge, charging, combo, perfectN, shakeT, state, clouds = [];
-  var G = NW.mount({ key: 'jump', title: '奶蛙跳一跳', scoreLabel: '分数', rules: '按住屏幕蓄力，松手起跳。落在平台正中心有额外加分，连续命中中心连击更高！', onStart: reset });
+  var G = NW.mount({ key: 'jump', title: '奶蛙跳一跳', scoreLabel: '分数', rules: '按住蓄力、松手起跳。虚线预判落点：灰=能踩中、红=会踩空。只有落在中心小圈才震动，连续完美连击更高！', onStart: reset });
   function plat(x, y, w, ci) { return { x: x, y: y, w: w, h: 26, ci: ci, sq: 0, born: 0 }; }
   function nextPlat(prev) { var n = Math.min(45, plats.length + (G.score || 0)) / 45, gap = 60 + n * 24 + Math.random() * (80 + n * 30), w = (78 + Math.random() * 46) * (1 - .3 * n), dir = Math.random() < .5 ? -1 : 1; var nx = prev.x + dir * (prev.w / 2 + gap + w / 2); if (nx < w / 2 + 14) nx = prev.x + (prev.w / 2 + gap + w / 2); if (nx > W - w / 2 - 14) nx = prev.x - (prev.w / 2 + gap + w / 2); nx = Math.max(w / 2 + 12, Math.min(W - w / 2 - 12, nx)); var p = plat(nx, prev.y - (62 + Math.random() * 18), w, (prev.ci + 1 + Math.floor(Math.random() * 4)) % PC.length); p.born = 0; return p; }
   function reset() {
@@ -36,14 +36,14 @@
   }
   function resize() { NW.fit(cv, box, W / H, 480); view.s = cv.width / W; } window.addEventListener('resize', resize); resize();
   function down(e) { if (!G.running || state !== 'idle' || (e.target && e.target.closest && e.target.closest('.nw-modal,.nw-top,button,a'))) return; charging = true; charge = 0; NW.sfx.click(); }
-  function up() { if (!charging) return; charging = false; if (state !== 'idle') return; var pw = Math.min(1, charge / 1.15); var dirp = plats.indexOf(frog.on) + 1, tgt = plats[dirp]; var dx = tgt ? Math.sign(tgt.x - frog.x) : 1; var dist = 35 + pw * 235; frog.vx = dx * dist / .62; frog.vy = -(200 + pw * 520); frog.t = 0; frog.air = true; frog.takeoff = frog.on; frog.rot = 0; state = 'air'; NW.sfx.jump(pw); fx.burst(frog.x, frog.y, { count: 6, speed: 120, colors: ['#fff'], size: 4 }); }
+  function up() { if (!charging) return; charging = false; if (state !== 'idle') return; var pw = Math.min(1, charge / 1.05); var dirp = plats.indexOf(frog.on) + 1, tgt = plats[dirp]; var dx = tgt ? Math.sign(tgt.x - frog.x) : 1; var dist = 40 + pw * 250; frog.vx = dx * dist / .55; frog.vy = -(220 + pw * 480); frog.airT = .46; frog.t = 0; frog.air = true; frog.takeoff = frog.on; frog.rot = 0; state = 'air'; NW.sfx.jump(pw); fx.burst(frog.x, frog.y, { count: 6, speed: 120, colors: ['#fff'], size: 4 }); }
   box.addEventListener('pointerdown', down); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   document.addEventListener('keydown', function (e) { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); down({}); } }); document.addEventListener('keyup', function (e) { if (e.code === 'Space') up(); });
   function land(p, perfect) {
     var dx = Math.abs(frog.x - p.x) / (p.w / 2), pts = 1, txt = '';
-    if (dx < .18) { combo++; pts = 2 * Math.min(combo, 6); txt = combo > 1 ? '完美 ×' + combo : '完美！'; NW.sfx.perfect(); shakeT = .12; NW.vib(combo > 1 ? 16 : 11); fx.burst(frog.x, frog.y, { count: 22, speed: 300, colors: ['#FFD23F', '#fff', PC[p.ci][0]], size: 7 }); } else { combo = 0; NW.sfx.land(); fx.burst(frog.x, frog.y, { count: 8, speed: 160, colors: ['#fff', PC[p.ci][0]], size: 5 }); }
+    if (dx < .17) { combo++; pts = 2 * Math.min(combo, 6); txt = combo > 1 ? '完美 ×' + combo : '完美！'; NW.sfx.perfect(); shakeT = .12; NW.vib(combo > 1 ? 16 : 11); fx.burst(frog.x, frog.y, { count: 22, speed: 300, colors: ['#FFD23F', '#fff', PC[p.ci][0]], size: 7 }); } else { combo = 0; NW.sfx.land(); fx.burst(frog.x, frog.y, { count: 8, speed: 160, colors: ['#fff', PC[p.ci][0]], size: 5 }); }
     G.setScore(G.score + pts); var sx = frog.x, sy = frog.y - 110 - cam * 0; fx.text(sx, sy + cam, '+' + pts, { size: 24, color: '#e8a000' }); if (txt) fx.text(W / 2, 130, txt, { size: 32, color: '#ff4a2a', life: 1 });
-    p.sq = 1; frog.sq = .68; frog.on = p; frog.air = false; frog.vy = 0; frog.y = p.y; frog.mood = txt ? 'l' : 'n'; frog.moodT = .6;
+    p.sq = 1; frog.sq = .68; frog.landPop = .32; frog.on = p; frog.air = false; frog.vy = 0; frog.y = p.y; frog.mood = txt ? 'l' : 'n'; frog.moodT = .6;
     if (plats.length < G.score + 8 || plats[plats.length - 1].y > p.y - 600) while (plats.length < plats.indexOf(p) + 7) plats.push(nextPlat(plats[plats.length - 1]));
     camT = Math.max(camT, GY - p.y + 6 - 0); state = 'idle';
   }
@@ -52,7 +52,7 @@
   function frame(t) {
     var dt = Math.min(.033, (t - last) / 1000); last = t;
     if (plats) {
-      if (charging) { charge += dt; frog.sq = 1 - Math.min(1, charge / 1.15) * .22; if (Math.floor(charge * 12) % 3 === 0) {} }
+      if (charging) { charge += dt; frog.sq = 1 - Math.min(1, charge / 1.05) * .22; if (Math.floor(charge * 12) % 3 === 0) {} }
       else if (state === 'idle') frog.sq += (1 - frog.sq) * Math.min(1, dt * 12);
       if (state === 'air' || state === 'dead') {
         frog.t += dt; frog.vy += 1400 * dt; frog.x += frog.vx * dt * (state === 'dead' ? .3 : 1); frog.y += frog.vy * dt; frog.rot += dt * 6.28 * 1.1; frog.sq += (1.26 - frog.sq) * Math.min(1, dt * 12);
@@ -82,14 +82,14 @@
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
     if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 12 * shakeT * 4, (Math.random() - .5) * 12 * shakeT * 4); }
-    c.save(); rr(c, 0, 0, W, H, 22); c.clip(); var bg = c.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#7ccbff'); bg.addColorStop(.7, '#cdeeff'); bg.addColorStop(1, '#fff3c2'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
+    c.save(); rr(c, 0, 0, W, H, 22); c.clip(); var bg = c.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#8FC3EA'); bg.addColorStop(.55, '#BCDAF2'); bg.addColorStop(1, '#E3EFF9'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
     clouds.forEach(function (cl) { var y = ((cl.y + cam * .35) % 1000 + 1000) % 1000 - 200; c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(cl.x, y, 38 * cl.s, 14 * cl.s, 0, 0, 7); c.ellipse(cl.x - 24 * cl.s, y + 5, 22 * cl.s, 10 * cl.s, 0, 0, 7); c.ellipse(cl.x + 26 * cl.s, y + 4, 26 * cl.s, 11 * cl.s, 0, 0, 7); c.fill(); });
     if (plats) {
       plats.forEach(function (p) { if (p.y + cam > -60 && p.y + cam < H + 60) { if (p !== frog.on || !frog.air) drawPlat(c, p); else drawPlat(c, p); } });
       // charge aura
       var fy = frog.y + cam;
-      if (charging) { var pw = Math.min(1, charge / 1.15); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.arc(frog.x, fy - 40, 46, -Math.PI / 2, -Math.PI / 2 + pw * 6.28); c.stroke(); c.strokeStyle = pw > .85 ? '#ff6b3a' : '#7CC93E'; c.lineWidth = 3; c.beginPath(); c.arc(frog.x, fy - 40, 46, -Math.PI / 2, -Math.PI / 2 + pw * 6.28); c.stroke(); }
-      if (charging) { var tg = plats[plats.indexOf(frog.on) + 1]; if (tg) { var pw2 = Math.min(1, charge / 1.15), dx2 = Math.sign(tg.x - frog.x), dist2 = 35 + pw2 * 235, vx2 = dx2 * dist2 / .62, vy2 = -(200 + pw2 * 520), x2 = frog.x, y2 = frog.y, v2 = vy2, pts2 = [], hit = false, tt2 = 0;
+      if (charging) { var pw = Math.min(1, charge / 1.05); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.arc(frog.x, fy - 40, 46, -Math.PI / 2, -Math.PI / 2 + pw * 6.28); c.stroke(); c.strokeStyle = pw > .85 ? '#ff6b3a' : '#7CC93E'; c.lineWidth = 3; c.beginPath(); c.arc(frog.x, fy - 40, 46, -Math.PI / 2, -Math.PI / 2 + pw * 6.28); c.stroke(); }
+      if (charging) { var tg = plats[plats.indexOf(frog.on) + 1]; if (tg) { var pw2 = Math.min(1, charge / 1.05), dx2 = Math.sign(tg.x - frog.x), dist2 = 40 + pw2 * 250, vx2 = dx2 * dist2 / .55, vy2 = -(220 + pw2 * 480), x2 = frog.x, y2 = frog.y, v2 = vy2, pts2 = [], hit = false, tt2 = 0;
         while (tt2 < 1.6) { tt2 += .02; v2 += 1400 * .02; x2 += vx2 * .02; y2 += v2 * .02; if (pts2.length < 60) pts2.push([x2, y2]); if (v2 > 0 && y2 >= tg.y) { hit = Math.abs(x2 - tg.x) < tg.w / 2 + 6; break; } }
         pts2.forEach(function (q, i) { if (i % 2) return; c.fillStyle = hit ? 'rgba(62,68,82,.55)' : 'rgba(228,87,74,.8)'; c.beginPath(); c.arc(q[0], q[1] + cam, 3.4, 0, 7); c.fill(); });
         c.strokeStyle = hit ? 'rgba(62,68,82,.7)' : 'rgba(228,87,74,.9)'; c.lineWidth = 3; c.beginPath(); c.arc(x2, tg.y + cam, 8, 0, 7); c.stroke(); } }
