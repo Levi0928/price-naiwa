@@ -8,42 +8,104 @@
 <meta name="description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！奶蛙小游戏之合成大奶蛙。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！奶蛙小游戏之合成大奶蛙。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=snd1">
+<meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=content1">
+<style>
+.jar-bar{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:8px 10px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.jar-bar .t{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px}
+.jar-bar .t img{width:26px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
+.jar-bar .t span{font-size:9px;font-weight:800;color:#948876}
+.jar-bar .t.on span{color:#6a4400}
+.revive-mask{position:fixed;inset:0;z-index:40;background:rgba(26,22,18,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.revive-mask.show{display:flex}
+.revive-box{background:linear-gradient(180deg,#fffdf2,#fff3c4);border-radius:24px;padding:22px 20px;max-width:320px;width:100%;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.25),0 0 0 3px #fff}
+.revive-box h3{margin:0 0 8px;font-size:1.25rem;color:#6a4400}
+.revive-box p{margin:0 0 16px;color:#4D453B;font-weight:600;line-height:1.5}
+.revive-box .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+</style>
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
+  <div class="jar-bar" id="chain" aria-label="合成进化链"></div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint">按住左右拖动瞄准，松手投放 · 两个相同的会合成更大的</p>
+  <p class="nw-hint">拖动瞄准、松手投放 · 相同合成 · 每 2000 分得复活币</p>
 </div>
-<script src="/assets/frog.js?v=snd1"></script><script src="/assets/nw.js?v=snd1"></script>
+<div class="revive-mask" id="revive"><div class="revive-box">
+  <h3>还能再救一下</h3>
+  <p id="rv-txt">清掉警戒线上方的奶蛙，继续这一局。</p>
+  <div class="row"><button class="btn green" id="rv-yes">用 1 枚复活币</button><button class="btn white" id="rv-no">结束本局</button></div>
+</div></div>
+<script src="/assets/frog.js?v=content1"></script><script src="/assets/nw.js?v=content1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-  var W = 360, H = 620, WALL = 10, FLOOR = H - 14, DANGER = 160, DROPY = 126;
-  var R = [17, 23, 30, 38, 47, 57, 68, 80, 94];
-  var COL = ['#FF7BAC', '#FF6B5E', '#B28DFF', '#FF9F43', '#5CC8F2', '#3ED3B5', '#8FD14F', '#FFB830', '#F7C32B'];
-  var MOOD = ['neutral', 'wow', 'neutral', 'laugh', 'neutral', 'wow', 'laugh', 'neutral', 'laugh'];
-  var spr = R.map(function (r, i) { var sz = Math.max(48, r * 2.35); return F.pieceSprite({ shape: 'ball', color: COL[i], mood: MOOD[i] }, sz, sz); });
+  var W = 360, H = 620, WALL = 10, FLOOR = H - 14, DANGER = 142, DROPY = 74;
+  // 11 tiers ~ milkyfrog teardown radii
+  var R = [17, 23, 31, 39, 48, 58, 69, 81, 94, 108, 124];
+  var COL = ['#FF7BAC', '#FF6B5E', '#B28DFF', '#FF9F43', '#5CC8F2', '#3ED3B5', '#8FD14F', '#FFB830', '#F7C32B', '#FFE27A', '#FFD83D'];
+  var MOOD = ['neutral', 'wow', 'neutral', 'laugh', 'neutral', 'wow', 'laugh', 'neutral', 'laugh', 'wow', 'laugh'];
+  var NAMES = ['粉豆','赤豆','紫豆','橙豆','蓝豆','青豆','绿豆','金豆','金蛙','大奶蛙','神奶蛙'];
+  var spr = R.map(function (r, i) { var sz = Math.max(48, Math.min(160, r * 2.2)); return F.pieceSprite({ shape: 'ball', color: COL[i], mood: MOOD[i] }, sz, sz); });
   var fx = new NW.FX(), view = { s: 1, dpr: 1 };
   var balls = [], cur = 0, nxt = 0, aimX = W / 2, canDrop = true, dropT = 0, dangerT = 0, shakeT = 0, shakeA = 0, uid = 0, chain = 0, chainT = 0, held = false, flash = 0, hitstop = 0;
-  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', rules: '拖动瞄准、松手投放。两个相同奶蛙相撞合成更大一号。投放冷却约 0.36 秒；越过红线且停住约 1.5 秒判负。合出最大金色奶蛙！', onStart: reset });
+  var coins = 0, coinBank = 0, paused = false, maxSeen = 0;
+  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', extraCard: '复活币', rules: '拖动瞄准、松手投放。两个相同奶蛙相撞合成更大一号（共 11 级）。越过红线且停住约 1.5 秒判负；每 2000 分送 1 枚复活币，可清掉线以上的球继续。合出神奶蛙！', onStart: reset });
   function rnd(not) { var w = [.28, .24, .20, .16, .12], v; for (var t = 0; t < 6; t++) { var r = Math.random(), s = 0; v = 4; for (var i = 0; i < 5; i++) { s += w[i]; if (r < s) { v = i; break; } } if (v !== not) break; } return v; }
-  function reset() { balls = []; fx.p = []; cur = rnd(); nxt = rnd(cur); canDrop = true; dangerT = 0; chain = 0; flash = 0; hitstop = 0; G.setScore(0, false); }
+  function paintChain() {
+    var el = document.getElementById('chain'); if (!el) return;
+    el.innerHTML = R.map(function (r, i) {
+      var on = i <= maxSeen ? ' on' : '';
+      return '<div class="t' + on + '"><img src="' + (spr[i].toDataURL ? spr[i].toDataURL() : '') + '" alt=""><span>' + (i + 1) + '</span></div>';
+    }).join('');
+    // pieceSprite returns canvas — use draw into img via data URL
+    var imgs = el.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      try { imgs[i].src = spr[i].toDataURL('image/png'); } catch (e) {}
+      if (i > maxSeen) imgs[i].style.opacity = '.35';
+    }
+  }
+  function reset() {
+    balls = []; fx.p = []; cur = rnd(); nxt = rnd(cur); canDrop = true; dangerT = 0; chain = 0; flash = 0; hitstop = 0;
+    coins = 0; coinBank = 0; paused = false; maxSeen = 0; document.getElementById('revive').classList.remove('show');
+    G.setScore(0, false); G.setExtra(coins); paintChain();
+  }
   function resize() { var o = NW.fit(cv, box, W / H, 520); view.dpr = o.dpr; view.s = cv.width / W; }
   window.addEventListener('resize', resize); resize();
   function pos(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
   function clampX(x) { var r = R[cur]; return Math.max(WALL + r, Math.min(W - WALL - r, x)); }
-  cv.addEventListener('pointerdown', function (e) { held = true; cv.setPointerCapture(e.pointerId); aimX = clampX(pos(e).x); });
-  cv.addEventListener('pointermove', function (e) { if (held) aimX = clampX(pos(e).x); });
-  function release() { if (!held) return; held = false; if (!G.running || !canDrop) return; drop(); }
+  cv.addEventListener('pointerdown', function (e) { if (paused) return; held = true; cv.setPointerCapture(e.pointerId); aimX = clampX(pos(e).x); });
+  cv.addEventListener('pointermove', function (e) { if (held && !paused) aimX = clampX(pos(e).x); });
+  function release() { if (!held) return; held = false; if (!G.running || !canDrop || paused) return; drop(); }
   cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', function () { held = false; });
   function drop() {
     balls.push({ id: ++uid, x: clampX(aimX), y: DROPY, vx: 0, vy: 130, r: R[cur], lv: cur, age: 0, sq: 0, sa: 0, grow: 1, pop: 0, rot: 0 });
-    NW.sfx.drop(); cur = nxt; nxt = rnd(cur); canDrop = false; dropT = .36;
+    NW.sfx.drop(); cur = nxt; nxt = rnd(cur); canDrop = false; dropT = .36; maxSeen = Math.max(maxSeen, cur); paintChain();
   }
-  function addScore(n, x, y) { G.setScore(G.score + n); fx.text(x, y, '+' + n, { size: 22 + Math.min(14, chain * 3), color: chain > 1 ? '#ff4a2a' : '#e8a000' }); }
+  function addScore(n, x, y) {
+    G.setScore(G.score + n);
+    fx.text(x, y, '+' + n, { size: 22 + Math.min(14, chain * 3), color: chain > 1 ? '#ff4a2a' : '#e8a000' });
+    var gained = Math.floor(G.score / 2000) - Math.floor(coinBank / 2000);
+    if (gained > 0) { coins += gained; coinBank = G.score; G.setExtra(coins); NW.toast('获得复活币 ×' + gained); NW.sfx.win(); }
+    else coinBank = Math.max(coinBank, G.score);
+  }
+  function doRevive() {
+    balls = balls.filter(function (b) { return !(b.y - b.r < DANGER); });
+    coins = Math.max(0, coins - 1); G.setExtra(coins); dangerT = 0; paused = false;
+    document.getElementById('revive').classList.remove('show');
+    fx.burst(W / 2, DANGER, { count: 28, colors: ['#FFD83D', '#fff', '#7CC93E'] });
+    NW.sfx.perfect(); NW.toast('清掉线以上，继续！');
+  }
+  function offerRevive() {
+    paused = true; held = false;
+    document.getElementById('rv-txt').textContent = '还有 ' + coins + ' 枚复活币。清掉警戒线上方的奶蛙，继续这一局。';
+    document.getElementById('revive').classList.add('show');
+  }
+  document.getElementById('rv-yes').onclick = function () { if (coins > 0) doRevive(); };
+  document.getElementById('rv-no').onclick = function () {
+    document.getElementById('revive').classList.remove('show'); paused = false;
+    G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级 · ' + NAMES[Math.min(10, balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0))]);
+  };
   function step(dt) {
     var i, j, a, b;
     for (i = 0; i < balls.length; i++) { a = balls[i]; a.vy += 2600 * dt; a.x += a.vx * dt; a.y += a.vy * dt; a.age += dt; a.sq *= Math.max(0, 1 - 9 * dt); if (a.pop > 0) a.pop = Math.max(0, a.pop - dt / .22);
@@ -66,14 +128,17 @@
     if (merged.length) {
       merged.forEach(function (m) {
         var a = m[0], b = m[1], x = (a.x + b.x) / 2, y = (a.y + b.y) / 2, lv = a.lv;
-        chain++; chainT = 1.1;
-        if (lv >= 8) { addScore(1000, x, y); fx.burst(x, y, { count: 60, speed: 520, size: 12, life: 1.1 }); NW.sfx.win(); shakeT = .4; shakeA = 10; flash = 1.4; hitstop = .13; NW.vib(70); }
-        else {
+        chain++; chainT = 1.1; maxSeen = Math.max(maxSeen, Math.min(10, lv + 1)); paintChain();
+        if (lv >= 10) {
+          addScore(500, x, y); coins += 1; G.setExtra(coins); coinBank = Math.max(coinBank, G.score);
+          fx.burst(x, y, { count: 60, speed: 520, size: 12, life: 1.1 }); NW.sfx.win(); shakeT = .4; shakeA = 10; flash = 1.4; hitstop = .13; NW.vib(70);
+          fx.text(W / 2, H * .32, '双神对撞！+复活币', { size: 28, color: '#ff4a2a', life: 1.3 });
+        } else {
           var n = { id: ++uid, x: x, y: y, vx: (a.vx + b.vx) / 2, vy: -80, r: R[lv + 1], lv: lv + 1, age: .05, sq: 0, sa: 0, grow: 1, pop: 1, rot: 0 };
-          balls.push(n); addScore((lv + 1) * (lv + 2) * 5 * Math.max(1, chain), x, y - R[lv + 1] * .5);
-          fx.burst(x, y, { count: 8 + 2 * (lv + 1), speed: 140 + 22 * (lv + 1), colors: [COL[lv + 1], '#fff', '#FFD23F'], size: 6 + lv });
-          NW.sfx.merge(lv); NW.vib(6 + lv + 1); flash = Math.max(flash, lv + 1 === 8 ? 1 : .32);
-          if (lv + 1 === 8) { fx.text(W / 2, H * .35, '皇冠奶蛙！', { size: 38, color: '#ff9f00', life: 1.4 }); shakeT = .3; shakeA = 8; NW.sfx.win(); hitstop = .13; }
+          balls.push(n); addScore((lv + 1) * (lv + 2) / 2, x, y - R[lv + 1] * .5);
+          fx.burst(x, y, { count: 8 + 2 * (lv + 1), speed: 140 + 22 * (lv + 1), colors: [COL[lv + 1], '#fff', '#FFD23F'], size: 6 + lv * .4 });
+          NW.sfx.merge(lv); NW.vib(6 + lv + 1); flash = Math.max(flash, lv + 1 === 10 ? 1 : .32);
+          if (lv + 1 === 10) { fx.text(W / 2, H * .35, '神奶蛙！', { size: 38, color: '#ff9f00', life: 1.4 }); shakeT = .3; shakeA = 8; NW.sfx.win(); hitstop = .13; }
           else if (chain > 1) { fx.text(x, y - R[lv + 1] - 14, '连锁 ×' + chain, { size: 24, color: '#ff4a2a', life: 1 }); NW.sfx.combo(chain); }
         }
       });
@@ -83,13 +148,16 @@
   var last = performance.now();
   function frame(t) {
     var dt = Math.min(.033, (t - last) / 1000); last = t;
-    if (G.running) {
+    if (G.running && !paused) {
       if (hitstop > 0) hitstop -= dt; else for (var k = 0; k < 3; k++) step(dt / 3);
       if (dropT > 0) { dropT -= dt; if (dropT <= 0) canDrop = true; }
       if (chainT > 0) { chainT -= dt; if (chainT <= 0) chain = 0; }
       var over = false; balls.forEach(function (b) { if (b.age > 1 && b.y - b.r < DANGER && Math.hypot(b.vx, b.vy) < 140) over = true; });
       dangerT = over ? dangerT + dt : Math.max(0, dangerT - dt * 2);
-      if (dangerT > 1.5) { shakeT = .5; shakeA = 12; fx.burst(W / 2, DANGER, { count: 30, colors: ['#ff5a5a', '#fff'] }); G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级'); }
+      if (dangerT > 1.5) {
+        if (coins > 0) { dangerT = 1.4; offerRevive(); }
+        else { shakeT = .5; shakeA = 12; fx.burst(W / 2, DANGER, { count: 30, colors: ['#ff5a5a', '#fff'] }); G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级'); }
+      }
     }
     if (flash > 0) flash = Math.max(0, flash - 2.2 * dt); fx.update(dt); draw(t);
     requestAnimationFrame(frame);
@@ -101,30 +169,35 @@
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H);
     c.save(); if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * shakeA * shakeT * 2, (Math.random() - .5) * shakeA * shakeT * 2); }
-    // 罐子背景
+    // jar glass
     var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#fff0d4');
     c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill();
     c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, 8, 8, W - 16, H - 16, 22); c.fill();
-    c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
-    // 危险线
-    var flash = dangerT > 0 ? (Math.sin(t / 90) > 0 ? 1 : .35) : .55;
-    c.strokeStyle = 'rgba(255,90,90,' + flash + ')'; c.lineWidth = 3; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(WALL, DANGER); c.lineTo(W - WALL, DANGER); c.stroke(); c.setLineDash([]);
-    // 地面
+    // thick jar rim
+    c.strokeStyle = 'rgba(26,22,18,.18)'; c.lineWidth = 5; rr(c, 4, 4, W - 8, H - 8, 24); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.65)'; c.lineWidth = 2; rr(c, 10, 10, W - 20, H - 20, 20); c.stroke();
+    // side glass sheen
+    c.fillStyle = 'rgba(255,255,255,.22)'; rr(c, 14, 40, 18, H - 120, 10); c.fill();
+    var flashL = dangerT > 0 ? (Math.sin(t / 90) > 0 ? 1 : .35) : .55;
+    c.strokeStyle = 'rgba(255,90,90,' + flashL + ')'; c.lineWidth = 3; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(WALL, DANGER); c.lineTo(W - WALL, DANGER); c.stroke(); c.setLineDash([]);
+    c.fillStyle = 'rgba(255,90,90,' + (dangerT > 0 ? .12 : .04) + ')'; c.fillRect(WALL, 0, W - WALL * 2, DANGER);
     var fg = c.createLinearGradient(0, FLOOR, 0, H); fg.addColorStop(0, '#a9e566'); fg.addColorStop(1, '#6bb82e'); c.fillStyle = fg; rr(c, WALL - 4, FLOOR, W - WALL * 2 + 8, H - FLOOR - 6, 12); c.fill();
-    // 瞄准
     if (G.running || true) {
       var ax = clampX(aimX);
-      if (canDrop && G.running) {
+      if (canDrop && G.running && !paused) {
         c.strokeStyle = 'rgba(120,90,0,.28)'; c.lineWidth = 2; c.setLineDash([4, 7]); c.beginPath(); c.moveTo(ax, DROPY + R[cur]); c.lineTo(ax, FLOOR); c.stroke(); c.setLineDash([]);
         drawBall(c, { lv: cur, r: R[cur] }, ax, DROPY + Math.sin(t / 300) * 2, 1);
       }
     }
     for (var i = 0; i < balls.length; i++) { var b = balls[i]; c.fillStyle = 'rgba(90,60,0,.1)'; c.beginPath(); c.ellipse(b.x, Math.min(FLOOR + 2, b.y + b.r * .96), b.r * .8, b.r * .1, 0, 0, 6.3); c.fill(); }
     for (i = 0; i < balls.length; i++) { b = balls[i]; drawBall(c, b, b.x, b.y, b.grow); }
-    // 下一个
-    c.fillStyle = 'rgba(255,255,255,.78)'; rr(c, W - 82, 10, 70, 78, 16); c.fill(); c.strokeStyle = 'rgba(26,22,18,.12)'; c.lineWidth = 1.5; rr(c, W - 82, 10, 70, 78, 16); c.stroke();
+    // next preview card
+    c.fillStyle = 'rgba(255,255,255,.82)'; rr(c, W - 82, 10, 70, 78, 16); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 1.5; rr(c, W - 82, 10, 70, 78, 16); c.stroke();
     c.fillStyle = '#4a3325'; c.font = '800 11px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'center'; c.fillText('下一个', W - 47, 28);
-    var sn = spr[nxt], k = 34 / R[nxt]; c.save(); c.translate(W - 46, 60); c.scale(Math.min(1, k) , Math.min(1, k)); c.drawImage(sn, -sn.__w * .5, -sn.__w * .5, sn.__w, sn.__w); c.restore();
+    var sn = spr[nxt], k = 34 / Math.max(1, R[nxt]); c.save(); c.translate(W - 46, 60); c.scale(Math.min(1, k), Math.min(1, k)); c.drawImage(sn, -sn.__w * .5, -sn.__w * .5, sn.__w, sn.__w); c.restore();
+    // coin chip
+    c.fillStyle = 'rgba(255,255,255,.82)'; rr(c, 10, 10, 78, 36, 14); c.fill();
+    c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('币 ' + coins, 22, 33);
     fx.draw(c); c.restore();
     if (flash > 0) { c.globalAlpha = Math.min(1, flash * .35); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
   }

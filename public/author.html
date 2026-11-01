@@ -4,23 +4,146 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#bfeaff">
-<title>作者 · 奶蛙小游戏</title>
-<meta name="description" content="奶蛙小游戏的作者页，信息稍后填写。">
+<title>作者 · Levi · 奶蛙小游戏</title>
+<meta name="description" content="奶蛙小游戏作者 Levi：自研前端合集，无广告，不收集隐私。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="作者 · 奶蛙小游戏"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=png3">
+<meta property="og:title" content="作者 · Levi · 奶蛙小游戏">
+<meta property="og:description" content="一只软糯糯的黄色小胖蛙，和它背后的作者 Levi。">
+<meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=content1">
 <style>
-body.lobby { min-height: 100vh; min-height: 100dvh; background: linear-gradient(180deg, #8fd6ff 0, #d3f1ff 30%, #fff6d6 62%, #d8f2a8 100%) fixed; }
-.au { max-width: 520px; margin: 0 auto; padding: 96px 16px 40px; }
-.au-card { position: relative; padding: 70px 22px 22px; border-radius: 30px; background: linear-gradient(180deg, #fffdf2, #fff3c4); box-shadow: 0 16px 34px rgba(120, 90, 0, .2), 0 0 0 3px #fff; text-align: center; margin-top: 70px; }
-.au-frog { position: absolute; left: 50%; top: -88px; width: 120px; transform: translateX(-50%); animation: nfidle 3.2s ease-in-out infinite; }
-.au-card h1 { margin: 0 0 6px; font-size: 1.6rem; font-weight: 900; color: #6a4400; }
-.au-card > p { margin: 0 0 14px; color: #8a6a20; font-weight: 600; font-size: .92rem; }
-.slot { text-align: left; padding: 12px 16px; margin: 10px 0; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 2px #ffe58a; color: #a8935a; font-weight: 600; font-size: .92rem; }
-.slot strong { display: block; color: #6a4400; font-size: .85rem; margin-bottom: 2px; }
-.au .row { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.note { margin-top: 14px; font-size: .8rem; color: #a8935a; }
+body.lobby {
+  min-height: 100vh; min-height: 100dvh;
+  background: linear-gradient(180deg, #8fd6ff 0, #d3f1ff 28%, #fff6d6 62%, #d8f2a8 100%) fixed;
+}
+.au { max-width: 540px; margin: 0 auto; padding: 96px 16px 48px; }
+.au-card {
+  position: relative;
+  padding: 78px 22px 26px;
+  border-radius: 30px;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.95), transparent 55%),
+    linear-gradient(180deg, #fffdf2 0%, #fff6d8 55%, #fff0b8 100%);
+  box-shadow:
+    0 18px 40px rgba(120, 90, 0, .18),
+    0 0 0 3px #fff,
+    inset 0 1px 0 rgba(255,255,255,.9);
+  text-align: center;
+  margin-top: 64px;
+}
+.au-frog {
+  position: absolute; left: 50%; top: -92px; width: 128px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 10px 14px rgba(120, 80, 0, .28));
+  animation: nfidle 3.2s ease-in-out infinite;
+}
+.au-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; margin: 0 0 10px;
+  border-radius: 999px; font-size: .78rem; font-weight: 800;
+  color: #5a3a00; letter-spacing: .06em;
+  background: linear-gradient(180deg, #fff7d0, #ffe27a);
+  box-shadow: 0 2px 0 #d4a820, inset 0 1px 0 #fff;
+}
+.au-card h1 {
+  margin: 0 0 4px; font-size: 2rem; font-weight: 900;
+  color: #6a4400; letter-spacing: .04em;
+}
+.au-role {
+  margin: 0 0 16px; color: #8a6a20; font-weight: 700; font-size: .95rem;
+}
+.au-bio {
+  margin: 0 0 18px; text-align: left; padding: 14px 16px;
+  border-radius: 18px; background: rgba(255,255,255,.78);
+  box-shadow: inset 0 0 0 2px #ffe58a;
+  color: #5a4530; font-weight: 600; font-size: .94rem; line-height: 1.65;
+}
+.au-bio p { margin: 0 0 8px; }
+.au-bio p:last-child { margin: 0; }
+.au-div {
+  display: flex; align-items: center; gap: 10px;
+  margin: 4px 0 14px; color: #c4a86a; font-size: .78rem; font-weight: 800; letter-spacing: .12em;
+}
+.au-div::before, .au-div::after {
+  content: ""; flex: 1; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #ffe58a, transparent);
+}
+.au-sec-title {
+  margin: 0 0 10px; text-align: left; font-size: .82rem; font-weight: 900;
+  color: #6a4400; letter-spacing: .08em;
+}
+.au-list {
+  list-style: none; margin: 0 0 18px; padding: 0;
+  display: grid; gap: 8px; text-align: left;
+}
+.au-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 14px; border-radius: 16px;
+  background: #fff; box-shadow: inset 0 0 0 2px #ffe9a0;
+  color: #5a4530; font-weight: 700; font-size: .9rem; line-height: 1.4;
+}
+.au-list .dot {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .78rem; font-weight: 900; color: #5a3a00;
+  background: linear-gradient(180deg, #ffe27a, #f7c32b);
+  box-shadow: 0 2px 0 #c98a07, inset 0 1px 0 rgba(255,255,255,.8);
+}
+.au-list .txt strong { display: block; color: #6a4400; font-size: .92rem; margin-bottom: 1px; }
+.au-list .txt span { color: #8a6a20; font-weight: 600; font-size: .82rem; }
+.au-contact {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin: 0 0 8px;
+}
+.au-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px; border-radius: 999px;
+  text-decoration: none; font-weight: 800; font-size: .86rem;
+  color: #7a5a10; background: linear-gradient(180deg, #fff, #f7efd8);
+  box-shadow: 0 3px 0 #d8c99a, 0 8px 14px rgba(120,90,0,.12), inset 0 1px 0 #fff;
+  transition: transform .12s, filter .2s;
+}
+.au-pill:hover { transform: translateY(-1px); filter: brightness(1.03); }
+.au-pill:active { transform: translateY(2px); box-shadow: 0 1px 0 #d8c99a, inset 0 1px 0 #fff; }
+.au-pill.muted {
+  color: #a8935a; background: #fffaf0;
+  box-shadow: inset 0 0 0 2px #ffe9a0;
+  cursor: default;
+}
+.au-pill .tag {
+  font-size: .7rem; font-weight: 900; letter-spacing: .04em;
+  padding: 2px 7px; border-radius: 999px;
+  color: #8a6a20; background: #fff3c4;
+}
+.au-pill.repo {
+  color: #fff; text-shadow: 0 1px 0 rgba(30,90,0,.35);
+  background: linear-gradient(180deg, #c3f58a 0%, #a9e566 14%, #7cc93e 100%);
+  box-shadow: 0 3px 0 #3f8e1c, 0 8px 14px rgba(40,110,0,.2), inset 0 1px 0 rgba(255,255,255,.65);
+}
+.au-note {
+  margin: 12px 0 0; font-size: .78rem; color: #a8935a; font-weight: 600; line-height: 1.5;
+}
+.au .row {
+  margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+}
+.au-clouds { pointer-events: none; position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.au-clouds i {
+  position: absolute; width: 70px; height: 28px; border-radius: 40px;
+  background: rgba(255,255,255,.45); filter: blur(.2px);
+}
+.au-clouds i::before, .au-clouds i::after {
+  content: ""; position: absolute; border-radius: 50%; background: inherit;
+}
+.au-clouds i::before { width: 34px; height: 34px; left: 10px; top: -16px; }
+.au-clouds i::after { width: 42px; height: 42px; right: 8px; top: -20px; }
+.au-clouds .c1 { left: 8%; top: 18%; opacity: .55; }
+.au-clouds .c2 { right: 6%; top: 28%; width: 54px; opacity: .4; }
+@media (min-width: 640px) {
+  .au { padding-top: 110px; }
+  .au-card { padding: 84px 28px 30px; }
+  .au-card h1 { font-size: 2.2rem; }
+}
 </style>
 </head>
 <body class="lobby">
@@ -28,23 +151,66 @@ body.lobby { min-height: 100vh; min-height: 100dvh; background: linear-gradient(
   <a class="brand" href="/"><img src="/assets/favicon-frog.png" alt="">奶蛙小游戏</a>
   <a class="lnk" href="/">首页</a><a class="lnk" href="/#games">游戏</a><a class="lnk on" href="/author.html">作者</a>
 </div></header>
+
 <main class="au">
-  <div class="au-card">
+  <article class="au-card">
+    <div class="au-clouds" aria-hidden="true"><i class="c1"></i><i class="c2"></i></div>
     <div class="au-frog" id="af" aria-hidden="true"></div>
-    <h1>作者页</h1>
-    <p>作者信息稍后填写。下面先留空壳，Levi 之后按自己的来填。</p>
-    <div class="slot"><strong>姓名 / 昵称</strong>（待填写）</div>
-    <div class="slot"><strong>简介</strong>（待填写）</div>
-    <div class="slot"><strong>联系方式</strong>（待填写：邮箱 / 社交账号 / 主页链接）</div>
-    <p class="note">本合集游戏均为自研前端作品，与其他网站无关。</p>
-    <div class="row"><a class="btn green" href="/#games">回游戏列表</a><a class="btn white" href="/">首页</a></div>
-  </div>
+
+    <div class="au-badge">作者页 · 奶蛙合集</div>
+    <h1>Levi</h1>
+    <p class="au-role">奶蛙小游戏 · 独立前端作者</p>
+
+    <div class="au-bio">
+      <p>你好，我是 Levi。闲暇时把一只软糯糯的黄色小胖蛙做成了这个小游戏合集，想让人打开浏览器就能笑一会儿。</p>
+      <p>全部自研、无广告、不收集隐私。成绩只存在你自己的手机里，关掉页面也不会偷偷带走什么。</p>
+    </div>
+
+    <div class="au-div">做了什么</div>
+    <p class="au-sec-title" style="margin-top:-4px">一点点说明</p>
+    <ul class="au-list">
+      <li>
+        <span class="dot">13</span>
+        <span class="txt"><strong>13 款小游戏</strong><span>点按、合成、消消乐、跳一跳……一只蛙玩出一整窝</span></span>
+      </li>
+      <li>
+        <span class="dot">玩</span>
+        <span class="txt"><strong>手机即玩</strong><span>免下载、免注册，浏览器打开就能点</span></span>
+      </li>
+      <li>
+        <span class="dot">存</span>
+        <span class="txt"><strong>本地存成绩</strong><span>高分留在本机，不上传、不追踪</span></span>
+      </li>
+    </ul>
+
+    <div class="au-div">联系</div>
+    <div class="au-contact" aria-label="联系方式">
+      <span class="au-pill muted" title="待 Levi 填写">邮箱 <span class="tag">待填</span></span>
+      <span class="au-pill muted" title="待 Levi 填写">X <span class="tag">待填</span></span>
+      <span class="au-pill muted" title="待 Levi 填写">GitHub 账号 <span class="tag">待填</span></span>
+      <a class="au-pill repo" href="https://github.com/Levi0928/price-naiwa" target="_blank" rel="noopener noreferrer">作品仓库</a>
+    </div>
+    <p class="au-note">邮箱 / X / GitHub 个人主页留给 Levi 自己填。上面「作品仓库」已链到本合集源码。</p>
+
+    <div class="row">
+      <a class="btn green" href="/#games">回游戏列表</a>
+      <a class="btn white" href="/">首页</a>
+    </div>
+  </article>
 </main>
+
 <footer class="site">
   <div class="fl"><a href="/">首页</a><a href="/#games">游戏</a><a href="/author.html">作者</a></div>
   纯前端自研 · 无广告 · 不收集隐私 · 仅供娱乐
 </footer>
-<script src="/assets/frog.js?v=png3"></script>
-<script>document.getElementById('af').innerHTML = NaiwaFrog.html({ pose: 'peace', width: 120, style: 'width:120px;height:auto;display:block' });</script>
+
+<script src="/assets/frog.js?v=content1"></script>
+<script>
+document.getElementById('af').innerHTML = NaiwaFrog.html({
+  pose: 'peace',
+  width: 128,
+  style: 'width:128px;height:auto;display:block'
+});
+</script>
 </body>
 </html>

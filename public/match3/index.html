@@ -5,43 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
 <title>奶蛙消消乐 · 奶蛙小游戏</title>
-<meta name="description" content="交换相邻的奶蛙，连成三个就消除！奶蛙小游戏之奶蛙消消乐。">
+<meta name="description" content="交换相邻的奶蛙，连成三个就消除！有条纹/炸弹特殊块与关卡目标。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！奶蛙小游戏之奶蛙消消乐。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=snd1">
+<meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=content1">
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint" id="hint">点选一只，再点相邻的交换；也可以直接拖动</p>
+  <p class="nw-hint" id="hint">四连→条纹，五连/L型→炸弹；完成收集目标过关</p>
 </div>
-<script src="/assets/frog.js?v=snd1"></script><script src="/assets/nw.js?v=snd1"></script>
+<script src="/assets/frog.js?v=content1"></script><script src="/assets/nw.js?v=content1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-  var N = 7, TYPES = 6, MOVES0 = 25, COLORS = ['#F7C32B', '#8FD14F', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF9F43'], MOODS = ['laugh', 'neutral', 'wow', 'neutral', 'laugh', 'wow'];
-  var CS = 52, PAD = 10, W = N * CS + PAD * 2, H = W + 0;
+  var N = 7, TYPES = 6, COLORS = ['#F7C32B', '#8FD14F', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF9F43'], MOODS = ['laugh', 'neutral', 'wow', 'neutral', 'laugh', 'wow'];
+  var CS = 52, PAD = 10, HUDH = 54, W = N * CS + PAD * 2, H = W + HUDH;
   var spr = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: MOODS[i] }, CS * 1.15, CS * 1.15); });
   var sprHi = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: 'laugh' }, CS * 1.15, CS * 1.15); });
-  var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, goal, freeze = 0;
-  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖连成 3 只及以上消除。限 25 步；连锁有顿帧与震动，连消越高分越多！', onStart: reset });
+  // level table: moves + collect goals [type, count]
+  var LEVELS = [
+    { moves: 25, goals: [[0, 15], [1, 12], [2, 10]] },
+    { moves: 24, goals: [[3, 14], [4, 12], [5, 10]] },
+    { moves: 22, goals: [[0, 18], [2, 14], [4, 12]] },
+    { moves: 22, goals: [[1, 16], [3, 16], [5, 12]] },
+    { moves: 20, goals: [[0, 12], [1, 12], [2, 12], [3, 12]] },
+    { moves: 20, goals: [[4, 18], [5, 18], [0, 10]] },
+    { moves: 18, goals: [[1, 20], [3, 16], [5, 14]] },
+    { moves: 18, goals: [[2, 22], [4, 18]] },
+    { moves: 16, goals: [[0, 14], [1, 14], [2, 14], [3, 14], [4, 10]] },
+    { moves: 15, goals: [[0, 20], [2, 20], [4, 20]] }
+  ];
+  var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, freeze = 0;
+  var level = 0, goals = [], collected = [], pendingSpecials = [];
+  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连生成条纹（清行/列），五连或 L/T 生成炸弹（清周围）。完成关卡收集目标过关，共 ' + LEVELS.length + ' 关。', onStart: reset });
   function rnd() { return Math.floor(Math.random() * TYPES); }
-  function reset() {
-    cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
-    moves = MOVES0; G.setScore(0, false); G.setExtra(moves); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null;
-    if (!findMove()) reshuffle();
+  function loadLevel(i) {
+    level = Math.min(i, LEVELS.length - 1);
+    var L = LEVELS[level];
+    goals = L.goals.map(function (g) { return g.slice(); });
+    collected = goals.map(function () { return 0; });
+    moves = L.moves; G.setExtra(moves);
   }
-  function mk(t, r, c, y0) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0 }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
+  function reset() {
+    loadLevel(+(NW.store.get('m3_lv', 0) || 0));
+    cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
+    G.setScore(0, false); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = [];
+    if (!findMove()) reshuffle();
+    document.getElementById('hint').textContent = '第 ' + (level + 1) + ' 关 · 完成收集目标过关';
+  }
+  function mk(t, r, c, y0, spec) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0, spec: spec || 0 }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
   function startMove(cl, kind, rows, delay) { cl.fx = cl.x; cl.fy = cl.y; cl.tt = -(delay || 0); cl.kind = kind; cl.dur = kind === 0 ? 220 : Math.min(380, 130 + 44 * rows); }
   function bez(x1, y1, x2, y2) { return function (x) { var lo = 0, hi = 1, t = x; for (var i = 0; i < 18; i++) { var cx = 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t; if (cx < x) lo = t; else hi = t; t = (lo + hi) / 2; } return 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t; }; }
   var easeQ = bez(.22, .9, .28, 1);
   function resize() { var o = NW.fit(cv, box, W / H, 480); view.s = cv.width / W; }
   window.addEventListener('resize', resize); resize();
-  function cellAt(e) { var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) / rc.width * W - PAD, y = (e.clientY - rc.top) / rc.height * H - PAD; var c = Math.floor(x / CS), r = Math.floor(y / CS); return (r < 0 || c < 0 || r >= N || c >= N) ? null : { r: r, c: c, x: x, y: y }; }
+  function cellAt(e) { var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) / rc.width * W - PAD, y = (e.clientY - rc.top) / rc.height * H - PAD - HUDH; var c = Math.floor(x / CS), r = Math.floor(y / CS); return (r < 0 || c < 0 || r >= N || c >= N) ? null : { r: r, c: c, x: x, y: y }; }
   cv.addEventListener('pointerdown', function (e) {
     if (!G.running || state !== 'idle') return; var p = cellAt(e); if (!p) return; hintT = 0; hint = null;
+    // tap special alone activates
+    var cl = cells[p.r][p.c];
+    if (cl && cl.spec && sel && sel.r === p.r && sel.c === p.c) { sel = null; activateSpecial(p.r, p.c); return; }
     if (sel && Math.abs(sel.r - p.r) + Math.abs(sel.c - p.c) === 1) { var a = sel; sel = null; trySwap(a, p); return; }
     sel = { r: p.r, c: p.c }; drag = { r: p.r, c: p.c, x: e.clientX, y: e.clientY }; NW.sfx.click();
   });
@@ -52,12 +78,68 @@
   window.addEventListener('pointerup', function () { drag = null; });
   function swapCells(a, b, anim) { var t = cells[a.r][a.c]; cells[a.r][a.c] = cells[b.r][b.c]; cells[b.r][b.c] = t; if (anim) { startMove(cells[a.r][a.c], 0); startMove(cells[b.r][b.c], 0); } }
   function trySwap(a, b) {
-    state = 'swap'; swapCells(a, b, true); NW.sfx.swap();
+    state = 'swap';
+    var A = cells[a.r][a.c], B = cells[b.r][b.c];
+    // special + special or special swap: activate
+    if (A.spec || B.spec) {
+      swapCells(a, b, true); NW.sfx.swap();
+      wait(235, function () {
+        moves--; G.setExtra(moves); combo = 0;
+        var marks = {};
+        function mark(r, c) { if (r >= 0 && c >= 0 && r < N && c < N) marks[r + ',' + c] = 1; }
+        if (A.spec) blastSpec(b.r, b.c, A.spec, mark); // A moved to b
+        if (B.spec) blastSpec(a.r, a.c, B.spec, mark);
+        // also clear the swapped cells
+        mark(a.r, a.c); mark(b.r, b.c);
+        var m = []; for (var k in marks) { var p = k.split(','); m.push([+p[0], +p[1]]); }
+        m.groups = [m.slice()];
+        resolve(m, true);
+      });
+      return;
+    }
+    swapCells(a, b, true); NW.sfx.swap();
     wait(235, function () {
       var m = findMatches();
       if (!m.length) { swapCells(a, b, true); NW.sfx.bad(); wait(235, function () { state = 'idle'; }); return; }
-      moves--; G.setExtra(moves); combo = 0; resolve(m);
+      moves--; G.setExtra(moves); combo = 0;
+      spawnSpecialsFromGroups(m.groups, a, b);
+      resolve(m, false);
     });
+  }
+  function blastSpec(r, c, spec, mark) {
+    if (spec === 1) { for (var cc = 0; cc < N; cc++) mark(r, cc); } // horiz
+    else if (spec === 2) { for (var rr = 0; rr < N; rr++) mark(rr, c); } // vert
+    else if (spec === 3) { for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) mark(r + dr, c + dc); } // bomb 3x3
+  }
+  function activateSpecial(r, c) {
+    var cl = cells[r][c]; if (!cl || !cl.spec) return;
+    state = 'swap'; moves--; G.setExtra(moves); combo = 0;
+    var marks = {}; function mark(rr, cc) { if (rr >= 0 && cc >= 0 && rr < N && cc < N) marks[rr + ',' + cc] = 1; }
+    blastSpec(r, c, cl.spec, mark); mark(r, c);
+    var m = []; for (var k in marks) { var p = k.split(','); m.push([+p[0], +p[1]]); }
+    m.groups = [m.slice()];
+    NW.sfx.pop(3); resolve(m, true);
+  }
+  function spawnSpecialsFromGroups(groups, a, b) {
+    pendingSpecials = [];
+    groups.forEach(function (g) {
+      if (g.length < 4) return;
+      // pick spawn cell: prefer swapped cell in group, else center
+      var sr = g[Math.floor(g.length / 2)][0], sc = g[Math.floor(g.length / 2)][1];
+      if (a) for (var i = 0; i < g.length; i++) if (g[i][0] === a.r && g[i][1] === a.c) { sr = a.r; sc = a.c; }
+      if (b) for (var i = 0; i < g.length; i++) if (g[i][0] === b.r && g[i][1] === b.c) { sr = b.r; sc = b.c; }
+      var horiz = g.every(function (p) { return p[0] === g[0][0]; });
+      var vert = g.every(function (p) { return p[1] === g[0][1]; });
+      var spec = 3; // default bomb for L/T or 5+
+      if (g.length === 4 && (horiz || vert)) spec = horiz ? 1 : 2;
+      else if (g.length >= 5) spec = 3;
+      else if (!horiz && !vert) spec = 3; // L/T shape when groups merge oddly — treat as bomb
+      var t = cells[sr][sc] ? cells[sr][sc].t : 0;
+      pendingSpecials.push({ r: sr, c: sc, t: t, spec: spec });
+    });
+    // detect L/T: cell in two groups
+    var seen = {};
+    groups.forEach(function (g, gi) { g.forEach(function (p) { var k = p[0] + ',' + p[1]; if (seen[k] != null && seen[k] !== gi) pendingSpecials.push({ r: p[0], c: p[1], t: cells[p[0]][p[1]].t, spec: 3 }); else seen[k] = gi; }); });
   }
   var timers = []; function wait(ms, fn) { timers.push({ t: ms / 1000, fn: fn }); }
   function findMatches() {
@@ -66,32 +148,85 @@
     for (c = 0; c < N; c++) { r = 0; while (r < N) { var t2 = cells[r][c] && cells[r][c].t, e2 = r; while (e2 + 1 < N && cells[e2 + 1][c] && cells[e2 + 1][c].t === t2) e2++; if (e2 - r >= 2) { var g2 = []; for (k = r; k <= e2; k++) { mark[k + ',' + c] = 1; g2.push([k, c]); } groups.push(g2); } r = e2 + 1; } }
     var res = []; for (var key in mark) { var p = key.split(','); res.push([+p[0], +p[1]]); } res.groups = groups; return res;
   }
-  function resolve(m) {
+  function countCollect(t) {
+    for (var i = 0; i < goals.length; i++) if (goals[i][0] === t) collected[i] = Math.min(goals[i][1], collected[i] + 1);
+  }
+  function goalsDone() { for (var i = 0; i < goals.length; i++) if (collected[i] < goals[i][1]) return false; return true; }
+  function resolve(m, fromSpecial) {
     state = 'clear'; combo++; var pts = 0;
-    m.groups.forEach(function (g) { pts += (g.length - 2) * 30 + (g.length >= 4 ? 40 : 0) + (g.length >= 5 ? 80 : 0); });
+    if (!fromSpecial && m.groups) m.groups.forEach(function (g) { pts += (g.length - 2) * 30 + (g.length >= 4 ? 40 : 0) + (g.length >= 5 ? 80 : 0); });
+    else pts = m.length * 20;
     pts = Math.round(pts * (1 + (combo - 1) * .6)); var cx = 0, cy = 0;
-    m.forEach(function (p) { var cl = cells[p[0]][p[1]]; cl.dead = true; cl.dying = 0; cx += cl.x; cy += cl.y; var px = PAD + cl.x + CS / 2, py = PAD + cl.y + CS / 2; fx.burst(px, py, { count: 7, speed: 230, colors: [COLORS[cl.t], '#fff', '#FFE27A'], size: 6 }); });
-    cx = PAD + cx / m.length + CS / 2; cy = PAD + cy / m.length + CS / 2;
+    // protect pending special spawn cells from dying this wave — leave as new special
+    var protect = {};
+    pendingSpecials.forEach(function (s) { protect[s.r + ',' + s.c] = s; });
+    m.forEach(function (p) {
+      var key = p[0] + ',' + p[1], cl = cells[p[0]][p[1]];
+      if (protect[key]) return;
+      // cascading specials: if clearing a special, expand
+      if (cl.spec && !fromSpecial) {
+        var extra = {}; function mark(rr, cc) { if (rr >= 0 && cc >= 0 && rr < N && cc < N) extra[rr + ',' + cc] = 1; }
+        blastSpec(p[0], p[1], cl.spec, mark);
+        for (var ek in extra) { var ep = ek.split(','); if (!m.some(function (q) { return q[0] === +ep[0] && q[1] === +ep[1]; })) m.push([+ep[0], +ep[1]]); }
+      }
+      cl.dead = true; cl.dying = 0; cx += cl.x; cy += cl.y; countCollect(cl.t);
+      var px = PAD + cl.x + CS / 2, py = HUDH + PAD + cl.y + CS / 2; fx.burst(px, py, { count: 7, speed: 230, colors: [COLORS[cl.t], '#fff', '#FFE27A'], size: 6 });
+    });
+    // place specials
+    pendingSpecials.forEach(function (s) {
+      var cl = cells[s.r][s.c];
+      cl.dead = false; cl.dying = 0; cl.a = 1; cl.sc = 1.2; cl.spec = s.spec; cl.t = s.t;
+      fx.text(PAD + s.c * CS + CS / 2, HUDH + PAD + s.r * CS + CS / 2, s.spec === 3 ? '💣' : '⚡', { size: 28, color: '#ff4a2a', life: .9 });
+    });
+    pendingSpecials = [];
+    var alive = m.filter(function (p) { return cells[p[0]][p[1]].dead; });
+    if (alive.length) { cx = PAD + cx / Math.max(1, alive.length) + CS / 2; cy = HUDH + PAD + cy / Math.max(1, alive.length) + CS / 2; }
+    else { cx = W / 2; cy = H / 2; }
     G.setScore(G.score + pts); fx.text(cx, cy, '+' + pts, { size: 26 + combo * 2, color: combo > 1 ? '#ff4a2a' : '#e8a000' });
-    if (combo > 1) { fx.text(W / 2, H * .16, combo + ' 连消！', { size: 30 + combo * 3, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(combo); shakeT = .15 + combo * .04; } else NW.sfx.pop(Math.min(4, m.length - 3));
-    if (m.length >= 5) { fx.text(W / 2, H * .3, m.length >= 6 ? '太棒了！' : '很不错！', { size: 34, color: '#ff9f00', life: 1.1 }); NW.sfx.perfect(); }
+    if (combo > 1) { fx.text(W / 2, HUDH + 8, combo + ' 连消！', { size: 28 + combo * 2, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(combo); shakeT = .15 + combo * .04; } else NW.sfx.pop(Math.min(4, m.length - 3));
+    if (m.length >= 5) { fx.text(W / 2, H * .35, m.length >= 6 ? '太棒了！' : '很不错！', { size: 34, color: '#ff9f00', life: 1.1 }); NW.sfx.perfect(); }
     NW.vib(10 + combo * 4); freeze = [.045, .062, .078][Math.min(2, combo - 1)];
     wait(200, function () {
-      for (var c = 0; c < N; c++) { var col = []; for (var r = N - 1; r >= 0; r--) if (!cells[r][c].dead) col.push(cells[r][c]); var miss = N - col.length; for (var i = 0; i < miss; i++) { var nc = mk(rnd(), 0, c, -(i + 1) * CS); col.push(nc); } for (r = N - 1, i = 0; r >= 0; r--, i++) { var q = col[i], rows = Math.max(1, Math.round((r * CS - q.y) / CS)); cells[r][c] = q; if (Math.abs(q.y - r * CS) > 1) startMove(q, 1, rows, 0); } }
+      for (var c = 0; c < N; c++) {
+        var col = []; for (var r = N - 1; r >= 0; r--) if (!cells[r][c].dead) col.push(cells[r][c]);
+        var miss = N - col.length; for (var i = 0; i < miss; i++) { var nc = mk(rnd(), 0, c, -(i + 1) * CS); col.push(nc); }
+        for (r = N - 1, i = 0; r >= 0; r--, i++) { var q = col[i], rows = Math.max(1, Math.round((r * CS - q.y) / CS)); cells[r][c] = q; if (Math.abs(q.y - r * CS) > 1) startMove(q, 1, rows, 0); }
+      }
       state = 'fall';
     });
   }
   function settle() {
     var m = findMatches();
-    if (m.length) { resolve(m); return; }
+    if (m.length) { spawnSpecialsFromGroups(m.groups, null, null); resolve(m, false); return; }
     combo = 0;
-    if (moves <= 0) { state = 'over'; wait(300, function () { state = 'idle'; G.over('25 步用完啦！'); }); return; }
+    if (goalsDone()) {
+      state = 'over';
+      var next = level + 1;
+      if (next < LEVELS.length) {
+        NW.store.set('m3_lv', next);
+        var keepScore = G.score;
+        wait(400, function () { NW.sfx.win(); fx.text(W / 2, H * .4, '过关！进入第 ' + (next + 1) + ' 关', { size: 34, color: '#ff9f00', life: 1.2 }); wait(700, function () {
+          loadLevel(next);
+          cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var tt; do { tt = rnd(); } while ((c >= 2 && cells[r][c - 1].t === tt && cells[r][c - 2].t === tt) || (r >= 2 && cells[r - 1][c].t === tt && cells[r - 2][c].t === tt)); cells[r].push(mk(tt, r, c, -(N - r) * CS - 40 - c * 6)); } }
+          sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = []; state = 'fall';
+          if (!findMove()) reshuffle();
+          G.setScore(keepScore, false); document.getElementById('hint').textContent = '第 ' + (level + 1) + ' 关 · 完成收集目标过关';
+        }); });
+      } else {
+        wait(300, function () { state = 'idle'; NW.store.set('m3_lv', 0); G.over('全部 ' + LEVELS.length + ' 关通关！'); });
+      }
+      return;
+    }
+    if (moves <= 0) { state = 'over'; wait(300, function () { state = 'idle'; G.over('第 ' + (level + 1) + ' 关步数用完'); }); return; }
     if (!findMove()) { G.toast('没有可消除的了，重新洗牌'); reshuffle(); return; }
     state = 'idle'; hintT = 0;
   }
-  function reshuffle() { var all = []; cells.forEach(function (row) { row.forEach(function (c) { all.push(c.t); }); }); var tries = 0; do { all.sort(function () { return Math.random() - .5; }); var i = 0; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) cells[r][c].t = all[i++]; tries++; } while ((findMatches().length || !findMove()) && tries < 80); cells.forEach(function (row) { row.forEach(function (c) { c.sc = 0.3; }); }); }
+  function reshuffle() { var all = []; cells.forEach(function (row) { row.forEach(function (c) { all.push({ t: c.t, spec: c.spec }); }); }); var tries = 0; do { all.sort(function () { return Math.random() - .5; }); var i = 0; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { cells[r][c].t = all[i].t; cells[r][c].spec = all[i].spec; i++; } tries++; } while ((findMatches().length || !findMove()) && tries < 80); cells.forEach(function (row) { row.forEach(function (c) { c.sc = 0.3; }); }); }
   function findMove() {
-    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var d = [[0, 1], [1, 0]]; for (var k = 0; k < 2; k++) { var r2 = r + d[k][0], c2 = c + d[k][1]; if (r2 >= N || c2 >= N) continue; swapCells({ r: r, c: c }, { r: r2, c: c2 }); var ok = findMatches().length > 0; swapCells({ r: r, c: c }, { r: r2, c: c2 }); if (ok) return [{ r: r, c: c }, { r: r2, c: c2 }]; } }
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
+      if (cells[r][c].spec) return [{ r: r, c: c }, { r: r, c: c }];
+      var d = [[0, 1], [1, 0]]; for (var k = 0; k < 2; k++) { var r2 = r + d[k][0], c2 = c + d[k][1]; if (r2 >= N || c2 >= N) continue; swapCells({ r: r, c: c }, { r: r2, c: c2 }); var ok = findMatches().length > 0; swapCells({ r: r, c: c }, { r: r2, c: c2 }); if (ok) return [{ r: r, c: c }, { r: r2, c: c2 }]; }
+    }
     return null;
   }
   var last = performance.now();
@@ -102,7 +237,7 @@
     if (cells) {
       var moving = false;
       for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var cl = cells[r][c]; if (!cl) continue; var tx = c * CS, ty = r * CS;
-        if (cl.dur > 0) { cl.tt += dt * 1000; if (cl.tt >= cl.dur) { cl.x = tx; cl.y = ty; if (cl.kind === 1) { cl.sc = .8; if (!cl.silent) {} } cl.dur = 0; } else if (cl.tt > 0) { var k = cl.tt / cl.dur, e = cl.kind === 0 ? easeQ(k) : k * k * (1.4 - .4 * k); cl.x = cl.fx + (tx - cl.fx) * e; cl.y = cl.fy + (ty - cl.fy) * e; } moving = true; }
+        if (cl.dur > 0) { cl.tt += dt * 1000; if (cl.tt >= cl.dur) { cl.x = tx; cl.y = ty; cl.dur = 0; } else if (cl.tt > 0) { var k = cl.tt / cl.dur, e = cl.kind === 0 ? easeQ(k) : k * k * (1.4 - .4 * k); cl.x = cl.fx + (tx - cl.fx) * e; cl.y = cl.fy + (ty - cl.fy) * e; } moving = true; }
         else { cl.x = tx; cl.y = ty; }
         if (cl.dead) { cl.dying += dt; moving = true; var pq = Math.min(1, cl.dying / .2); cl.pq = pq; cl.sc = pq < .42 ? 1 + .3 * (pq / .42) : pq < .72 ? 1.3 - .5 * ((pq - .42) / .3) : .8 * (1 - (pq - .72) / .28); cl.rot = pq < .42 ? -.12 * (pq / .42) : pq < .72 ? -.12 + .22 * ((pq - .42) / .3) : .1 + .15 * ((pq - .72) / .28); cl.a = pq < .72 ? 1 : 1 - (pq - .72) / .28; }
         else cl.sc += (1 - cl.sc) * Math.min(1, dt * 14); }
@@ -112,20 +247,38 @@
     fx.update(dt); draw(t); requestAnimationFrame(frame);
   }
   function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function drawSpecBadge(c, cl, px, py) {
+    if (!cl.spec) return;
+    c.save();
+    if (cl.spec === 1) { c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.moveTo(px - 14, py); c.lineTo(px + 14, py); c.stroke(); c.strokeStyle = '#ff9f00'; c.lineWidth = 2; c.beginPath(); c.moveTo(px - 14, py); c.lineTo(px + 14, py); c.stroke(); }
+    else if (cl.spec === 2) { c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, py - 14); c.lineTo(px, py + 14); c.stroke(); c.strokeStyle = '#ff9f00'; c.lineWidth = 2; c.beginPath(); c.moveTo(px, py - 14); c.lineTo(px, py + 14); c.stroke(); }
+    else { c.fillStyle = 'rgba(255,74,42,.95)'; c.beginPath(); c.arc(px + 12, py - 12, 8, 0, 7); c.fill(); c.fillStyle = '#fff'; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('炸', px + 12, py - 11); }
+    c.restore();
+  }
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
     if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
     var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#ffe9c8'); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
-    for (var r = 0; r < N; r++) for (var cc = 0; cc < N; cc++) { c.fillStyle = (r + cc) % 2 ? 'rgba(247,195,43,.18)' : 'rgba(124,201,62,.16)'; rr(c, PAD + cc * CS + 2, PAD + r * CS + 2, CS - 4, CS - 4, 12); c.fill(); }
+    // goal HUD
+    c.fillStyle = 'rgba(255,255,255,.75)'; rr(c, 10, 8, W - 20, HUDH - 12, 14); c.fill();
+    c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('第 ' + (level + 1) + ' 关', 20, 28);
+    var gx = 90; goals.forEach(function (goal, i) {
+      var s = spr[goal[0]], done = collected[i] >= goal[1];
+      c.globalAlpha = done ? .45 : 1; c.drawImage(s, gx, 12, 28, 28); c.globalAlpha = 1;
+      c.fillStyle = done ? '#7CC93E' : '#4a3325'; c.font = '800 11px system-ui'; c.fillText(collected[i] + '/' + goal[1], gx + 30, 30);
+      gx += 78;
+    });
+    for (var r = 0; r < N; r++) for (var cc = 0; cc < N; cc++) { c.fillStyle = (r + cc) % 2 ? 'rgba(247,195,43,.18)' : 'rgba(124,201,62,.16)'; rr(c, PAD + cc * CS + 2, HUDH + PAD + r * CS + 2, CS - 4, CS - 4, 12); c.fill(); }
     if (!cells) { c.restore(); return; }
-    c.save(); c.beginPath(); rr(c, PAD - 4, PAD - 4, N * CS + 8, N * CS + 8, 18); c.clip();
+    c.save(); c.beginPath(); rr(c, PAD - 4, HUDH + PAD - 4, N * CS + 8, N * CS + 8, 18); c.clip();
     for (r = 0; r < N; r++) for (cc = 0; cc < N; cc++) {
       var cl = cells[r][cc]; if (!cl || cl.sc <= .01) continue; var s = spr[cl.t], sz = s.__w;
       var sel_ = sel && sel.r === r && sel.c === cc, hn = hint && ((hint[0].r === r && hint[0].c === cc) || (hint[1].r === r && hint[1].c === cc));
       var sc = cl.sc * (sel_ ? 1.12 + Math.sin(t / 120) * .03 : 1) * (hn ? 1 + Math.sin(t / 150) * .07 : 1);
-      var px = PAD + cl.x + CS / 2, py = PAD + cl.y + CS / 2; c.globalAlpha = cl.a == null ? 1 : cl.a;
-      if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = '#7CC93E'; c.lineWidth = 3; c.stroke(); }
-      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .5, sz, sz); c.filter = 'none'; c.restore(); c.globalAlpha = 1;
+      var px = PAD + cl.x + CS / 2, py = HUDH + PAD + cl.y + CS / 2; c.globalAlpha = cl.a == null ? 1 : cl.a;
+      if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, HUDH + PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = '#7CC93E'; c.lineWidth = 3; c.stroke(); }
+      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .5, sz, sz); c.filter = 'none'; c.restore();
+      drawSpecBadge(c, cl, px, py); c.globalAlpha = 1;
     }
     c.restore(); fx.draw(c); c.restore();
   }
