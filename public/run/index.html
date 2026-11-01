@@ -17,12 +17,13 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 手机：左右滑、上滑跳、下滑铲</p>
 </div>
-<script src="/assets/frog.js?v=run2"></script><script src="/assets/nw.js?v=run2"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var W = 360, H = 600, view = { s: 1 };
   var FW = 64, FH = 88;
+  var __nfBody = F.load({ pose: 'stand' });
   var spr = {
     run: F.spritePng(F.png({ pose: 'stand' }), FW, FH),
     jump: F.spritePng(F.png({ pose: 'peace' }), FW, FH),
@@ -397,7 +398,7 @@
     var sy = (frog.slide ? 0.7 : 1) * (2 - frog.sq);
     c.scale(frog.facing * frog.sq, sy);
     if (img && img.width) c.drawImage(img, -FW / 2, -FH + 6, FW, FH);
-    else { c.fillStyle = '#F7C32B'; c.beginPath(); c.ellipse(0, -28, 24, 28, 0, 0, 6.28); c.fill(); }
+    else if (spr && spr.run && spr.run.width) c.drawImage(spr.run, -FW / 2, -FH + 6, FW, FH);
     c.restore();
 
     c.restore();

@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙打砖块 · 奶蛙小游戏"><meta property="og:description" content="拖动挡板接住奶蛙球，打碎所有彩色砖块，还有各种道具！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=snd1">
+<link rel="stylesheet" href="/style.css?v=model3">
 <style></style>
 </head>
 <body class="game">
@@ -18,7 +18,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">拖动挡板接球，清空砖块过关</p>
 </div>
-<script src="/assets/frog.js?v=snd1"></script><script src="/assets/nw.js?v=snd1"></script><script src="/nwkit/kit.js?v=snd1"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script><script src="/nwkit/kit.js?v=model3"></script>
 <script>
 (function () {
 var G = NW.mount({ key: 'breakout', title: '奶蛙打砖块', extraCard: '关卡', rules: '左右拖动挡板接球，打碎所有砖块过关。掉落的道具接住有奇效：加宽、多球、慢速、加命。', onStart: function(){ if (window.__start) window.__start(); } });
@@ -132,9 +132,9 @@ function draw(c) {
   c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, -pad.w / 2 + 6, -pad.h / 2 + 2, pad.w - 12, 4, 2); c.fill();
   c.restore();
   // 蛙在挡板上方探头
-  NWK.drawBust(c, '#8FD14F', flashT > 0 ? 'wow' : 'neutral', px, PY + 22, 34);
+  NWK.drawBustSoft(c, '#8FD14F', flashT > 0 ? 'wow' : 'neutral', px, PY + 22, 38);
   // 球
-  balls.forEach(function (b) { var st = 1 + b.sq * .15; c.save(); c.translate(b.x, b.y); c.scale(st, 2 - st > .7 ? 2 - st : .7); c.fillStyle = 'rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(2, 3, b.r, b.r * .9, 0, 0, TAU); c.fill(); c.restore(); NWK.drawBust(c, '#F7C32B', Math.abs(b.vy) > 400 ? 'wow' : 'laugh', b.x, b.y, b.r * 2.9, b.rot); });
+  balls.forEach(function (b) { var st = 1 + b.sq * .15; c.save(); c.translate(b.x, b.y); c.scale(st, 2 - st > .7 ? 2 - st : .7); NWK.drawBall(c, '#F7C32B', Math.abs(b.vy) > 400 ? 'wow' : 'laugh', 0, 0, b.r * 2.9, b.rot); c.restore(); });
   pu.forEach(function (p) { var cols = { wide: '#5CC8F2', multi: '#ff7bac', slow: '#B28DFF', life: '#ff5a5a' }; c.save(); c.translate(p.x, p.y); c.scale(1 + Math.sin(p.t * 10) * .06, 1); c.fillStyle = cols[p.k]; NWK.rr(c, -22, -11, 44, 22, 11); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.stroke(); c.fillStyle = '#fff'; c.font = '900 14px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(NAMES[p.k], 0, 1); c.restore(); });
   // HUD in canvas
   c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, 8, 8, W - 16, 30, 15); c.fill(); c.font = '900 15px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'left'; c.fillStyle = '#7a5a00'; c.fillText('第 ' + level + ' 关', 20, 24);

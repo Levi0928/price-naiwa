@@ -174,7 +174,17 @@
     perfect: function () { [0, 2, 4, 7].forEach(function (k, i) { tone(SCALE[k + 3], .12, 'triangle', .22, null, i * .05); }); },
     win: function () { [0, 2, 4, 5, 7].forEach(function (k, i) { tone(SCALE[k], .18, 'triangle', .26, null, i * .08); }); },
     lose: function () { tone(420, .2, 'sawtooth', .16, 280); tone(300, .22, 'sawtooth', .16, 180, .16); tone(200, .4, 'sawtooth', .18, 90, .32); },
-    start: function () { [0, 4, 7].forEach(function (k, i) { tone(SCALE[k + 2], .11, 'triangle', .22, null, i * .06); }); }
+    start: function () { [0, 4, 7].forEach(function (k, i) { tone(SCALE[k + 2], .11, 'triangle', .22, null, i * .06); }); },
+    nearMiss: function () { tone(920, .06, 'sine', .12, 1400); noise(.04, .06, 3200); },
+    slide: function () { noise(.09, .14, 900); tone(180, .1, 'sine', .2, 90); },
+    spring: function () { tone(360, .1, 'triangle', .22, 720); tone(540, .12, 'sine', .18, 880, .05); },
+    djump: function () { tone(340, .12, 'sine', .2, 760); },
+    slice: function () { noise(.05, .1, 2400); tone(880, .07, 'square', .12, 420); },
+    sliceCombo: function (n) { var k = Math.min(n || 1, 8); for (var i = 0; i < 2; i++) tone(SCALE[Math.min(10, 4 + k + i)], .09, 'triangle', .2, null, i * .04); },
+    whoosh: function () { noise(.06, .08, 1800); },
+    hit: function () { tone(160, .16, 'sawtooth', .2, 70); noise(.1, .16, 700); },
+    fanfare: function () { [0, 4, 7, 12].forEach(function (k, i) { tone(SCALE[Math.min(10, k)] || (261.6 * Math.pow(2, k/12)), .1, 'triangle', .2, null, i * .05); }); },
+    coin: function () { tone(980, .07, 'sine', .18, 1320); }
   };
 
   /* 轻量循环 BGM：原创五声琶音，不大声 */
@@ -252,6 +262,21 @@
     root.addEventListener(ev, function () { if (!muted) { ctx(); loadAudio(); } }, { passive: true });
   });
   var canVib = null;
+  sfx.charge = function (pw) {
+    try {
+      var a = ctx(); if (!a || muted) return;
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.value = 180 + (pw || 0) * 420;
+      g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(0.045, a.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.09);
+      o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + 0.1);
+    } catch (e) {}
+  };
+  sfx.spark = function () { try { noise && noise(0.06, 0.12, 1400); } catch (e) { tone(1200, 0.05, 'square', 0.04); } };
+  sfx.reward = function () {
+    try { var notes = [523, 659, 784, 1047]; notes.forEach(function (f, i) { setTimeout(function () { tone(f, 0.1, 'sine', 0.06); }, i * 90); }); } catch (e) {}
+  };
+  sfx.feverIn = function () { try { var a = ctx(); if (!a || muted) return; var o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(400, a.currentTime); o.frequency.exponentialRampToValueAtTime(900, a.currentTime + 0.15); g.gain.value = 0.08; g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.18); o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + 0.2); } catch (e) {} };
   function vib(n) {
     try {
       if (muted) return;
@@ -262,12 +287,29 @@
 
   /* ---------- 粒子 ---------- */
   function FX() { this.p = []; }
+  FX.MAX_P = 140;
   FX.prototype.burst = function (x, y, o) {
-    o = o || {}; var n = o.count || 14, cols = o.colors || ['#FFD23F', '#7CC93E', '#fff', '#FF9F43'];
+    o = o || {};
+    var reduce = !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var n = o.count || 14; if (reduce) n = Math.max(2, Math.floor(n * 0.3));
+    var cols = o.colors || ['#FFD23F', '#7CC93E', '#fff', '#FF9F43'];
     for (var i = 0; i < n; i++) {
       var a = Math.random() * 6.283, sp = (o.speed || 240) * (0.35 + Math.random() * 0.75);
       this.p.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up || 60), life: 0, max: (o.life || .7) * (0.7 + Math.random() * .6), size: (o.size || 7) * (0.6 + Math.random() * .8), color: cols[i % cols.length], shape: o.shape || (Math.random() < .5 ? 'star' : 'circle'), rot: Math.random() * 6, vr: (Math.random() - .5) * 10, g: o.gravity == null ? 520 : o.gravity });
     }
+    while (this.p.length > FX.MAX_P) {
+      var drop = -1;
+      for (var j = 0; j < this.p.length; j++) if (this.p[j].shape !== 'text' && this.p[j].shape !== 'ripple' && this.p[j].shape !== 'ring') { drop = j; break; }
+      if (drop < 0) break; this.p.splice(drop, 1);
+    }
+  };
+  FX.prototype.ripple = function (x, y, o) {
+    o = o || {};
+    this.p.push({ x: x, y: y, vx: 0, vy: 0, life: 0, max: o.life || 0.32, size: o.size || 10, color: o.color || 'rgba(255,255,255,.85)', shape: 'ripple', rot: 0, vr: 0, g: 0, maxR: o.maxR || 48, line: o.line || 3 });
+  };
+  FX.prototype.ring = function (x, y, o) {
+    o = o || {};
+    this.p.push({ x: x, y: y, vx: 0, vy: 0, life: 0, max: o.life || 0.55, size: o.size || 20, color: o.color || 'rgba(255,210,63,.7)', shape: 'ring', rot: 0, vr: 0, g: 0, maxR: o.maxR || 160, line: o.line || 10 });
   };
   FX.prototype.text = function (x, y, str, o) {
     o = o || {}; this.p.push({ x: x, y: y, vx: 0, vy: -(o.rise || 70), life: 0, max: o.life || .9, size: o.size || 26, color: o.color || '#ff8a00', shape: 'text', text: str, g: 0, rot: 0, vr: 0, pop: 1, stroke: o.stroke || '#fff' });
@@ -288,6 +330,10 @@
         var sc = t < .15 ? .5 + (t / .15) * .7 : (t < .3 ? 1.2 - (t - .15) / .15 * .2 : 1);
         c.scale(sc, sc); c.font = '900 ' + q.size + 'px ' + getComputedStyle(document.body).fontFamily; c.textAlign = 'center'; c.textBaseline = 'middle';
         c.lineWidth = Math.max(4, q.size / 5); c.strokeStyle = q.stroke; c.lineJoin = 'round'; c.strokeText(q.text, 0, 0); c.fillStyle = q.color; c.fillText(q.text, 0, 0);
+      } else if (q.shape === 'ripple' || q.shape === 'ring') {
+        var rr = (q.size || 8) + t * (q.maxR || 48);
+        c.strokeStyle = q.color; c.lineWidth = Math.max(1, (q.line || 3) * (1 - t));
+        c.beginPath(); c.arc(0, 0, rr, 0, 6.283); c.stroke();
       } else {
         c.rotate(q.rot); var s = q.size * (1 - t * .4); c.fillStyle = q.color;
         if (q.shape === 'star') { c.beginPath(); for (var k = 0; k < 10; k++) { var r = k % 2 ? s * .45 : s, an = k * Math.PI / 5 - Math.PI / 2; c.lineTo(Math.cos(an) * r, Math.sin(an) * r); } c.closePath(); c.fill(); }
@@ -381,7 +427,14 @@
     return ctl;
   }
 
-  root.NW = { store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
+  function grade(score, tiers) {
+    tiers = tiers || [[7000, '笑到打滚'], [4500, '一秒破绷'], [2500, '噗嗤一声'], [1000, '嘴角上扬'], [0, '就这？']];
+    for (var i = 0; i < tiers.length; i++) if (score >= tiers[i][0]) return tiers[i][1];
+    return tiers[tiers.length - 1][1];
+  }
+  function reduceMotion() { try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
+  function reducedMotion() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
+  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
 })(window);
 /* 叠加层 canvas（粒子特效）：自动跟随容器尺寸 */
 (function (root) {

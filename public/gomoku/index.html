@@ -18,7 +18,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">按住拖动选点，松手落子</p>
 </div>
-<script src="/assets/frog.js?v=snd1"></script><script src="/assets/nw.js?v=snd1"></script><script src="/nwkit/kit.js?v=snd1"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script><script src="/nwkit/kit.js?v=model3"></script>
 <script>
 (function () {
 var G = NW.mount({ key: 'gomoku', title: '奶蛙五子棋', extraCard: '步数', rules: '你执黑（金蛙），电脑执白（绿蛙）。横竖斜先连成五子者获胜。可以悔棋，也可以换难度。', onStart: function(){ if (window.__start) window.__start(); } });
@@ -91,9 +91,7 @@ S.on({
 function undo() { if (thinking || over || hist.length < 2) { NW.sfx.bad(); return; } for (var i = 0; i < 2; i++) { var h = hist.pop(); b[h[1]][h[0]] = 0; } myMoves = Math.max(0, myMoves - 1); G.setExtra(myMoves); last = hist.length ? [hist[hist.length - 1][0], hist[hist.length - 1][1]] : null; turn = ME; NW.sfx.swap(); }
 function update(dt, rdt) { drops.forEach(function (d) { d.t = Math.min(1, d.t + rdt * 4.5); }); }
 function stone(c, x, y, p, sc, mood) {
-  c.save(); c.translate(x, y); c.scale(sc, sc); c.fillStyle = 'rgba(60,40,0,.25)'; c.beginPath(); c.ellipse(1.5, 3, 11, 10, 0, 0, TAU); c.fill();
-  var P = NaiwaFrog.pal(ACOL[p]); var g = c.createRadialGradient(-3, -4, 1, 0, 0, 11.5); g.addColorStop(0, '#fff'); g.addColorStop(.4, P.hi); g.addColorStop(1, P.mid); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 11, 0, TAU); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke(); c.restore();
-  NWK.drawBust(c, ACOL[p], mood || 'neutral', x, y + .5, 19 * sc);
+  NWK.drawBustSoft(c, ACOL[p], mood || 'neutral', x, y + .5, 22 * sc);
 }
 function draw(c) {
   S.panel(c, '#ffe9b8', '#fff6d8');

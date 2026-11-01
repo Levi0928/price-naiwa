@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="俄罗斯奶块 · 奶蛙小游戏"><meta property="og:description" content="奶蛙方块版俄罗斯方块：点按旋转、滑动移动、下滑急降。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=snd1">
+<link rel="stylesheet" href="/style.css?v=model3">
 <style></style>
 </head>
 <body class="game">
@@ -18,7 +18,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">点按旋转 · 左右拖动 · 下滑加速 · 快划落底</p>
 </div>
-<script src="/assets/frog.js?v=snd1"></script><script src="/assets/nw.js?v=snd1"></script><script src="/nwkit/kit.js?v=snd1"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script><script src="/nwkit/kit.js?v=model3"></script>
 <script>
 (function () {
 var G = NW.mount({ key: 'tetris', title: '俄罗斯奶块', extraCard: '行数', rules: '点一下旋转，左右拖动移动，向下拖加速，快速下滑直接落底。消行得分，越消越快！', onStart: function(){ if (window.__start) window.__start(); } });
@@ -111,7 +111,7 @@ function cell(c, x, y, ci, a, sc) {
   var s = CS * (sc || 1), col = COLORS[ci]; c.save(); c.globalAlpha = a == null ? 1 : a; c.translate(x + CS / 2, y + CS / 2);
   var P = NaiwaFrog.pal(col); c.fillStyle = P.shade; NWK.rr(c, -s / 2 + .5, -s / 2 + 2, s - 1, s - 1, 7); c.fill();
   var g = c.createLinearGradient(0, -s / 2, 0, s / 2); g.addColorStop(0, P.hi); g.addColorStop(.5, P.base); g.addColorStop(1, P.mid); c.fillStyle = g; NWK.rr(c, -s / 2 + .5, -s / 2 + .5, s - 1, s - 3, 7); c.fill();
-  c.restore(); if ((a == null || a > .5)) NWK.drawBust(c.canvas ? c : c, col, 'neutral', x + CS / 2, y + CS / 2 + 1, s * .84);
+  c.restore(); if ((a == null || a > .5)) NWK.drawBustSoft(c, col, 'neutral', x + CS / 2, y + CS / 2 + 1, s * .9);
 }
 function drawMini(c, t, cx, cy, sc) { var m = SH[t], n = m.length, cs = CS * sc; var minx = 9, maxx = -1, miny = 9, maxy = -1; for (var r = 0; r < n; r++) for (var q = 0; q < n; q++) if (m[r][q]) { minx = Math.min(minx, q); maxx = Math.max(maxx, q); miny = Math.min(miny, r); maxy = Math.max(maxy, r); }
   var ox = cx - (maxx - minx + 1) * cs / 2 - minx * cs, oy = cy - (maxy - miny + 1) * cs / 2 - miny * cs;
@@ -140,7 +140,7 @@ function draw(c) {
   c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, rx, BY + 84, rw, 3 * 62 + 24, 14); c.fill(); c.fillStyle = '#7a5a00'; c.font = '900 12px sans-serif'; c.fillText('下一个', rx + rw / 2, BY + 100);
   for (i = 0; i < 3; i++) drawMini(c, nextQ[i], rx + rw / 2, BY + 134 + i * 60, i === 0 ? .6 : .5);
   c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, rx, BY + 84 + 3 * 62 + 32, rw, 60, 14); c.fill(); c.fillStyle = '#7a5a00'; c.font = '900 12px sans-serif'; c.fillText('等级', rx + rw / 2, BY + 84 + 3 * 62 + 50); c.font = '900 22px sans-serif'; c.fillText(String(level + 1), rx + rw / 2, BY + 84 + 3 * 62 + 76);
-  NWK.drawBust(c, '#F7C32B', mood, rx + rw / 2, 28, 40);
+  NWK.drawBustSoft(c, '#F7C32B', mood, rx + rw / 2, 28, 44);
   c.textAlign = 'left'; c.fillStyle = '#7a5a00'; c.font = '900 16px sans-serif'; c.fillText('消除 ' + lines + ' 行', BX, 28); c.font = '700 12px sans-serif'; c.fillText('速度 ' + Math.round(interval() * 1000) + 'ms', BX, 46);
 }
 S.run(update, draw);

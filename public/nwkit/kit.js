@@ -43,7 +43,31 @@
     if (rot) { c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(im, -w / 2, -h / 2, w, h); c.restore(); }
     else c.drawImage(im, x - w / 2, y - h / 2, w, h);
   };
-  K.preload = function (colors, moods) { colors.forEach(function (c) { moods.forEach(function (m) { K.bust(c, m); }); }); };
+  K.ball = function (color, mood) {
+    var k = 'ball|' + color + '|' + (mood || 'neutral');
+    if (!cache[k]) cache[k] = NaiwaFrog.pieceImage({ shape: 'ball', color: color, mood: mood || 'neutral' });
+    return cache[k];
+  };
+  /* 只画 3D 棋子，不要色圆垫底 */
+  K.drawBall = function (c, color, mood, x, y, size, rot) {
+    var im = K.ball(color, mood); if (!(im.complete && im.naturalWidth)) return;
+    c.save();
+    c.fillStyle = 'rgba(60,40,0,.14)';
+    c.beginPath(); c.ellipse(x + 1, y + size * .42, size * .34, size * .1, 0, 0, 6.3); c.fill();
+    if (rot) { c.translate(x, y); c.rotate(rot); c.drawImage(im, -size / 2, -size / 2, size, size); }
+    else c.drawImage(im, x - size / 2, y - size / 2, size, size);
+    c.restore();
+  };
+  K.drawBustSoft = function (c, color, mood, x, y, size, rot) {
+    var im = K.bust(color, mood); if (!(im.complete && im.naturalWidth)) return;
+    c.save();
+    c.fillStyle = 'rgba(60,40,0,.14)';
+    c.beginPath(); c.ellipse(x + 1, y + size * .4, size * .32, size * .09, 0, 0, 6.3); c.fill();
+    if (rot) { c.translate(x, y); c.rotate(rot); c.drawImage(im, -size / 2, -size / 2, size, size); }
+    else c.drawImage(im, x - size / 2, y - size / 2, size, size);
+    c.restore();
+  };
+  K.preload = function (colors, moods) { colors.forEach(function (c) { moods.forEach(function (m) { K.bust(c, m); K.ball(c, m); }); }); };
 
   /* 舞台：逻辑分辨率 W×H，自动适配容器与 DPR；统一指针事件 */
   K.stage = function (o) {

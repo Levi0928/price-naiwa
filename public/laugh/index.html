@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="60 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=content1">
+<link rel="stylesheet" href="/style.css?v=model3">
 <style>
 .scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fff7ec 0%, #ffe9c2 45%, #fff1c8 100%); box-shadow: 0 14px 36px rgba(126,84,44,.18), 0 0 0 1.5px rgba(26,22,18,.12); touch-action: manipulation; }
 .scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
@@ -28,6 +28,13 @@
 .combo.on { opacity: 1; animation: nwpop .2s; }
 .haha-float { position: absolute; font-weight: 900; pointer-events: none; z-index: 3; animation: hahaFloat 1.4s ease-out forwards; text-shadow: 0 2px 0 #fff; }
 @keyframes hahaFloat { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
+.loop-btn { position: absolute; left: 14px; bottom: 14px; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: #fff; color: #6a4400; box-shadow: 0 4px 0 rgba(26,22,18,.12), 0 8px 18px rgba(0,0,0,.12); cursor: pointer; }
+.loop-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
+.loop-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(26,22,18,.12); }
+.corner-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.meter-ring { position: absolute; left: 50%; top: 42%; width: 0; height: 0; border-radius: 50%; border: 0 solid rgba(255,154,106,.0); transform: translate(-50%,-50%); pointer-events: none; z-index: 2; transition: width .2s, height .2s, border-width .2s; }
+.scene.frenzy .meter-ring { width: 220px; height: 220px; border: 10px solid rgba(255,90,90,.35); animation: ringPulse 1s ease-in-out infinite; }
+@keyframes ringPulse { 50% { transform: translate(-50%,-50%) scale(1.08); border-color: rgba(255,210,63,.55); } }
 </style>
 </head>
 <body class="game">
@@ -36,13 +43,16 @@
   <main class="nw-stage">
     <div class="scene" id="scene" data-m="idle">
       <div class="meter"><i id="mt"></i></div><div class="meter-l" id="ml">笑意槽</div><div class="combo" id="cb"></div>
+      <div class="meter-ring" id="mring"></div>
+      <div class="corner-layer" id="corners"></div>
       <div class="grass"></div>
       <div class="fwrap"><div class="inner" id="fi"></div></div>
+      <button type="button" class="loop-btn" id="loopLaugh" aria-pressed="false">循环笑 🚫</button>
     </div>
   </main>
-  <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满进入 FEVER 约 6.2 秒</p>
+  <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 左下可开循环笑</p>
 </div>
-<script src="/assets/frog.js?v=content1"></script><script src="/assets/nw.js?v=content1"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -57,8 +67,22 @@
   var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1, floatN = 0, warmupLeft = TAP_WARMUP;
   var WORDS = ['哈哈哈', 'HAHA', '嘎嘎嘎', '啊哈哈'];
   var POS = [{ l: '12%', t: '30%' }, { l: 'auto', r: '12%', t: '26%' }, { l: '18%', t: '55%' }, { l: 'auto', r: '16%', t: '50%' }];
+  var loopOn = false, loopTimer = 0, cornerT = 0, SQUASH_FEVER = 1.3;
+  var loopBtn = document.getElementById('loopLaugh');
+  function syncLoopBtn() {
+    loopBtn.classList.toggle('on', loopOn);
+    loopBtn.setAttribute('aria-pressed', loopOn ? 'true' : 'false');
+    loopBtn.textContent = loopOn ? '循环笑 ON' : '循环笑 🚫';
+  }
+  loopBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  loopBtn.addEventListener('click', function (e) {
+    e.stopPropagation(); loopOn = !loopOn; syncLoopBtn();
+    if (loopOn) { NW.sfx.ha(0, false); setM('laugh'); }
+    else { if (NW.stopFeverGiggle) NW.stopFeverGiggle(); if (frenzy <= 0) setM('idle'); }
+  });
+  syncLoopBtn();
   function reset() {
-    left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; warmupLeft = TAP_WARMUP;
+    left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; warmupLeft = TAP_WARMUP; cornerT = 0;
     if (NW.stopFeverGiggle) NW.stopFeverGiggle();
     G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); upd();
   }
@@ -74,9 +98,12 @@
     scene.appendChild(el); setTimeout(function () { el.remove(); }, 1400);
   }
   function enterFever() {
-    frenzy = FEVER_DUR; meter = 100; NW.sfx.win(); NW.shake(scene, 12, 400);
-    fx.burst(ov.w / 2, ov.h * .4, { count: 40, speed: 420, size: 10 });
-    fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 40, color: '#ff4a2a', life: 1.3 });
+    frenzy = FEVER_DUR; meter = 100;
+    if (NW.sfx.feverIn) NW.sfx.feverIn(); NW.sfx.win();
+    NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 14, 480);
+    fx.burst(ov.w / 2, ov.h * .4, { count: 48, speed: 460, size: 11 });
+    if (fx.ring) fx.ring(ov.w / 2, ov.h * .42, { maxR: 180, life: 0.6, color: 'rgba(255,90,90,.65)', line: 14 });
+    fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 42, color: '#ff4a2a', life: 1.3 });
     if (NW.startFeverGiggle) NW.startFeverGiggle();
     upd();
   }
@@ -107,7 +134,7 @@
     }
     setM(frenzy > 0 ? (combo > 8 ? 'cackle' : 'laugh') : (combo > 12 ? 'cackle' : 'laugh'));
     clearTimeout(laughT); laughT = setTimeout(function () { setM(frenzy > 0 ? 'laugh' : 'idle'); }, frenzy > 0 ? 280 : 420);
-    squash(); if (!warm) floatHaha(); NW.sfx.ha(hahaN++ % 6, warm ? false : (frenzy > 0)); NW.vib(warm ? 6 : 12);
+    squash(); if (!warm) floatHaha(); NW.sfx.ha(hahaN++ % 6, warm ? false : (frenzy > 0)); NW.vib(warm ? 6 : (8 + Math.min(20, combo)));
     fx.burst(x, y, { count: 7 + Math.min(10, combo), speed: 260 });
     fx.text(x + (Math.random() * 50 - 25), y - 20, ['哈', '哈哈', '嘿', '嘻嘻', '哈哈哈'][Math.floor(Math.random() * 5)], { size: 24 + Math.min(18, combo), color: ['#ff8a00', '#ff5a5a', '#e8a800', '#7cc93e'][hahaN % 4] });
     var c = $('#cb'); if (combo >= 3) { c.textContent = '×' + mult + ' 连击' + combo; c.classList.remove('on'); void c.offsetWidth; c.classList.add('on'); }
@@ -115,7 +142,11 @@
     upd();
   });
   function squash() {
-    tilt = -tilt; fi.animate([{ transform: 'scale(1,1) rotate(0)' }, { transform: 'scale(1.1,.88) rotate(' + tilt * -2 + 'deg)', offset: .2 }, { transform: 'scale(.94,1.1) rotate(' + tilt * 3 + 'deg) translateY(-3%)', offset: .55 }, { transform: 'scale(1,1) rotate(0)' }], { duration: 260, easing: 'ease-out' });
+    tilt = -tilt;
+    var f = frenzy > 0 ? SQUASH_FEVER : 1;
+    var s1x = 1.1 * f, s1y = Math.max(0.72, .88 / f);
+    var s2x = Math.max(0.82, .94 / f), s2y = 1.1 * f;
+    fi.animate([{ transform: 'scale(1,1) rotate(0)' }, { transform: 'scale(' + s1x + ',' + s1y + ') rotate(' + tilt * -2 + 'deg)', offset: .2 }, { transform: 'scale(' + s2x + ',' + s2y + ') rotate(' + tilt * 3 + 'deg) translateY(-3%)', offset: .55 }, { transform: 'scale(1,1) rotate(0)' }], { duration: frenzy > 0 ? 220 : 260, easing: 'ease-out' });
   }
   var lt = performance.now();
   function loop(t) {
@@ -125,15 +156,26 @@
       if (frenzy > 0) {
         frenzy -= dt; meter = Math.max(0, frenzy / FEVER_DUR * 100);
         if (frenzy <= 0) exitFever(); else upd();
+        cornerT -= dt; if (cornerT <= 0) { cornerT = 0.35; floatHaha(); }
       } else if (meter > 0) {
-        // decay slower while recently tapping
         var decay = (performance.now() - lastTap < 400) ? 3.2 : 6.5;
         meter = Math.max(0, meter - dt * decay); upd();
       }
       if (combo > 0 && performance.now() - lastTap > 650) { combo = 0; $('#cb').classList.remove('on'); }
       if (left <= 0) {
         left = 0; setM('laugh'); if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-        G.over('评级「' + grade(G.score) + '」· 点了 ' + taps + ' 下 · 最高连击 ×' + maxCombo);
+        var gtxt = (NW.grade ? NW.grade(G.score) : grade(G.score));
+        G.over('评级「' + gtxt + '」· 点了 ' + taps + ' 下 · 最高连击 ×' + maxCombo);
+      }
+    }
+    // loop laugh UX: keep giggling even outside fever when toggled
+    if (loopOn) {
+      loopTimer -= dt;
+      if (loopTimer <= 0) {
+        loopTimer = frenzy > 0 ? 0.28 : 0.48;
+        NW.sfx.ha(hahaN++ % 6, frenzy > 0);
+        if (frenzy <= 0) { setM('laugh'); clearTimeout(laughT); laughT = setTimeout(function () { if (loopOn) setM('cackle'); }, 200); }
+        floatHaha();
       }
     }
     fx.update(dt); ov.ctx.setTransform(ov.dpr, 0, 0, ov.dpr, 0, 0); ov.ctx.clearRect(0, 0, ov.w, ov.h); fx.draw(ov.ctx);
