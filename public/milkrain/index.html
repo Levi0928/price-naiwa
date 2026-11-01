@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#bfeaff">
+<title>奶滴接接乐 · 奶蛙小游戏</title>
+<meta name="description" content="拖动奶蛙接住天上掉下来的奶块，连击翻倍，别接到坏奶！奶蛙小游戏之奶滴接接乐。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="奶滴接接乐 · 奶蛙小游戏"><meta property="og:description" content="拖动奶蛙接住天上掉下来的奶块，连击翻倍，别接到坏奶！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css">
+<style></style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">拖动屏幕，让奶蛙接住奶块</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script><script src="/nwkit/kit.js"></script>
+<script>
+(function () {
+var G = NW.mount({ key: 'milkrain', title: '奶滴接接乐', extraCard: '接住', rules: '左右拖动奶蛙接住掉落的奶块。漏接好奶块或接到坏奶会掉一颗心，连接 3 个 ×2、5 个 ×4 并全屏吸收！', onStart: function(){ if (window.__start) window.__start(); } });
+var W = 360, H = 600, S = NWK.stage({ W: W, H: H }), E = NWK.ease, R = NWK.rand, TAU = Math.PI * 2;
+NWK.preload(['#F7C32B'], ['neutral', 'laugh', 'wow', 'sad']);
+var TYPES = {
+  plain: { c1: '#ffffff', c2: '#dff0ff', pts: 1, w: 10 }, ice: { c1: '#e3f6ff', c2: '#7fd0f5', pts: 2, w: 3 }, rich: { c1: '#fff1b8', c2: '#f4b928', pts: 3, w: 3 },
+  dbl: { c1: '#ffe0ee', c2: '#ff8fb8', pts: 5, w: 1.6 }, coin: { c1: '#fff7c0', c2: '#ffc61a', pts: 10, w: 1.4 }, bad: { pts: 0, w: 0 }
+};
+var items, fx = S.fx, frogX, targetX, lives, combo, catches, t0, spawnT, slowT, sq, sqv, mood, moodT, grow, dragging, flash, banner, bannerT, lost;
+function reset() { items = []; frogX = W / 2; targetX = W / 2; lives = 3; combo = 0; catches = 0; t0 = 0; spawnT = .6; slowT = 0; sq = 0; sqv = 0; mood = 'neutral'; moodT = 0; grow = 1; flash = 0; banner = ''; bannerT = 0; lost = false; G.setScore(0, false); G.setExtra(0); }
+reset(); window.__start = reset;
+function pick() {
+  var badP = Math.min(.2, .04 + t0 * .004), r = Math.random();
+  if (t0 > 6 && r < badP) return 'bad';
+  var tot = 0, k, o = []; for (k in TYPES) if (k !== 'bad') { tot += TYPES[k].w; o.push([k, tot]); }
+  r = Math.random() * tot; for (var i = 0; i < o.length; i++) if (r <= o[i][1]) return o[i][0]; return 'plain';
+}
+function speed() { var s = t0 < 15 ? 150 + t0 * 4 : Math.min(455, 150 + G.score * 3.6 + 60); return s * (slowT > 0 ? .55 : 1); }
+function spawn() { var x = R(28, W - 28); items.push({ type: pick(), x: x, y: -30, vy: 0, rot: R(-.3, .3), vr: R(-1.5, 1.5), born: 0, ph: R(0, 6) }); }
+function mult() { return combo >= 5 ? 4 : combo >= 3 ? 2 : 1; }
+function catchW() { return 38 * grow; }
+function setLives() { var s = ''; for (var i = 0; i < 3; i++) s += i < lives ? '●' : '○'; G.setExtra(s); }
+function loseLife(x, why) {
+  lives--; combo = 0; setLives(); NW.sfx.bad(); NW.vib([20, 40, 20]); S.shake(10); flash = .4; mood = 'sad'; moodT = .8;
+  fx.text(x, H - 190, why, { size: 26, color: '#ff4a4a' });
+  if (lives <= 0 && !lost) { lost = true; S.freeze(220); G.over('接了 ' + catches + ' 个奶块'); }
+}
+function doCatch(it) {
+  var m = mult(); catches++; combo++; G.setExtra(catches);
+  var nm = mult(), p = TYPES[it.type].pts * m; G.setScore(G.score + p);
+  NW.sfx.pop(Math.min(combo, 8)); NW.vib(8); sqv += 7; mood = 'laugh'; moodT = .25;
+  fx.burst(it.x, H - 185, { count: 8, speed: 200, size: 6, colors: ['#fff', TYPES[it.type].c2, '#FFD23F'], gravity: 700 });
+  fx.text(it.x, H - 205, '+' + p, { size: 22 + Math.min(10, combo), color: m > 1 ? '#ff4a2a' : '#e8a000' });
+  if (it.type === 'ice') { slowT = 3.5; fx.text(W / 2, 150, '冰奶 · 减速', { size: 26, color: '#2a9ad0' }); }
+  if (it.type === 'coin') { NW.sfx.perfect(); fx.burst(it.x, H - 185, { count: 18, speed: 320, size: 8, colors: ['#FFD23F', '#fff'] }); }
+  if (catches % 3 === 0 && grow < 1.45) { grow += .06; sqv += 12; fx.text(frogX, H - 130, '肚子变大了', { size: 20, color: '#3F8E1C' }); }
+  if (combo === 3 || combo === 5 || (combo > 5 && combo % 5 === 0)) { NW.sfx.combo(Math.floor(combo / 3)); banner = combo >= 5 ? '连击 ×4' : '连击 ×2'; bannerT = 1; S.shake(5); }
+  if (combo === 5 || (combo > 5 && combo % 10 === 0)) { // 全屏吸收
+    items.forEach(function (o) { if (o.type !== 'bad' && o !== it) { o.suck = 1; } else if (o.type === 'bad') { o.pop = 1; } });
+    NW.sfx.win(); S.shake(9); fx.text(W / 2, 210, '全屏吸收！', { size: 36, color: '#ff4a2a', life: 1.2 });
+  }
+}
+S.on({
+  down: function (x) { if (!G.running) return; dragging = true; targetX = NWK.clamp(x, 34, W - 34); },
+  move: function (x) { if (dragging && G.running) targetX = NWK.clamp(x, 34, W - 34); },
+  up: function () { dragging = false; }
+});
+function update(dt, rdt) {
+  if (G.running) {
+    t0 += dt; if (slowT > 0) slowT -= dt;
+    spawnT -= dt; if (spawnT <= 0) { spawn(); spawnT = Math.max(.34, .95 - t0 * .012) * R(.8, 1.2); }
+    var sp = speed();
+    for (var i = items.length - 1; i >= 0; i--) {
+      var it = items[i]; it.born = Math.min(1, it.born + dt * 6); it.rot += it.vr * dt;
+      if (it.suck) { it.x += (frogX - it.x) * Math.min(1, dt * 14); it.y += (H - 180 - it.y) * Math.min(1, dt * 14); if (Math.abs(it.y - (H - 180)) < 14) { items.splice(i, 1); doCatch(it); } continue; }
+      if (it.pop) { fx.burst(it.x, it.y, { count: 8, speed: 200, size: 6, colors: ['#8e5aa8', '#fff'] }); items.splice(i, 1); continue; }
+      it.y += sp * dt * (it.type === 'ice' ? .85 : 1);
+      var cy = H - 188;
+      if (it.y > cy - 10 && it.y < cy + 26 && Math.abs(it.x - frogX) < catchW() + 10) {
+        items.splice(i, 1);
+        if (it.type === 'bad') { loseLife(it.x, '坏奶！'); fx.burst(it.x, cy, { count: 14, speed: 260, size: 7, colors: ['#8e5aa8', '#4a2a5a', '#fff'] }); }
+        else doCatch(it);
+        continue;
+      }
+      if (it.y > H - 20) {
+        items.splice(i, 1);
+        if (it.type !== 'bad') { fx.burst(it.x, H - 24, { count: 6, speed: 140, size: 5, colors: ['#fff', TYPES[it.type].c2], gravity: 600 }); if (it.type !== 'coin') loseLife(it.x, '漏接'); }
+      }
+    }
+  } else { items = items.filter(function (o) { return o.y < H; }); items.forEach(function (o) { o.y += 60 * dt; }); }
+  frogX += (targetX - frogX) * Math.min(1, dt * 26);
+  sqv += (-sq * 340 - sqv * 14) * dt; sq += sqv * dt;
+  if (moodT > 0) { moodT -= rdt; if (moodT <= 0) mood = 'neutral'; }
+  if (flash > 0) flash -= rdt; if (bannerT > 0) bannerT -= rdt;
+}
+function drawItem(c, it) {
+  c.save(); c.translate(it.x, it.y); var s = E.outBack(it.born); c.scale(s, s); c.rotate(it.rot * (it.suck ? 3 : 1));
+  if (it.type === 'bad') {
+    c.fillStyle = '#6b3a82'; c.beginPath(); for (var k = 0; k < 16; k++) { var r = k % 2 ? 14 : 21, a = k / 16 * TAU; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill();
+    c.fillStyle = '#8e5aa8'; c.beginPath(); c.arc(0, 0, 13, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(-5, -3, 4, 0, TAU); c.arc(5, -3, 4, 0, TAU); c.fill(); c.fillStyle = '#2a1030'; c.beginPath(); c.arc(-5, -2, 2, 0, TAU); c.arc(5, -2, 2, 0, TAU); c.fill();
+    c.strokeStyle = '#2a1030'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-9, -9); c.lineTo(-2, -6); c.moveTo(9, -9); c.lineTo(2, -6); c.moveTo(-5, 7); c.quadraticCurveTo(0, 3, 5, 7); c.stroke();
+  } else {
+    var T = TYPES[it.type]; c.fillStyle = 'rgba(60,90,140,.2)'; NWK.rr(c, -17, -14, 34, 34, 11); c.fill();
+    var g = c.createLinearGradient(0, -18, 0, 18); g.addColorStop(0, T.c1); g.addColorStop(1, T.c2); c.fillStyle = g; NWK.rr(c, -17, -18, 34, 34, 11); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.75)'; NWK.rr(c, -12, -14, 14, 6, 3); c.fill();
+    c.fillStyle = it.type === 'coin' ? '#c98a07' : 'rgba(40,60,90,.55)';
+    if (it.type === 'coin') { c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.fill(); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(0, 0, 5.4, 0, TAU); c.fill(); }
+    else if (it.type === 'dbl') { c.font = '900 15px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('x2', 0, 0); }
+    else if (it.type === 'ice') { c.lineWidth = 2.4; c.strokeStyle = '#2a8abf'; for (var q = 0; q < 3; q++) { c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); c.stroke(); c.rotate(TAU / 6); } }
+    else { c.beginPath(); c.moveTo(0, -7); c.quadraticCurveTo(8, 3, 0, 9); c.quadraticCurveTo(-8, 3, 0, -7); c.fill(); }
+  }
+  c.restore();
+}
+function draw(c) {
+  S.panel(c, '#bfeaff', '#eaf9d0');
+  // 云
+  c.fillStyle = 'rgba(255,255,255,.8)'; for (var i = 0; i < 4; i++) { var cx = ((i * 140 + S.time * 8) % 440) - 40, cy = 60 + i * 70; c.beginPath(); c.arc(cx, cy, 20, 0, TAU); c.arc(cx + 22, cy + 4, 15, 0, TAU); c.arc(cx - 20, cy + 5, 13, 0, TAU); c.fill(); }
+  if (slowT > 0) { c.fillStyle = 'rgba(120,200,255,.18)'; c.fillRect(0, 0, W, H); }
+  // 草地
+  var gr = c.createLinearGradient(0, H - 60, 0, H); gr.addColorStop(0, '#a9e566'); gr.addColorStop(1, '#6bb82e'); c.fillStyle = gr; c.beginPath(); c.moveTo(0, H); c.lineTo(0, H - 28); c.quadraticCurveTo(W / 2, H - 56, W, H - 28); c.lineTo(W, H); c.fill();
+  // 奶蛙
+  var bx = frogX, fh = 138, s = grow, imB = NWK.body('#F7C32B', mood, 140);
+  c.save(); c.translate(bx, H - 28); c.scale(s * (1 + sq * .05), 1 - sq * .07 + (s - 1) * .3); c.fillStyle = 'rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(0, 0, 44, 8, 0, 0, TAU); c.fill();
+  if (imB.complete && imB.naturalWidth) { var ih = fh, iw = imB.naturalWidth / imB.naturalHeight * ih; c.drawImage(imB, -iw / 2, -ih + 6, iw, ih); }
+  c.restore();
+  // 接奶碗（嘴前的碗口）
+  c.fillStyle = 'rgba(255,255,255,.65)'; NWK.rr(c, bx - catchW() - 6, H - 168, (catchW() + 6) * 2, 8, 4); c.fill();
+  for (var j = 0; j < items.length; j++) drawItem(c, items[j]);
+  // 心
+  for (var h = 0; h < 3; h++) { c.save(); c.translate(26 + h * 30, 28); var a = h < lives ? 1 : .3, bump = h === lives ? 1 + Math.max(0, flash) : 1; c.scale(bump, bump); c.globalAlpha = a; c.fillStyle = '#ff5a7a'; c.beginPath(); c.moveTo(0, 8); c.bezierCurveTo(-16, -4, -8, -16, 0, -6); c.bezierCurveTo(8, -16, 16, -4, 0, 8); c.fill(); c.restore(); }
+  if (combo >= 2) { c.textAlign = 'right'; c.font = '900 20px sans-serif'; c.fillStyle = mult() > 1 ? '#ff4a2a' : '#c98a07'; c.strokeStyle = '#fff'; c.lineWidth = 4; c.strokeText('连接 ' + combo + (mult() > 1 ? '  ×' + mult() : ''), W - 16, 30); c.fillText('连接 ' + combo + (mult() > 1 ? '  ×' + mult() : ''), W - 16, 30); }
+  if (bannerT > 0) { var k = Math.min(1, (1 - bannerT) * 6); c.save(); c.globalAlpha = Math.min(1, bannerT * 2); c.translate(W / 2, 120); c.scale(E.outBack(k), E.outBack(k)); c.font = '900 40px sans-serif'; c.textAlign = 'center'; c.lineWidth = 7; c.strokeStyle = '#fff'; c.fillStyle = '#ff4a2a'; c.strokeText(banner, 0, 0); c.fillText(banner, 0, 0); c.restore(); }
+  if (flash > 0) { c.fillStyle = 'rgba(255,60,60,' + flash * .5 + ')'; c.fillRect(0, 0, W, H); }
+}
+S.run(update, draw);
+window.__g = { S: S, G: G, dbg: { items: function () { return items; }, frogX: function () { return frogX; }, setX: function (x) { targetX = x; } } };
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffe9b8">
+<title>奶蛙五子棋 · 奶蛙小游戏</title>
+<meta name="description" content="和奶蛙下五子棋，先连成五子的获胜，三档难度。奶蛙小游戏之奶蛙五子棋。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="奶蛙五子棋 · 奶蛙小游戏"><meta property="og:description" content="和奶蛙下五子棋，先连成五子的获胜，三档难度。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css">
+<style></style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">按住拖动选点，松手落子</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script><script src="/nwkit/kit.js"></script>
+<script>
+(function () {
+var G = NW.mount({ key: 'gomoku', title: '奶蛙五子棋', extraCard: '步数', rules: '你执黑（金蛙），电脑执白（绿蛙）。横竖斜先连成五子者获胜。可以悔棋，也可以换难度。', onStart: function(){ if (window.__start) window.__start(); } });
+var W = 360, H = 600, S = NWK.stage({ W: W, H: H }), E = NWK.ease, TAU = Math.PI * 2, fx = S.fx;
+var N = 15, CELL = 23.4, X0 = (W - CELL * (N - 1)) / 2, Y0 = 100, ME = 1, AI = 2, ACOL = ['', '#F7C32B', '#8FD14F'];
+NWK.preload(['#F7C32B', '#8FD14F'], ['neutral', 'laugh', 'wow', 'sad', 'smug']);
+var b, hist, turn, over, winLine, diff, thinking, ghost, last, moodMe, moodAi, moodT, hint1, myMoves, drops;
+var DIFFS = ['简单', '普通', '困难'];
+function reset() { b = []; for (var y = 0; y < N; y++) { b.push([]); for (var x = 0; x < N; x++) b[y].push(0); } hist = []; turn = ME; over = false; winLine = null; thinking = false; ghost = null; last = null; moodMe = 'neutral'; moodAi = 'neutral'; moodT = 0; myMoves = 0; drops = []; G.setScore(0, false); G.setExtra(0); }
+diff = 1; reset(); window.__start = reset;
+function inb(x, y) { return x >= 0 && y >= 0 && x < N && y < N; }
+var DIR = [[1, 0], [0, 1], [1, 1], [1, -1]];
+function lineScore(x, y, p) { // 假设在 (x,y) 放 p 的四方向得分
+  var tot = 0;
+  for (var d = 0; d < 4; d++) {
+    var dx = DIR[d][0], dy = DIR[d][1], cnt = 1, open = 0;
+    for (var s = 1; s < 5; s++) { var nx = x + dx * s, ny = y + dy * s; if (inb(nx, ny) && b[ny][nx] === p) cnt++; else { if (inb(nx, ny) && b[ny][nx] === 0) open++; break; } }
+    for (s = 1; s < 5; s++) { nx = x - dx * s; ny = y - dy * s; if (inb(nx, ny) && b[ny][nx] === p) cnt++; else { if (inb(nx, ny) && b[ny][nx] === 0) open++; break; } }
+    if (cnt >= 5) tot += 100000; else if (cnt === 4) tot += open === 2 ? 10000 : open === 1 ? 1000 : 0; else if (cnt === 3) tot += open === 2 ? 1000 : open === 1 ? 100 : 0; else if (cnt === 2) tot += open === 2 ? 100 : open === 1 ? 10 : 0; else tot += open ? 1 : 0;
+  }
+  return tot;
+}
+function cands() {
+  var out = [], any = false; for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (b[y][x]) any = true;
+  if (!any) return [[7, 7]];
+  for (y = 0; y < N; y++) for (x = 0; x < N; x++) if (!b[y][x]) { var near = false; for (var dy = -2; dy <= 2 && !near; dy++) for (var dx = -2; dx <= 2; dx++) if (inb(x + dx, y + dy) && b[y + dy][x + dx]) { near = true; break; } if (near) out.push([x, y]); }
+  return out;
+}
+function evalMove(x, y) { var a = lineScore(x, y, AI), d = lineScore(x, y, ME); var cx = N / 2 - .5; var pos = 6 - (Math.abs(x - 7) + Math.abs(y - 7)) * .3; return a * (diff === 0 ? .8 : 1) + d * (diff === 0 ? .7 : 1.05) + pos; }
+function aiMove() {
+  var cs = cands(), best = null, scored = cs.map(function (c) { return { x: c[0], y: c[1], s: evalMove(c[0], c[1]) + (diff === 0 ? Math.random() * 400 : Math.random() * 3) }; });
+  scored.sort(function (a, b) { return b.s - a.s; });
+  if (diff === 2) { // 二层搜索：前8候选，模拟落子后看对手最佳回应
+    var top = scored.slice(0, 8), bs = -1e18;
+    top.forEach(function (m) { b[m.y][m.x] = AI; var worst = 0; cands().forEach(function (c) { var v = lineScore(c[0], c[1], ME); if (v > worst) worst = v; }); var win = lineScore(m.x, m.y, AI) >= 100000; var sc = m.s - worst * .55 + (win ? 1e7 : 0); b[m.y][m.x] = 0; if (sc > bs) { bs = sc; best = m; } });
+  } else best = scored[0];
+  return best;
+}
+function checkWin(x, y, p) {
+  for (var d = 0; d < 4; d++) { var line = [[x, y]]; for (var s = 1; s < 6; s++) { var nx = x + DIR[d][0] * s, ny = y + DIR[d][1] * s; if (inb(nx, ny) && b[ny][nx] === p) line.push([nx, ny]); else break; } for (s = 1; s < 6; s++) { nx = x - DIR[d][0] * s; ny = y - DIR[d][1] * s; if (inb(nx, ny) && b[ny][nx] === p) line.unshift([nx, ny]); else break; } if (line.length >= 5) return line; }
+  return null;
+}
+function px(x) { return X0 + x * CELL; } function py(y) { return Y0 + y * CELL; }
+function put(x, y, p) {
+  b[y][x] = p; hist.push([x, y, p]); last = [x, y]; drops.push({ x: x, y: y, t: 0, p: p }); NW.sfx.drop(); NW.vib(p === ME ? 8 : 4);
+  fx.burst(px(x), py(y), { count: 6, speed: 130, size: 4, colors: ['#fff', ACOL[p]], gravity: 300 }); S.shake(1.5);
+  var wl = checkWin(x, y, p); if (wl) return finish(p, wl);
+  if (hist.length >= N * N) return finish(0, null);
+  turn = p === ME ? AI : ME;
+  if (turn === AI) { thinking = true; moodAi = 'smug'; setTimeout(function () { if (over || !G.running) { thinking = false; return; } var m = aiMove(); thinking = false; moodAi = 'neutral'; put(m.x, m.y, AI); }, 380 + Math.random() * 260); }
+}
+function finish(p, line) {
+  over = true; winLine = line; thinking = false; G.setExtra(myMoves);
+  if (p === ME) { var pts = 100 * (diff + 1) + Math.max(0, 60 - myMoves) * 6; G.setScore(pts); moodMe = 'laugh'; moodAi = 'sad'; NW.sfx.win(); S.shake(8); fx.text(W / 2, 250, '你赢了！+' + pts, { size: 36, color: '#ff4a2a', life: 1.6 }); fx.burst(W / 2, 250, { count: 50, speed: 460, size: 9 }); setTimeout(function () { G.over('用了 ' + myMoves + ' 手 · ' + DIFFS[diff] + '难度', '你赢了！'); }, 1300); }
+  else if (p === AI) { moodMe = 'sad'; moodAi = 'laugh'; NW.sfx.bad(); S.shake(6); fx.text(W / 2, 250, '电脑赢了', { size: 34, color: '#3F8E1C', life: 1.6 }); setTimeout(function () { G.over('再来一局试试', '输了…'); }, 1300); }
+  else { fx.text(W / 2, 250, '平局', { size: 34, color: '#7a5a00', life: 1.4 }); setTimeout(function () { G.over('棋盘下满啦', '平局'); }, 1000); }
+}
+function snapPt(x, y) { var gx = Math.round((x - X0) / CELL), gy = Math.round((y - Y0) / CELL); return inb(gx, gy) ? [gx, gy] : null; }
+var BTNS = [{ k: 'undo', x: 16, w: 74, l: '悔棋' }, { k: 'd0', x: 100, w: 62, l: '简单' }, { k: 'd1', x: 168, w: 62, l: '普通' }, { k: 'd2', x: 236, w: 62, l: '困难' }, { k: 'redo', x: 304, w: 40, l: '重开' }], BY2 = 506;
+function btnAt(x, y) { if (y < BY2 || y > BY2 + 44) return null; for (var i = 0; i < BTNS.length; i++) if (x >= BTNS[i].x && x <= BTNS[i].x + BTNS[i].w) return BTNS[i]; return null; }
+S.on({
+  down: function (x, y) {
+    if (!G.running) return; var bt = btnAt(x, y);
+    if (bt) { NW.sfx.click(); if (bt.k === 'undo') undo(); else if (bt.k === 'redo') { reset(); } else { diff = +bt.k[1]; NW.toast('难度：' + DIFFS[diff]); } return; }
+    if (turn !== ME || over || thinking) return; ghost = { x: x, y: y - 34, active: true };
+  },
+  move: function (x, y) { if (ghost) { ghost.x = x; ghost.y = y - 34; } },
+  up: function (x, y) { if (!ghost) return; var p = snapPt(ghost.x, ghost.y); ghost = null; if (p && !b[p[1]][p[0]] && turn === ME && !over) { myMoves++; G.setExtra(myMoves); put(p[0], p[1], ME); } }
+});
+function undo() { if (thinking || over || hist.length < 2) { NW.sfx.bad(); return; } for (var i = 0; i < 2; i++) { var h = hist.pop(); b[h[1]][h[0]] = 0; } myMoves = Math.max(0, myMoves - 1); G.setExtra(myMoves); last = hist.length ? [hist[hist.length - 1][0], hist[hist.length - 1][1]] : null; turn = ME; NW.sfx.swap(); }
+function update(dt, rdt) { drops.forEach(function (d) { d.t = Math.min(1, d.t + rdt * 4.5); }); }
+function stone(c, x, y, p, sc, mood) {
+  c.save(); c.translate(x, y); c.scale(sc, sc); c.fillStyle = 'rgba(60,40,0,.25)'; c.beginPath(); c.ellipse(1.5, 3, 11, 10, 0, 0, TAU); c.fill();
+  var P = NaiwaFrog.pal(ACOL[p]); var g = c.createRadialGradient(-3, -4, 1, 0, 0, 11.5); g.addColorStop(0, '#fff'); g.addColorStop(.4, P.hi); g.addColorStop(1, P.mid); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 11, 0, TAU); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke(); c.restore();
+  NWK.drawBust(c, ACOL[p], mood || 'neutral', x, y + .5, 19 * sc);
+}
+function draw(c) {
+  S.panel(c, '#ffe9b8', '#fff6d8');
+  // 棋盘
+  var bx = X0 - 16, by = Y0 - 16, bw = CELL * (N - 1) + 32; c.fillStyle = 'rgba(120,70,0,.2)'; NWK.rr(c, bx + 2, by + 5, bw, bw, 16); c.fill();
+  var g = c.createLinearGradient(0, by, 0, by + bw); g.addColorStop(0, '#f6d37a'); g.addColorStop(1, '#e7b64c'); c.fillStyle = g; NWK.rr(c, bx, by, bw, bw, 16); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.stroke();
+  c.strokeStyle = 'rgba(110,70,10,.6)'; c.lineWidth = 1; for (var i = 0; i < N; i++) { c.beginPath(); c.moveTo(px(0), py(i)); c.lineTo(px(N - 1), py(i)); c.stroke(); c.beginPath(); c.moveTo(px(i), py(0)); c.lineTo(px(i), py(N - 1)); c.stroke(); }
+  c.fillStyle = 'rgba(110,70,10,.7)'; [[3, 3], [11, 3], [7, 7], [3, 11], [11, 11]].forEach(function (s) { c.beginPath(); c.arc(px(s[0]), py(s[1]), 2.8, 0, TAU); c.fill(); });
+  // 顶部状态
+  NWK.drawBust(c, '#F7C32B', moodMe, 34, 38, 44); NWK.drawBust(c, '#8FD14F', moodAi, W - 34, 38, 44);
+  c.font = '900 15px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'left'; c.fillStyle = turn === ME && !over ? '#c98a07' : '#a89a70'; c.fillText('你（金蛙）', 62, 28); c.textAlign = 'right'; c.fillStyle = turn === AI && !over ? '#3F8E1C' : '#a89a70'; c.fillText('电脑（绿蛙）', W - 62, 28);
+  c.textAlign = 'center'; c.font = '800 13px sans-serif'; c.fillStyle = '#7a5a00'; c.fillText(over ? '' : thinking ? '电脑思考中' + '...'.slice(0, 1 + Math.floor(S.time * 3) % 3) : '轮到你落子', W / 2, 52);
+  c.font = '700 11px sans-serif'; c.fillStyle = '#9a8040'; c.fillText('难度：' + DIFFS[diff] + '  ·  第 ' + (hist.length + 1) + ' 手', W / 2, 70);
+  if (turn === ME && !over) { var pulse = 1 + Math.sin(S.time * 6) * .06; c.strokeStyle = '#F7C32B'; c.lineWidth = 3; c.beginPath(); c.arc(34, 38, 25 * pulse, 0, TAU); c.stroke(); }
+  // 棋子
+  for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) if (b[y][x]) { var d = null; for (var q = 0; q < drops.length; q++) if (drops[q].x === x && drops[q].y === y) d = drops[q]; var sc = d && d.t < 1 ? E.outBack(d.t) * (1.5 - .5 * d.t) * .7 + .3 : 1; var isLast = last && last[0] === x && last[1] === y; stone(c, px(x), py(y), b[y][x], d ? Math.max(.3, sc) : 1, over && winLine && winLine.some(function (w) { return w[0] === x && w[1] === y; }) ? 'laugh' : (isLast ? 'wow' : 'neutral')); }
+  if (last && !over) { c.strokeStyle = '#ff4a2a'; c.lineWidth = 2.2; var rr = 14 + Math.sin(S.time * 8) * 1; c.beginPath(); c.arc(px(last[0]), py(last[1]), rr, 0, TAU); c.stroke(); }
+  if (winLine) { c.strokeStyle = 'rgba(255,74,42,.9)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(px(winLine[0][0]), py(winLine[0][1])); c.lineTo(px(winLine[winLine.length - 1][0]), py(winLine[winLine.length - 1][1])); c.stroke(); c.lineCap = 'butt'; }
+  if (ghost) { var p = snapPt(ghost.x, ghost.y); if (p && !b[p[1]][p[0]]) { c.globalAlpha = .75; stone(c, px(p[0]), py(p[1]), ME, 1.05); c.globalAlpha = 1; c.strokeStyle = 'rgba(255,74,42,.8)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px(0), py(p[1])); c.lineTo(px(N - 1), py(p[1])); c.moveTo(px(p[0]), py(0)); c.lineTo(px(p[0]), py(N - 1)); c.stroke(); } c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(ghost.x, ghost.y + 34, 20, 0, TAU); c.fill(); }
+  // 按钮
+  BTNS.forEach(function (bt) { var sel = bt.k === 'd' + diff; c.fillStyle = sel ? '#3F8E1C' : '#d49a1a'; NWK.rr(c, bt.x, BY2 + 4, bt.w, 40, 14); c.fill(); var gg = c.createLinearGradient(0, BY2, 0, BY2 + 40); gg.addColorStop(0, sel ? '#c3f58a' : '#ffe27a'); gg.addColorStop(1, sel ? '#7CC93E' : '#F7C32B'); c.fillStyle = gg; NWK.rr(c, bt.x, BY2, bt.w, 40, 14); c.fill(); c.fillStyle = sel ? '#fff' : '#6a4400'; c.font = '900 14px sans-serif'; c.textAlign = 'center'; c.fillText(bt.l, bt.x + bt.w / 2, BY2 + 21); });
+}
+S.run(update, draw);
+window.__g = { S: S, G: G, dbg: { b: function () { return b; }, turn: function () { return turn; }, thinking: function () { return thinking; }, over: function () { return over; }, pos: function (x, y) { return [px(x), py(y)]; }, cands: cands, eval: evalMove } };
+
+})();
+</script>
+</body>
+</html>

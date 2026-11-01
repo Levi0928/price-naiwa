@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#d9f0ff">
+<title>重力2048 · 奶蛙小游戏</title>
+<meta name="description" content="滑动让蛙球朝一个方向滚落，相同数字相撞合并，冲向 2048！奶蛙小游戏之重力2048。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="重力2048 · 奶蛙小游戏"><meta property="og:description" content="滑动让蛙球朝一个方向滚落，相同数字相撞合并，冲向 2048！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css">
+<style></style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">滑动屏幕，让蛙球朝那边滚落</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script><script src="/nwkit/kit.js"></script>
+<script>
+(function () {
+var G = NW.mount({ key: 'gravity2048', title: '重力2048', extraCard: '最大', rules: '滑动屏幕改变重力方向，数字蛙球会朝那边滚落，相同数字相撞合并翻倍。合成 2048 通关，格子填满且无法合并则失败。', onStart: function(){ if (window.__start) window.__start(); } });
+var W = 360, H = 560, S = NWK.stage({ W: W, H: H }), E = NWK.ease, fx = S.fx, TAU = Math.PI * 2;
+var N = 4, BX = 20, BY = 120, BS = 320, GAP = 8, TS = (BS - GAP * 5) / 4, COLS = NaiwaFrog.COLORS;
+NWK.preload(COLS, ['neutral', 'laugh', 'wow', 'smug']);
+var tiles, anim, score, maxv, won, dead, moveCnt, tipT;
+function reset() { tiles = []; anim = 0; score = 0; maxv = 2; won = false; dead = false; moveCnt = 0; spawn(); spawn(); G.setScore(0, false); G.setExtra(2); }
+window.__start = reset; reset();
+function cx(c) { return BX + GAP + c * (TS + GAP) + TS / 2; } function cy(r) { return BY + GAP + r * (TS + GAP) + TS / 2; }
+function grid() { var g = []; for (var r = 0; r < N; r++) { g.push([null, null, null, null]); } tiles.forEach(function (t) { if (!t.dead) g[t.r][t.c] = t; }); return g; }
+function spawn() { var g = grid(), e = []; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (!g[r][c]) e.push([r, c]); if (!e.length) return; var p = e[Math.floor(Math.random() * e.length)]; tiles.push({ v: Math.random() < .9 ? 2 : 4, r: p[0], c: p[1], x: cx(p[1]), y: cy(p[0]), fx: 0, fy: 0, s: 0, pop: 0, born: 1 }); }
+function colOf(v) { return COLS[(Math.log2(v) - 1) % 8 | 0]; }
+function canMove() { var g = grid(); for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { if (!g[r][c]) return true; if (c < 3 && g[r][c + 1] && g[r][c + 1].v === g[r][c].v) return true; if (r < 3 && g[r + 1][c] && g[r + 1][c].v === g[r][c].v) return true; } return false; }
+function move(dx, dy) {
+  if (anim > 0 || dead || !G.running) return;
+  var g = grid(), moved = false, gain = 0, merges = 0, big = 0;
+  tiles = tiles.filter(function (t) { return !t.dead; }); tiles.forEach(function (t) { t.merged = false; t.born = 0; });
+  var rs = [0, 1, 2, 3], cs = [0, 1, 2, 3]; if (dy > 0) rs.reverse(); if (dx > 0) cs.reverse();
+  rs.forEach(function (r) { cs.forEach(function (c) {
+    var t = g[r][c]; if (!t) return; var nr = r, nc = c;
+    while (true) { var tr = nr + dy, tc = nc + dx; if (tr < 0 || tc < 0 || tr >= N || tc >= N) break; var o = g[tr][tc]; if (!o) { nr = tr; nc = tc; continue; } if (o.v === t.v && !o.merged && !o.mergeInto) { nr = tr; nc = tc; t.into = o; } break; }
+    g[r][c] = null; if (t.into) { t.into.merged = true; t.r = nr; t.c = nc; g[nr][nc] = t.into; moved = true; t.dead = true; var nv = t.v * 2; t.into.nv = nv; gain += nv; merges++; if (nv > big) big = nv; }
+    else { g[nr][nc] = t; if (nr !== r || nc !== c) moved = true; t.r = nr; t.c = nc; }
+  }); });
+  if (!moved) { NW.sfx.bad(); S.shake(3); NW.vib(5); tiles.forEach(function (t) { t.nudge = .12; }); return; }
+  tiles.forEach(function (t) { t.fx = t.x; t.fy = t.y; t.s = 0; });
+  anim = .13; moveCnt++; NW.sfx.swap();
+  S.pending = { gain: gain, merges: merges, big: big };
+}
+function finishMove() {
+  var p = S.pending; S.pending = null;
+  tiles.forEach(function (t) { if (t.into) { } });
+  tiles = tiles.filter(function (t) { return !t.dead; });
+  tiles.forEach(function (t) { t.x = cx(t.c); t.y = cy(t.r); if (t.nv) { t.v = t.nv; t.nv = 0; t.pop = 1; t.merged = false; fx.burst(t.x, t.y, { count: 6 + Math.min(18, Math.log2(t.v) * 2), speed: 200 + t.v / 16, size: 6, colors: ['#fff', colOf(t.v)], gravity: 400 }); if (t.v > maxv) { maxv = t.v; G.setExtra(maxv); } } t.into = null; });
+  if (p.merges) { var combo = p.merges; score += p.gain * (combo > 1 ? combo : 1); G.setScore(score, true); NW.sfx.pop(Math.min(8, combo * 2)); NW.vib(10 + combo * 5); S.shake(2 + Math.log2(p.big)); if (p.big >= 64) S.freeze(30 + Math.min(40, p.big / 16)); fx.text(W / 2, BY + BS / 2, (combo > 1 ? '双合并 ×' + combo + '  ' : '') + '+' + p.gain * (combo > 1 ? combo : 1), { size: 22 + combo * 2, color: '#ff7a1a', life: .8 }); }
+  spawn(); 
+  if (!won && maxv >= 2048) { won = true; NW.sfx.win(); S.shake(10); fx.burst(W / 2, H / 2, { count: 60, speed: 480, size: 10 }); fx.text(W / 2, 240, '2048 达成！', { size: 40, color: '#ff4a2a', life: 2 }); }
+  if (!canMove()) { dead = true; setTimeout(function () { G.over('最大蛙球 ' + maxv + ' · ' + moveCnt + ' 步', won ? '通关啦！' : '蛙球满出来了'); }, 700); NW.sfx.bad(); }
+}
+var sx, sy, done;
+S.on({ down: function (x, y) { sx = x; sy = y; done = false; }, move: function (x, y) { if (done || sx == null) return; var dx = x - sx, dy = y - sy; if (Math.abs(dx) > 22 || Math.abs(dy) > 22) { done = true; if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1, 0); else move(0, dy > 0 ? 1 : -1); } }, up: function () { sx = null; } });
+window.addEventListener('keydown', function (e) { var k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (k) { e.preventDefault(); move(k[0], k[1]); } });
+function update(dt, rdt) {
+  if (anim > 0) { anim -= rdt; var k = Math.min(1, 1 - anim / .13); tiles.forEach(function (t) { var e = E.outCubic(k); t.x = t.fx + (cx(t.c) - t.fx) * e; t.y = t.fy + (cy(t.r) - t.fy) * e; }); if (anim <= 0) { anim = 0; finishMove(); } }
+  tiles.forEach(function (t) { if (t.pop > 0) t.pop = Math.max(0, t.pop - rdt * 4); if (t.born != null && t.born > 0 && anim === 0) t.born = Math.max(0, t.born - rdt * 5); if (t.nudge > 0) t.nudge = Math.max(0, t.nudge - rdt); });
+}
+function tile(c, t) {
+  var v = t.nv && anim <= 0 ? t.nv : t.v, col = colOf(v), P = NaiwaFrog.pal(col);
+  var sc = t.born ? E.outBack(1 - t.born) : 1; if (t.pop > 0) sc *= 1 + Math.sin((1 - t.pop) * Math.PI) * .22; if (t.dead && anim > 0) sc *= 1; if (sc <= 0) return;
+  var x = t.x + (t.nudge ? Math.sin(t.nudge * 80) * 3 : 0), y = t.y, s = TS * sc;
+  c.save(); c.translate(x, y); c.fillStyle = 'rgba(0,0,0,.14)'; NWK.rr(c, -s / 2, -s / 2 + 4, s, s, 16); c.fill();
+  var g = c.createLinearGradient(0, -s / 2, 0, s / 2); g.addColorStop(0, P.hi); g.addColorStop(1, P.mid); c.fillStyle = g; NWK.rr(c, -s / 2, -s / 2, s, s, 16); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.stroke(); c.restore();
+  NWK.drawBust(c, col, v >= 128 ? 'laugh' : 'neutral', x, y - s * .1, s * .62);
+  c.save(); c.font = '900 ' + (v >= 1024 ? 17 : v >= 128 ? 20 : 23) * sc + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 4; c.strokeStyle = P.deep; c.lineJoin = 'round'; c.strokeText(v, x, y + s * .33); c.fillStyle = '#fff'; c.fillText(v, x, y + s * .33); c.restore();
+}
+function draw(c) {
+  S.panel(c, '#d9f0ff', '#f0f9ff');
+  c.fillStyle = 'rgba(80,120,160,.25)'; NWK.rr(c, BX, BY, BS, BS, 20); c.fill();
+  for (var r = 0; r < N; r++) for (var q = 0; q < N; q++) { c.fillStyle = 'rgba(255,255,255,.55)'; NWK.rr(c, cx(q) - TS / 2, cy(r) - TS / 2, TS, TS, 14); c.fill(); }
+  var order = tiles.slice().sort(function (a, b) { return (a.dead ? 0 : 1) - (b.dead ? 0 : 1); }); order.forEach(function (t) { tile(c, t); });
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '900 14px sans-serif'; c.fillStyle = '#4a7ca0'; c.fillText('下一个目标：' + Math.max(maxv * 2, 8), W / 2, 76);
+  var pr = Math.min(1, Math.log2(maxv) / 11); c.fillStyle = 'rgba(80,120,160,.25)'; NWK.rr(c, 60, 92, 240, 12, 6); c.fill(); c.fillStyle = '#5CC8F2'; NWK.rr(c, 60, 92, Math.max(12, 240 * pr), 12, 6); c.fill();
+  c.font = '700 13px sans-serif'; c.fillStyle = '#6a95b5'; c.fillText('步数 ' + moveCnt + ' · 相同数字的蛙球相撞合并', W / 2, BY + BS + 28);
+  var a = (Math.sin(S.time * 3) + 1) / 2; c.globalAlpha = .35 + a * .4; c.fillStyle = '#4a7ca0'; c.font = '900 22px sans-serif'; c.fillText('← → ↑ ↓ 滑动', W / 2, BY + BS + 62); c.globalAlpha = 1;
+}
+S.run(update, draw);
+window.__g = { S: S, G: G, dbg: { move: move, tiles: function () { return tiles; }, anim: function () { return anim; }, maxv: function () { return maxv; }, dead: function () { return dead; } } };
+
+})();
+</script>
+</body>
+</html>

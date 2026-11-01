@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#e8dcff">
+<title>俄罗斯奶块 · 奶蛙小游戏</title>
+<meta name="description" content="奶蛙方块版俄罗斯方块：点按旋转、滑动移动、下滑急降。奶蛙小游戏之俄罗斯奶块。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="俄罗斯奶块 · 奶蛙小游戏"><meta property="og:description" content="奶蛙方块版俄罗斯方块：点按旋转、滑动移动、下滑急降。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css">
+<style></style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">点按旋转 · 左右拖动 · 下滑加速 · 快划落底</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script><script src="/nwkit/kit.js"></script>
+<script>
+(function () {
+var G = NW.mount({ key: 'tetris', title: '俄罗斯奶块', extraCard: '行数', rules: '点一下旋转，左右拖动移动，向下拖加速，快速下滑直接落底。消行得分，越消越快！', onStart: function(){ if (window.__start) window.__start(); } });
+var W = 360, H = 600, S = NWK.stage({ W: W, H: H }), E = NWK.ease, TAU = Math.PI * 2, fx = S.fx;
+var CS = 26, COLS = 10, ROWS = 20, BX = 12, BY = 60, COLORS = ['#5CC8F2', '#F7C32B', '#B28DFF', '#8FD14F', '#FF6B5E', '#4a8bff', '#FF9F43'];
+NWK.preload(COLORS, ['neutral']); NWK.preload(['#F7C32B'], ['laugh', 'wow']);
+var SH = [ // I O T S Z J L
+  [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], [[1, 1], [1, 1]], [[0, 1, 0], [1, 1, 1], [0, 0, 0]], [[0, 1, 1], [1, 1, 0], [0, 0, 0]], [[1, 1, 0], [0, 1, 1], [0, 0, 0]], [[1, 0, 0], [1, 1, 1], [0, 0, 0]], [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
+];
+var grid, cur, hold, canHold, bag, nextQ, lines, level, dropT, lockT, lockResets, clearing, clearT, over, softHeld, lastMoveT, mood, moodT, combo, flashRows, ptr;
+function rot(m) { var n = m.length, r = []; for (var y = 0; y < n; y++) { r.push([]); for (var x = 0; x < n; x++) r[y].push(m[n - 1 - x][y]); } return r; }
+function refill() { var b = [0, 1, 2, 3, 4, 5, 6]; for (var i = 6; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = b[i]; b[i] = b[j]; b[j] = t; } bag = bag.concat(b); }
+function take() { if (bag.length < 8) refill(); return bag.shift(); }
+function mk(t) { var m = SH[t].map(function (r) { return r.slice(); }); return { t: t, m: m, x: Math.floor((COLS - m.length) / 2), y: t === 0 ? -1 : 0, rot: 0 }; }
+function collide(p, m, x, y) { for (var r = 0; r < m.length; r++) for (var c = 0; c < m.length; c++) if (m[r][c]) { var gx = x + c, gy = y + r; if (gx < 0 || gx >= COLS || gy >= ROWS) return true; if (gy >= 0 && grid[gy][gx] >= 0) return true; } return false; }
+function reset() { grid = []; for (var r = 0; r < ROWS; r++) { grid.push([]); for (var c = 0; c < COLS; c++) grid[r].push(-1); } bag = []; nextQ = [take(), take(), take()]; hold = -1; canHold = true; lines = 0; level = 0; over = false; clearing = null; clearT = 0; combo = 0; mood = 'neutral'; moodT = 0; lockT = 0; lockResets = 0; dropT = 0; spawn(); G.setScore(0, false); G.setExtra(0); }
+function spawn(t) { cur = mk(t == null ? nextQ.shift() : t); if (t == null) nextQ.push(take()); canHold = true; dropT = 0; lockT = 0; lockResets = 0; if (collide(cur, cur.m, cur.x, cur.y)) { endGame(); } }
+function endGame() { if (over) return; over = true; NW.vib([30, 30, 60]); S.shake(14); S.freeze(200); for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) if (grid[r][c] >= 0) fx.burst(BX + c * CS + CS / 2, BY + r * CS + CS / 2, { count: 1, speed: 160, size: 5, colors: [COLORS[grid[r][c]]], gravity: 900 }); G.over('消除 ' + lines + ' 行 · 等级 ' + (level + 1)); }
+reset(); window.__start = reset;
+function interval() { return Math.max(80, 660 * Math.pow(.87, level)) / 1000; }
+function move(dx) { if (!cur || clearing || over) return false; if (!collide(cur, cur.m, cur.x + dx, cur.y)) { cur.x += dx; if (lockT > 0 && lockResets < 10) { lockT = 0; lockResets++; } NW.sfx.swap(); NW.vib(2); return true; } else { S.shake(1.5); return false; } }
+function rotate() {
+  if (!cur || clearing || over || cur.t === 1) return; var m = rot(cur.m), kicks = [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0], [-1, -1], [1, -1]];
+  for (var i = 0; i < kicks.length; i++) if (!collide(cur, m, cur.x + kicks[i][0], cur.y + kicks[i][1])) { cur.m = m; cur.x += kicks[i][0]; cur.y += kicks[i][1]; cur.spin = 1; if (lockT > 0 && lockResets < 10) { lockT = 0; lockResets++; } NW.sfx.tap(); NW.vib(4); return; }
+}
+function ghostY() { var y = cur.y; while (!collide(cur, cur.m, cur.x, y + 1)) y++; return y; }
+function hardDrop() { if (!cur || clearing || over) return; var gy = ghostY(), d = gy - cur.y; cur.y = gy; G.setScore(G.score + d * 2); NW.sfx.drop(); S.shake(4 + Math.min(d, 12) * .4); for (var r = 0; r < cur.m.length; r++) for (var c = 0; c < cur.m.length; c++) if (cur.m[r][c]) fx.burst(BX + (cur.x + c) * CS + CS / 2, BY + (cur.y + r) * CS + CS, { count: 2, speed: 140, size: 4, colors: ['#fff', COLORS[cur.t]], gravity: 500, up: 40 }); lock(); }
+function doHold() { if (!cur || !canHold || clearing || over) return; var t = cur.t; if (hold < 0) { hold = t; spawn(); } else { var h = hold; hold = t; spawn(h); } canHold = false; NW.sfx.swap(); }
+function lock() {
+  for (var r = 0; r < cur.m.length; r++) for (var c = 0; c < cur.m.length; c++) if (cur.m[r][c]) { var gy = cur.y + r, gx = cur.x + c; if (gy < 0) { endGame(); return; } grid[gy][gx] = cur.t; grid[gy][gx + 0]; }
+  cur.locked = { t: cur.t, cells: [] }; popCells(cur);
+  var full = []; for (var y = 0; y < ROWS; y++) { var ok = true; for (var x = 0; x < COLS; x++) if (grid[y][x] < 0) { ok = false; break; } if (ok) full.push(y); }
+  if (full.length) {
+    clearing = full; clearT = 0; combo++; var base = [0, 100, 300, 500, 800][full.length], pts = base * (level + 1) + (combo > 1 ? 50 * combo : 0);
+    G.setScore(G.score + pts); NW.sfx.merge(Math.min(10, full.length * 2 + combo)); NW.vib([10 + full.length * 4]); S.shake(4 + full.length * 3); S.freeze(40 + full.length * 22);
+    full.forEach(function (y) { for (var x = 0; x < COLS; x++) fx.burst(BX + x * CS + CS / 2, BY + y * CS + CS / 2, { count: 2, speed: 260, size: 6, colors: [COLORS[grid[y][x]], '#fff'], gravity: 700 }); });
+    var cy = BY + full[full.length - 1] * CS; fx.text(BX + COLS * CS / 2, cy - 10, ['', '一行！', '两行！', '三行！', '四行！奶块！'][full.length] + (combo > 1 ? ' 连消×' + combo : ''), { size: full.length >= 4 ? 34 : 26, color: full.length >= 3 ? '#ff4a2a' : '#e8a000', life: 1.1 });
+    fx.text(BX + COLS * CS / 2, cy + 22, '+' + pts, { size: 20, color: '#3F8E1C' }); mood = full.length >= 3 ? 'laugh' : 'wow'; moodT = .8;
+    cur = null;
+  } else { combo = 0; NW.sfx.land(); spawn(); }
+}
+var pops = [];
+function popCells(p) { for (var r = 0; r < p.m.length; r++) for (var c = 0; c < p.m.length; c++) if (p.m[r][c]) pops.push({ x: p.x + c, y: p.y + r, t: 0 }); }
+function finishClear() {
+  var set = {}; clearing.forEach(function (y) { set[y] = 1; }); var ng = [];
+  for (var y = 0; y < ROWS; y++) if (!set[y]) ng.push(grid[y]);
+  var n = ROWS - ng.length; var add = []; for (var i = 0; i < n; i++) { add.push([]); for (var c = 0; c < COLS; c++) add[i].push(-1); }
+  grid = add.concat(ng); lines += clearing.length; var nl = Math.floor(lines / 10); if (nl > level) { level = nl; fx.text(W / 2, 220, '加速！等级 ' + (level + 1), { size: 32, color: '#ff4a2a', life: 1.3 }); NW.sfx.combo(3); }
+  clearing = null; G.setExtra(lines); spawn();
+}
+// 手势
+var gs = null;
+S.on({
+  down: function (x, y) {
+    if (!G.running) return; if (x > BX + COLS * CS + 4 && y < BY + 80) { doHold(); return; }
+    gs = { x0: x, y0: y, x: x, y: y, t0: performance.now(), mx: 0, my: 0, moved: false, soft: false };
+  },
+  move: function (x, y) {
+    if (!gs || !G.running) return; var dx = x - gs.x, dy = y - gs.y;
+    if (Math.abs(x - gs.x0) > 8 || Math.abs(y - gs.y0) > 8) gs.moved = true;
+    gs.mx += dx; gs.my += dy; gs.x = x; gs.y = y;
+    while (gs.mx > CS * .85) { move(1); gs.mx -= CS * .85; } while (gs.mx < -CS * .85) { move(-1); gs.mx += CS * .85; }
+    if (gs.my > CS * .9 && Math.abs(y - gs.y0) > Math.abs(x - gs.x0)) { while (gs.my > CS * .9) { stepDown(true); gs.my -= CS * .9; } gs.soft = true; }
+    if (gs.my < 0) gs.my = 0;
+  },
+  up: function (x, y) {
+    if (!gs) return; var dt = performance.now() - gs.t0, dy = y - gs.y0, dx = x - gs.x0;
+    if (!gs.moved && dt < 300) rotate();
+    else if (dt < 260 && dy > 55 && dy > Math.abs(dx) * 1.5) hardDrop();
+    gs = null;
+  }
+});
+document.addEventListener('keydown', function (e) { if (!G.running) return; var k = e.key; if (k === 'ArrowLeft') move(-1); else if (k === 'ArrowRight') move(1); else if (k === 'ArrowUp') rotate(); else if (k === 'ArrowDown') stepDown(true); else if (k === ' ') hardDrop(); else if (k === 'c') doHold(); else return; e.preventDefault(); });
+function stepDown(soft) {
+  if (!cur || clearing || over) return false;
+  if (!collide(cur, cur.m, cur.x, cur.y + 1)) { cur.y++; if (soft) G.setScore(G.score + 1); dropT = 0; lockT = 0; return true; }
+  if (soft && lockT === 0) lockT = .0001; return false;
+}
+function update(dt, rdt) {
+  for (var i = pops.length - 1; i >= 0; i--) { pops[i].t += rdt * 5; if (pops[i].t >= 1) pops.splice(i, 1); }
+  if (moodT > 0) { moodT -= rdt; if (moodT <= 0) mood = 'neutral'; }
+  if (!G.running || over) return;
+  if (clearing) { clearT += dt; if (clearT > .3) finishClear(); return; }
+  if (!cur) return;
+  var onGround = collide(cur, cur.m, cur.x, cur.y + 1);
+  if (onGround) { lockT += dt; if (lockT > .45) { lock(); } }
+  else { lockT = 0; dropT += dt; var iv = (gs && gs.soft) ? Math.min(.05, interval()) : interval(); while (dropT >= iv) { dropT -= iv; if (!stepDown(false)) break; } }
+}
+function cell(c, x, y, ci, a, sc) {
+  var s = CS * (sc || 1), col = COLORS[ci]; c.save(); c.globalAlpha = a == null ? 1 : a; c.translate(x + CS / 2, y + CS / 2);
+  var P = NaiwaFrog.pal(col); c.fillStyle = P.shade; NWK.rr(c, -s / 2 + .5, -s / 2 + 2, s - 1, s - 1, 7); c.fill();
+  var g = c.createLinearGradient(0, -s / 2, 0, s / 2); g.addColorStop(0, P.hi); g.addColorStop(.5, P.base); g.addColorStop(1, P.mid); c.fillStyle = g; NWK.rr(c, -s / 2 + .5, -s / 2 + .5, s - 1, s - 3, 7); c.fill();
+  c.restore(); if ((a == null || a > .5)) NWK.drawBust(c.canvas ? c : c, col, 'neutral', x + CS / 2, y + CS / 2 + 1, s * .84);
+}
+function drawMini(c, t, cx, cy, sc) { var m = SH[t], n = m.length, cs = CS * sc; var minx = 9, maxx = -1, miny = 9, maxy = -1; for (var r = 0; r < n; r++) for (var q = 0; q < n; q++) if (m[r][q]) { minx = Math.min(minx, q); maxx = Math.max(maxx, q); miny = Math.min(miny, r); maxy = Math.max(maxy, r); }
+  var ox = cx - (maxx - minx + 1) * cs / 2 - minx * cs, oy = cy - (maxy - miny + 1) * cs / 2 - miny * cs;
+  for (r = 0; r < n; r++) for (q = 0; q < n; q++) if (m[r][q]) { c.save(); c.translate(ox + q * cs, oy + r * cs); c.scale(sc, sc); cell(c, 0, 0, t); c.restore(); } }
+function draw(c) {
+  S.panel(c, '#e8dcff', '#d9f1ff');
+  c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, BX - 4, BY - 4, COLS * CS + 8, ROWS * CS + 8, 14); c.fill();
+  c.save(); NWK.rr(c, BX, BY, COLS * CS, ROWS * CS, 10); c.clip(); c.fillStyle = 'rgba(120,100,180,.08)'; c.fillRect(BX, BY, COLS * CS, ROWS * CS);
+  c.strokeStyle = 'rgba(120,100,180,.1)'; c.lineWidth = 1; for (var i = 1; i < COLS; i++) { c.beginPath(); c.moveTo(BX + i * CS, BY); c.lineTo(BX + i * CS, BY + ROWS * CS); c.stroke(); } for (i = 1; i < ROWS; i++) { c.beginPath(); c.moveTo(BX, BY + i * CS); c.lineTo(BX + COLS * CS, BY + i * CS); c.stroke(); }
+  var cl = clearing ? {} : null; if (clearing) clearing.forEach(function (y) { cl[y] = 1; });
+  for (var y = 0; y < ROWS; y++) for (var x = 0; x < COLS; x++) if (grid[y][x] >= 0) {
+    if (cl && cl[y]) { var k = Math.min(1, clearT / .3); cell(c, BX + x * CS, BY + y * CS, grid[y][x], 1 - k, 1 + Math.sin(k * 3.14) * .15); c.fillStyle = 'rgba(255,255,255,' + (Math.sin(k * 3.14) * .8) + ')'; NWK.rr(c, BX + x * CS, BY + y * CS, CS, CS, 6); c.fill(); }
+    else { var pp = null; for (var q = 0; q < pops.length; q++) if (pops[q].x === x && pops[q].y === y) pp = pops[q]; cell(c, BX + x * CS, BY + y * CS, grid[y][x], 1, pp ? 1 + Math.sin(pp.t * 3.14) * .16 : 1); }
+  }
+  if (cur && !clearing && !over) {
+    var gy = ghostY();
+    for (var r = 0; r < cur.m.length; r++) for (var q2 = 0; q2 < cur.m.length; q2++) if (cur.m[r][q2]) { var py = gy + r; if (py >= 0) { c.strokeStyle = COLORS[cur.t]; c.globalAlpha = .55; c.lineWidth = 2.5; NWK.rr(c, BX + (cur.x + q2) * CS + 2, BY + py * CS + 2, CS - 4, CS - 4, 6); c.stroke(); c.globalAlpha = 1; } }
+    var lk = lockT > 0 ? 1 - Math.sin(Math.min(1, lockT / .45) * 3.14 * 4) * .05 : 1;
+    for (r = 0; r < cur.m.length; r++) for (q2 = 0; q2 < cur.m.length; q2++) if (cur.m[r][q2] && cur.y + r >= 0) cell(c, BX + (cur.x + q2) * CS, BY + (cur.y + r) * CS, cur.t, 1, lk);
+  }
+  c.restore();
+  // 右栏
+  var rx = BX + COLS * CS + 12, rw = W - rx - 10;
+  c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, rx, BY - 4, rw, 78, 14); c.fill(); c.fillStyle = '#7a5a00'; c.font = '900 12px sans-serif'; c.textAlign = 'center'; c.fillText('暂存', rx + rw / 2, BY + 10);
+  if (hold >= 0) { c.globalAlpha = canHold ? 1 : .4; drawMini(c, hold, rx + rw / 2, BY + 42, .6); c.globalAlpha = 1; } else { c.fillStyle = 'rgba(0,0,0,.3)'; c.font = '700 11px sans-serif'; c.fillText('点这里', rx + rw / 2, BY + 44); }
+  c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, rx, BY + 84, rw, 3 * 62 + 24, 14); c.fill(); c.fillStyle = '#7a5a00'; c.font = '900 12px sans-serif'; c.fillText('下一个', rx + rw / 2, BY + 100);
+  for (i = 0; i < 3; i++) drawMini(c, nextQ[i], rx + rw / 2, BY + 134 + i * 60, i === 0 ? .6 : .5);
+  c.fillStyle = 'rgba(255,255,255,.7)'; NWK.rr(c, rx, BY + 84 + 3 * 62 + 32, rw, 60, 14); c.fill(); c.fillStyle = '#7a5a00'; c.font = '900 12px sans-serif'; c.fillText('等级', rx + rw / 2, BY + 84 + 3 * 62 + 50); c.font = '900 22px sans-serif'; c.fillText(String(level + 1), rx + rw / 2, BY + 84 + 3 * 62 + 76);
+  NWK.drawBust(c, '#F7C32B', mood, rx + rw / 2, 28, 40);
+  c.textAlign = 'left'; c.fillStyle = '#7a5a00'; c.font = '900 16px sans-serif'; c.fillText('消除 ' + lines + ' 行', BX, 28); c.font = '700 12px sans-serif'; c.fillText('速度 ' + Math.round(interval() * 1000) + 'ms', BX, 46);
+}
+S.run(update, draw);
+window.__g = { S: S, G: G, dbg: { grid: function () { return grid; }, cur: function () { return cur; }, move: move, rotate: rotate, hardDrop: hardDrop, lines: function () { return lines; } } };
+
+})();
+</script>
+</body>
+</html>

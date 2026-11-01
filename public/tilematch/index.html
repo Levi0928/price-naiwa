@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#d6f5c6">
+<title>奶了个蛙 · 奶蛙小游戏</title>
+<meta name="description" content="点选没被压住的蛙头放进卡槽，三个相同自动消除，槽满就输！奶蛙小游戏之奶了个蛙。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="奶了个蛙 · 奶蛙小游戏"><meta property="og:description" content="点选没被压住的蛙头放进卡槽，三个相同自动消除，槽满就输！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css">
+<style></style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">点击没被压住的蛙头，3 个相同消除</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script><script src="/nwkit/kit.js"></script>
+<script>
+(function () {
+var G = NW.mount({ key: 'tilematch', title: '奶了个蛙', extraCard: '关卡', rules: '点击没被遮挡的蛙头放入下方 7 格卡槽，3 个相同的会消除。卡槽满了就失败，善用撤回和洗牌！', onStart: function(){ if (window.__start) window.__start(); } });
+var W = 360, H = 600, S = NWK.stage({ W: W, H: H }), E = NWK.ease, R = NWK.rand, TAU = Math.PI * 2, fx = S.fx;
+var TW = 44, TH = 48, U = 22, UV = 23, OX = 16, OY = 62, SLOTS = 7, SW = 44, SX = (W - (SLOTS * SW + (SLOTS - 1) * 4)) / 2, SY = 478;
+var TYPES = []; NaiwaFrog.COLORS.forEach(function (c) { TYPES.push([c, 'neutral']); }); NaiwaFrog.COLORS.slice(0, 4).forEach(function (c) { TYPES.push([c, 'laugh']); });
+NWK.preload(NaiwaFrog.COLORS, ['neutral', 'laugh']);
+var tiles, tray, level, combo, comboT, undoN, shufN, outN, lastTile, busy, lost, won, shakeId, moveCount, pending;
+function build(lv) {
+  var n = Math.min(99, 24 + lv * 9); n -= n % 3; var nt = Math.min(TYPES.length, 4 + lv), ids = [];
+  for (var i = 0; i < n / 3; i++) { var t = i % nt; ids.push(t, t, t); }
+  for (i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), q = ids[i]; ids[i] = ids[j]; ids[j] = q; }
+  var layers = Math.min(5, 2 + Math.floor(lv / 2)), per = [], rem = n; for (i = 0; i < layers; i++) { per.push(Math.floor(n / layers)); rem -= per[i]; } per[0] += rem;
+  var out = [], used = {};
+  for (var l = 0; l < layers; l++) {
+    var off = l % 2, cand = [];
+    for (var gy = off; gy <= 14; gy += 2) for (var gx = off; gx <= 12; gx += 2) cand.push([gx, gy]);
+    cand.forEach(function (c) { var dx = (c[0] - 6) / 6, dy = (c[1] - 7) / 7; c.w = Math.random() + (l ? Math.hypot(dx, dy) * .9 : Math.hypot(dx, dy) * .3); });
+    cand.sort(function (a, b) { return a.w - b.w; });
+    var cnt = Math.min(per[l], cand.length); if (cnt < per[l] && l < layers - 1) per[l + 1] += per[l] - cnt;
+    for (i = 0; i < cnt; i++) out.push({ gx: cand[i][0], gy: cand[i][1], l: l });
+  }
+  while (out.length > ids.length) out.pop(); while (ids.length > out.length) ids.pop();
+  out.forEach(function (t, k) { t.type = ids[k]; t.x = OX + t.gx * U; t.y = OY + t.gy * UV; t.dx = t.x; t.dy = t.y; t.sc = 1; t.sq = 0; t.born = Math.random() * .3 - .5; t.id = k; t.state = 'board'; });
+  out.sort(function (a, b) { return a.l - b.l; }); return out;
+}
+function covered(t) { if (t.state !== 'board') return false; for (var i = 0; i < tiles.length; i++) { var o = tiles[i]; if (o !== t && o.state === 'board' && o.l > t.l && Math.abs(o.x - t.x) < TW - 3 && Math.abs(o.y - t.y) < TH - 3) return true; } return false; }
+function refresh() { tiles.forEach(function (t) { t.cov = covered(t); }); }
+function start(lv) { level = lv; tiles = build(lv); tray = []; combo = 0; comboT = 0; undoN = 1; shufN = 1; outN = 1; lastTile = null; busy = 0; lost = false; won = false; shakeId = -1; pending = []; refresh(); G.setExtra(level); }
+function reset() { start(1); G.setScore(0, false); } reset(); window.__start = reset;
+function slotPos(i) { return [SX + i * (SW + 4) + SW / 2 - TW / 2, SY + (SW - TH) / 2]; }
+function place(t) {
+  t.state = 'tray'; var idx = -1; for (var i = tray.length - 1; i >= 0; i--) if (tray[i].type === t.type) { idx = i; break; }
+  if (idx >= 0) tray.splice(idx + 1, 0, t); else tray.push(t); lastTile = t; t.fly = 0;
+  refresh(); NW.sfx.tap(); NW.vib(5); t.sq = 1;
+  fx.burst(t.dx + TW / 2, t.dy + TH / 2, { count: 5, speed: 120, size: 4, colors: ['#fff', '#FFD23F'] });
+  checkMatch();
+}
+function checkMatch() {
+  var cnt = {}; tray.forEach(function (t) { if (!t.clearing) cnt[t.type] = (cnt[t.type] || 0) + 1; });
+  for (var k in cnt) if (cnt[k] >= 3) {
+    var grp = tray.filter(function (t) { return t.type == k && !t.clearing; }).slice(0, 3); grp.forEach(function (t) { t.clearing = .001; });
+    pending.push({ grp: grp, t: 0 }); lastTile = null; return;
+  }
+  if (tray.filter(function (t) { return !t.clearing; }).length >= SLOTS && !pending.length) { lost = true; NW.sfx.bad(); S.shake(12); NW.vib([30, 40, 30]); setTimeout(function () { G.over('卡槽满了 · 第 ' + level + ' 关'); }, 500); }
+}
+function doClear(p) {
+  combo = comboT > 0 ? combo + 1 : 1; comboT = 3.2; var pts = 30 * Math.min(combo, 6); G.setScore(G.score + pts);
+  var cx = 0; p.grp.forEach(function (t) { cx += t.dx + TW / 2; fx.burst(t.dx + TW / 2, t.dy + TH / 2, { count: 10, speed: 280, size: 7, colors: [TYPES[t.type][0], '#fff', '#FFD23F'], gravity: 700 }); }); cx = NWK.clamp(cx / 3, 90, W - 90);
+  fx.text(cx, SY - 18, '+' + pts + (combo > 1 ? ' 连消×' + combo : ''), { size: combo > 1 ? 26 : 22, color: combo > 2 ? '#ff4a2a' : '#e8a000' });
+  NW.sfx.merge(Math.min(8, combo + 2)); NW.vib(12); S.shake(3 + combo); S.freeze(45);
+  tray = tray.filter(function (t) { return p.grp.indexOf(t) < 0; }); tiles = tiles.filter(function (t) { return p.grp.indexOf(t) < 0; });
+  if (!tiles.length && !won) { won = true; setTimeout(winLevel, 400); }
+}
+function winLevel() {
+  NW.sfx.win(); S.shake(8); var b = 100 + level * 20; G.setScore(G.score + b); fx.text(W / 2, 260, '第 ' + level + ' 关通过！+' + b, { size: 30, color: '#ff4a2a', life: 1.4 });
+  fx.burst(W / 2, 260, { count: 40, speed: 420, size: 9 }); setTimeout(function () { start(level + 1); }, 1300);
+}
+function ptIn(x, y, rx, ry, rw, rh) { return x >= rx && x <= rx + rw && y >= ry && y <= ry + rh; }
+var BTN = [{ k: 'undo', x: 28, w: 96 }, { k: 'out', x: 132, w: 96 }, { k: 'shuf', x: 236, w: 96 }], BY2 = 540, BH2 = 44;
+S.on({
+  down: function (x, y) {
+    if (!G.running || lost || won) return;
+    if (y > BY2 - 6) { BTN.forEach(function (b) { if (ptIn(x, y, b.x, BY2, b.w, BH2)) power(b.k); }); return; }
+    for (var i = tiles.length - 1; i >= 0; i--) {
+      var t = tiles[i]; if (t.state !== 'board') continue;
+      if (ptIn(x, y, t.x, t.y, TW, TH)) {
+        if (t.cov) { shakeId = t.id; t.shk = 1; NW.sfx.bad(); NW.vib(8); return; }
+        if (tray.filter(function (q) { return !q.clearing; }).length >= SLOTS) return; place(t); return;
+      }
+    }
+  }
+});
+function power(k) {
+  if (k === 'undo') { if (undoN <= 0 || !lastTile || lastTile.clearing || lastTile.state !== 'tray') { NW.sfx.bad(); return; } undoN--; ret(lastTile); lastTile = null; }
+  else if (k === 'out') { if (outN <= 0 || !tray.length) { NW.sfx.bad(); return; } var g = tray.filter(function (t) { return !t.clearing; }).slice(0, 3); if (!g.length) return; outN--; g.forEach(ret); }
+  else if (k === 'shuf') { if (shufN <= 0) { NW.sfx.bad(); return; } shufN--; var b = tiles.filter(function (t) { return t.state === 'board'; }), ty = b.map(function (t) { return t.type; }); for (var i = ty.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), q = ty[i]; ty[i] = ty[j]; ty[j] = q; } b.forEach(function (t, n) { t.type = ty[n]; t.sq = 1; t.sc = .6; }); NW.sfx.combo(2); S.shake(5); fx.text(W / 2, 250, '洗牌！', { size: 30, color: '#2a9ad0' }); }
+}
+function ret(t) { tray = tray.filter(function (q) { return q !== t; }); t.state = 'board'; t.sq = 1; NW.sfx.swap(); refresh(); }
+function update(dt, rdt) {
+  if (comboT > 0) comboT -= dt;
+  for (var i = 0; i < tiles.length; i++) {
+    var t = tiles[i], tx = t.x, ty = t.y;
+    if (t.state === 'tray') { var si = tray.indexOf(t), p = slotPos(si); tx = p[0]; ty = p[1]; }
+    var rate = t.state === 'tray' ? 20 : 16; t.dx += (tx - t.dx) * Math.min(1, dt * rate); t.dy += (ty - t.dy) * Math.min(1, dt * rate);
+    t.sq += (0 - t.sq) * Math.min(1, dt * 10); t.sc += (1 - t.sc) * Math.min(1, dt * 12); t.born = Math.min(1, t.born + dt * 4); if (t.shk) t.shk = Math.max(0, t.shk - dt * 4);
+    if (t.clearing) t.clearing += dt * 5;
+  }
+  for (i = pending.length - 1; i >= 0; i--) { var p2 = pending[i]; p2.t += dt; var all = p2.grp.every(function (t) { return Math.abs(t.dx - slotPos(tray.indexOf(t))[0]) < 6; }); if (p2.t > .28 && (all || p2.t > .6)) { pending.splice(i, 1); doClear(p2); checkMatch(); } }
+}
+function drawTile(c, t, inTray) {
+  var x = t.dx, y = t.dy, k = t.clearing ? 1 - Math.min(1, (t.clearing - 1) * 0) : 1, sc = t.sc * (1 + t.sq * .12) * (t.clearing ? 1 + Math.sin(Math.min(1, t.clearing) * 3.14) * .25 : 1);
+  if (t.born < 1) { if (t.born <= 0) return; sc *= E.outBack(t.born); }
+  c.save(); c.translate(x + TW / 2 + (t.shk ? Math.sin(t.shk * 40) * 4 * t.shk : 0), y + TH / 2); c.scale(sc, sc);
+  if (!inTray) { c.fillStyle = 'rgba(80,100,60,.22)'; NWK.rr(c, -TW / 2 + 1, -TH / 2 + 5, TW, TH, 9); c.fill(); }
+  c.fillStyle = '#d7c07a'; NWK.rr(c, -TW / 2, -TH / 2 + 4, TW, TH - 2, 9); c.fill();
+  var g = c.createLinearGradient(0, -TH / 2, 0, TH / 2); g.addColorStop(0, '#fffdf0'); g.addColorStop(1, '#fff0c0'); c.fillStyle = g; NWK.rr(c, -TW / 2, -TH / 2, TW, TH - 4, 9); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 1.5; c.stroke();
+  var ty = TYPES[t.type]; NWK.drawBust(c, ty[0], ty[1], 0, -2, 36);
+  if (t.cov && t.state === 'board') { c.fillStyle = 'rgba(70,60,30,.42)'; NWK.rr(c, -TW / 2, -TH / 2, TW, TH - 4, 9); c.fill(); }
+  c.restore();
+}
+function draw(c) {
+  S.panel(c, '#d6f5c6', '#f6fbd8');
+  c.fillStyle = 'rgba(255,255,255,.35)'; NWK.rr(c, 8, 52, W - 16, 400, 18); c.fill();
+  c.font = '900 16px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'left'; c.fillStyle = '#4a7a1c'; c.fillText('第 ' + level + ' 关', 16, 28); c.textAlign = 'right'; c.fillStyle = '#7a5a00'; c.fillText('剩余 ' + tiles.filter(function (t) { return t.state === 'board'; }).length + ' 张', W - 16, 28);
+  if (comboT > 0 && combo > 1) { c.textAlign = 'center'; c.fillStyle = '#ff4a2a'; c.fillText('连消 ×' + combo, W / 2, 28); }
+  // 卡槽
+  var full = tray.filter(function (t) { return !t.clearing; }).length;
+  c.fillStyle = full >= 6 ? 'rgba(255,90,90,.35)' : 'rgba(110,80,20,.2)'; NWK.rr(c, SX - 8, SY - 8, SLOTS * (SW + 4) + 12, SW + 16, 16); c.fill();
+  for (var i = 0; i < SLOTS; i++) { c.fillStyle = full >= 6 ? 'rgba(255,200,200,.7)' : 'rgba(255,255,255,.55)'; NWK.rr(c, SX + i * (SW + 4), SY, SW, SW, 10); c.fill(); }
+  tiles.filter(function (t) { return t.state === 'board'; }).forEach(function (t) { drawTile(c, t, false); });
+  tiles.filter(function (t) { return t.state === 'tray'; }).forEach(function (t) { drawTile(c, t, true); });
+  // 按钮
+  var lab = { undo: '撤回', out: '移出', shuf: '洗牌' }, cnt = { undo: undoN, out: outN, shuf: shufN };
+  BTN.forEach(function (b) { var on = cnt[b.k] > 0; c.fillStyle = on ? '#e08a1e' : '#b9b09a'; NWK.rr(c, b.x, BY2 + 4, b.w, BH2, 16); c.fill(); var g = c.createLinearGradient(0, BY2, 0, BY2 + BH2); g.addColorStop(0, on ? '#ffe27a' : '#e6e0d0'); g.addColorStop(1, on ? '#F7C32B' : '#cfc8b6'); c.fillStyle = g; NWK.rr(c, b.x, BY2, b.w, BH2, 16); c.fill(); c.fillStyle = on ? '#6a4400' : '#8a8472'; c.font = '900 16px sans-serif'; c.textAlign = 'center'; c.fillText(lab[b.k] + (on ? ' ×' + cnt[b.k] : ''), b.x + b.w / 2, BY2 + BH2 / 2 + 1); });
+}
+S.run(update, draw);
+window.__g = { S: S, G: G, dbg: { tiles: function () { return tiles; }, tray: function () { return tray; }, level: function () { return level; } } };
+
+})();
+</script>
+</body>
+</html>
