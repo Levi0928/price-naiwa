@@ -3,77 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#ffd54a">
-<meta name="description" content="奶蛙小游戏合集：点按、合成、2048、消消乐、贪吃蛙等，手机浏览器即可玩。">
-<title>奶蛙小游戏</title>
+<meta name="theme-color" content="#8fdcff">
+<title>奶蛙小游戏 · 点一下就笑的黄色小胖蛙</title>
+<meta name="description" content="奶蛙小游戏合集：狂笑点按、合成大奶蛙、奶蛙2048、奶蛙消消乐、贪吃蛙、跳一跳。手机浏览器直接玩，免下载免注册。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="奶蛙小游戏 · 点一下就笑的黄色小胖蛙">
+<meta property="og:description" content="6 款免下载小游戏，手机浏览器直接玩。">
+<meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<meta property="og:url" content="https://price-naiwa.onrender.com/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-  <div class="wrap">
-    <header class="hero">
-      <div class="mascot" aria-hidden="true">
-        <img src="/assets/frog.svg" alt="" width="112" height="134">
-      </div>
-      <h1>奶蛙小游戏</h1>
-      <p>亮黄叶绿的自研小合集。点一下就笑、合成变大、滑动消消——手机浏览器就能玩，不用注册。</p>
-      <nav class="nav" aria-label="站点导航">
-        <a href="#games">去玩游戏</a>
-        <a class="ghost" href="/author.html">作者</a>
-        <a class="ghost" href="/">首页</a>
-      </nav>
-    </header>
+<body class="lobby">
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="">奶蛙小游戏</a>
+  <a class="lnk on" href="/">首页</a><a class="lnk" href="#games">游戏</a><a class="lnk" href="/author.html">作者</a>
+</div></header>
 
-    <section id="games" class="grid" aria-label="游戏列表">
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog-laugh.svg" alt=""></div>
-        <h2>狂笑点按</h2>
-        <p>点一下奶蛙就狂笑抖动，连点看分数飙升。</p>
-        <div class="meta">作者 · Levi</div>
-        <a class="play" href="/laugh/">去玩</a>
-      </article>
-
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog.svg" alt=""></div>
-        <h2>合成大青蛙</h2>
-        <p>落下同类青蛙会合并变大，合成出最大那只就过关。</p>
-        <div class="meta">作者 · 名京</div>
-        <a class="play" href="/merge/">去玩</a>
-      </article>
-
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog.svg" alt=""></div>
-        <h2>青蛙 2048</h2>
-        <p>滑动合并相同数字青蛙，冲击 2048。</p>
-        <div class="meta">作者 · Levi</div>
-        <a class="play" href="/g2048/">去玩</a>
-      </article>
-
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog.svg" alt=""></div>
-        <h2>青蛙消消乐</h2>
-        <p>三只及以上同色连成一线即可消除，清盘刷分。</p>
-        <div class="meta">作者 · 名京</div>
-        <a class="play" href="/match3/">去玩</a>
-      </article>
-
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog.svg" alt=""></div>
-        <h2>贪吃蛙</h2>
-        <p>控制奶蛙蛇身吃果子变长，别撞墙也别咬到自己。</p>
-        <div class="meta">作者 · Levi</div>
-        <a class="play" href="/snake/">去玩</a>
-      </article>
-
-      <article class="card">
-        <div class="thumb" aria-hidden="true"><img src="/assets/frog.svg" alt=""></div>
-        <h2>跳一跳蛙</h2>
-        <p>长按蓄力、松手起跳，落在平台上连跳得分。</p>
-        <div class="meta">作者 · 名京</div>
-        <a class="play" href="/jump/">去玩</a>
-      </article>
-    </section>
-
-    <p class="foot">纯前端自研小游戏 · 无广告 · 不收集隐私 · 仅供娱乐</p>
+<section class="hero" id="top">
+  <i class="cloud c1"></i><i class="cloud c2"></i><i class="cloud c3"></i>
+  <div class="float" style="left:7%;top:34%;width:46px" id="fl1"></div>
+  <div class="float" style="right:8%;top:46%;width:38px;animation-delay:-2s" id="fl2"></div>
+  <div class="float" style="left:16%;top:62%;width:30px;animation-delay:-4s" id="fl3"></div>
+  <div class="txt">
+    <h1>奶蛙<span>小游戏</span></h1>
+    <p class="sub">一只软糯糯的黄色小胖蛙，带你笑着玩 6 款小游戏。点它一下试试？</p>
+    <div class="hero-cta"><a class="btn green big" href="#games">开始玩</a><button class="btn white big" id="laughBtn" type="button">逗它笑</button></div>
+    <div class="laugh-count" id="lc"></div>
   </div>
+  <div class="hero-frog" id="hf" role="button" aria-label="点一点奶蛙，它会大笑" tabindex="0">
+    <div class="a" id="hfa"></div><div class="b" id="hfb"></div>
+    <span class="tap-tip" id="tip">点我！</span>
+  </div>
+  <div class="hills"><svg viewBox="0 0 1200 190" preserveAspectRatio="none"><defs><linearGradient id="h1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6ea72"/><stop offset="1" stop-color="#7cc93e"/></linearGradient><linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#95d94f"/><stop offset="1" stop-color="#5fae2a"/></linearGradient></defs><path d="M0 90C140 30 280 40 420 80C560 120 640 50 800 54C960 58 1080 110 1200 70V190H0Z" fill="url(#h1)"/><path d="M0 130C160 90 320 110 480 130C640 150 760 90 940 100C1060 106 1140 130 1200 120V190H0Z" fill="url(#h2)"/><g fill="#fff"><circle cx="150" cy="140" r="5"/><circle cx="170" cy="146" r="4"/><circle cx="930" cy="128" r="5"/><circle cx="1010" cy="140" r="4"/><circle cx="560" cy="150" r="4"/></g><g fill="#ffd23f"><circle cx="160" cy="141" r="2.6"/><circle cx="939" cy="129" r="2.6"/></g></svg></div>
+</section>
+
+<section class="block" id="games">
+  <h2 class="sec-title">热门小游戏</h2>
+  <p class="sec-sub">全部免下载 · 点开就玩 · 成绩自动保存</p>
+  <div class="grid" id="grid"></div>
+</section>
+
+<div class="about"><div class="about-in reveal"><div class="bf" id="bf"></div><div><h3>关于奶蛙</h3><p>黄黄圆圆、没有脖子、永远笑嘻嘻。这里的每款小游戏都是自研的，没有广告，也不收集任何隐私。</p></div></div></div>
+
+<footer class="site">
+  <div class="fl"><a href="/">首页</a><a href="#games">游戏</a><a href="/author.html">作者</a></div>
+  纯前端自研 · 无广告 · 不收集隐私 · 仅供娱乐
+</footer>
+
+<script src="/assets/frog.js"></script>
+<script src="/assets/nw.js"></script>
+<script>
+(function () {
+  var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
+  /* 主视觉：三个姿态 */
+  $('#hfa').innerHTML = F.svg({ pose: 'peace', mood: 'neutral', anim: true, id: 'hA_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
+  $('#hfb').innerHTML = F.svg({ pose: 'peace', mood: 'laugh', anim: true, id: 'hB_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
+  $('#bf').innerHTML = F.svg({ pose: 'stand', mood: 'laugh', crop: 'head', id: 'hC_' });
+  [['#fl1', '#F7C32B', 'laugh'], ['#fl2', '#8FD14F', 'neutral'], ['#fl3', '#FF7BAC', 'wow']].forEach(function (a) { $(a[0]).innerHTML = '<img alt="" style="width:100%" src="' + F.url(F.ball({ color: a[1], mood: a[2] })) + '">'; });
+
+  /* 点击大笑 */
+  var hf = $('#hf'), count = NW.store.get('laughs', 0), lc = $('#lc'), t1, t2, laughN = 0;
+  function showCount() { lc.textContent = count ? '你已经逗它笑了 ' + count + ' 次' : ''; }
+  showCount();
+  function laugh(e) {
+    count++; NW.store.set('laughs', count); showCount(); $('#tip').style.display = 'none';
+    NW.sfx.ha(laughN++ % 5); NW.vib(18);
+    hf.classList.remove('hop'); void hf.offsetWidth; hf.classList.add('hop'); hf.classList.add('laughing');
+    clearTimeout(t1); clearTimeout(t2); t2 = setTimeout(function () { hf.classList.remove('laughing'); }, 1100);
+    var r = hf.getBoundingClientRect(), cx = e && e.clientX ? e.clientX : r.left + r.width / 2, cy = e && e.clientY ? e.clientY : r.top + r.height * .3;
+    for (var i = 0; i < 6; i++) spark(cx, cy, i);
+    var h = document.createElement('div'); h.textContent = ['哈', '嘿', '哈哈', '嘻'][Math.floor(Math.random() * 4)];
+    h.style.cssText = 'position:fixed;z-index:60;pointer-events:none;font-weight:900;font-size:30px;color:#ff8a00;text-shadow:0 2px 0 #fff,0 0 8px #fff;left:' + (cx - 14 + (Math.random() * 60 - 30)) + 'px;top:' + (cy - 20) + 'px';
+    document.body.appendChild(h);
+    h.animate([{ transform: 'translateY(0) scale(.6)', opacity: 1 }, { transform: 'translateY(-70px) scale(1.3) rotate(' + (Math.random() * 30 - 15) + 'deg)', opacity: 0 }], { duration: 800, easing: 'ease-out' }).onfinish = function () { h.remove(); };
+  }
+  function spark(x, y, i) {
+    var s = document.createElement('i'), c = ['#FFD23F', '#7CC93E', '#FF9F43', '#fff', '#FF7BAC'][i % 5], a = Math.random() * 6.28, d = 50 + Math.random() * 60;
+    s.style.cssText = 'position:fixed;z-index:60;pointer-events:none;width:12px;height:12px;left:' + x + 'px;top:' + y + 'px;background:' + c + ';clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)';
+    document.body.appendChild(s);
+    s.animate([{ transform: 'translate(0,0) scale(1) rotate(0)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + (Math.sin(a) * d - 30) + 'px) scale(.2) rotate(240deg)', opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.2,.8,.4,1)' }).onfinish = function () { s.remove(); };
+  }
+  hf.addEventListener('pointerdown', laugh);
+  hf.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); laugh(); } });
+  $('#laughBtn').addEventListener('click', function (e) { laugh(); });
+
+  /* 游戏卡片（插画缩略图：用角色素材绘制，无 emoji） */
+  var B = function (c, m, extra) { return F.url(F.ball(Object.assign({ color: c, mood: m || 'neutral' }, extra || {}))); };
+  function im(src, st) { return '<img alt="" src="' + src + '" style="' + st + '">'; }
+  var frogUrl = F.url(F.svg({ id: 't1_', mood: 'laugh' })), peaceUrl = F.url(F.svg({ id: 't2_', pose: 'peace', mood: 'laugh' })), frogN = F.url(F.svg({ id: 't3_', mood: 'neutral' }));
+  var TH = {
+    laugh: '<div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 70%,#ffe27a 0 10deg,#ffd23f 10deg 20deg)"></div><div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 70%,rgba(255,255,255,.65),transparent 60%)"></div>' + im(peaceUrl, 'left:50%;bottom:-6%;height:104%;transform:translateX(-50%)').replace('<img', '<img class="t-pop"') + '<b style="position:absolute;left:8%;top:12%;font-size:1.7rem;color:#ff8a00;text-shadow:0 2px 0 #fff;transform:rotate(-12deg)">哈</b><b style="position:absolute;right:9%;top:20%;font-size:1.4rem;color:#ff6a3a;text-shadow:0 2px 0 #fff;transform:rotate(10deg)">哈哈</b>',
+    merge: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#bdeaff,#e8f8ff)"></div><div class="t-pop" style="position:absolute;left:14%;right:14%;top:12%;bottom:8%;border:4px solid #fff;border-top:0;border-radius:0 0 22px 22px;background:rgba(255,255,255,.45);box-shadow:inset 0 -10px 18px rgba(80,160,200,.25)">' +
+      im(B('#F7C32B', 'laugh', { crown: 1 }), 'left:22%;bottom:2%;width:56%') + im(B('#8FD14F'), 'left:-6%;bottom:2%;width:34%') + im(B('#FF9F43', 'wow'), 'right:-6%;bottom:2%;width:36%') + im(B('#FF7BAC'), 'left:6%;bottom:42%;width:24%') + im(B('#5CC8F2', 'laugh'), 'right:6%;bottom:46%;width:24%') + '</div>',
+    g2048: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#ffe9a8,#ffd266)"></div><div class="t-pop" style="position:absolute;left:18%;right:18%;top:12%;bottom:12%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:7px;border-radius:16px;background:#c98a07;box-shadow:0 6px 0 #9a6700">' +
+      [['2', '#fff3c4', '#8a6a20'], ['4', '#ffe38a', '#8a6a20'], ['8', '#ffb86a', '#fff'], ['', '#e2b84a', ''], ['16', '#ff9a5a', '#fff'], ['32', '#ff7a4a', '#fff'], ['', '#e2b84a', ''], ['64', '#ff5a5a', '#fff'], ['128', '#F7C32B', '#fff']].map(function (t) { return '<div style="border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:1.05rem;color:' + t[2] + ';background:' + t[1] + ';box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 2px 0 rgba(0,0,0,.15)">' + t[0] + '</div>'; }).join('') + '</div>',
+    match3: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#d9c8ff,#ffd6ec)"></div><div class="t-pop" style="position:absolute;left:12%;right:12%;top:10%;bottom:10%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:4px;padding:6px;border-radius:18px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px #fff">' +
+      ['#FF7BAC', '#5CC8F2', '#8FD14F', '#F7C32B', '#F7C32B', '#F7C32B', '#F7C32B', '#B28DFF', '#5CC8F2', '#FF7BAC', '#8FD14F', '#FF9F43'].map(function (c, i) { return '<div style="position:relative">' + im(B(c, i > 2 && i < 7 ? 'laugh' : 'neutral'), 'inset:0;width:100%;' + (i > 2 && i < 7 ? 'filter:drop-shadow(0 0 6px #fff)' : '')) + '</div>'; }).join('') + '</div>',
+    snake: '<div style="position:absolute;inset:0;background:conic-gradient(#c8f08a 25%,#b8e87a 0 50%,#c8f08a 0 75%,#b8e87a 0) 0 0/36px 36px"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      [[16, 66, 20], [28, 72, 22], [42, 66, 24], [56, 58, 26], [66, 44, 28]].map(function (p, i) { return im(B(i == 4 ? '#F7C32B' : '#FFD84A', i == 4 ? 'laugh' : 'neutral'), 'left:' + p[0] + '%;top:' + p[1] + '%;width:' + (p[2] + 6) + '%;transform:translate(-30%,-60%)'); }).join('') + im(B('#FF5A5A', 'neutral'), 'right:10%;top:18%;width:16%') + '</div>',
+    jump: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#8fdcff,#e8f8ff 70%,#d8f3a8)"></div><div class="t-pop" style="position:absolute;inset:0"><div style="position:absolute;left:6%;bottom:12%;width:30%;height:22%;border-radius:50%/40%;background:linear-gradient(180deg,#b6ea72,#7cc93e);box-shadow:0 12px 0 #4e9a1e"></div><div style="position:absolute;right:6%;bottom:22%;width:26%;height:20%;border-radius:50%/40%;background:linear-gradient(180deg,#ffd0a0,#ff9f43);box-shadow:0 12px 0 #c8721c"></div>' +
+      '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M24 52Q48 6 76 40" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-linecap="round"/></svg>' + im(frogN, 'left:38%;top:6%;width:20%;transform:rotate(-14deg)') + '</div>'
+  };
+  var G = [
+    ['laugh', '狂笑点按', '30 秒拼手速，点得越快它笑得越疯。', ['点按', '爽'], '热门'],
+    ['merge', '合成大奶蛙', '同款相撞升级，合出最大的金色奶蛙。', ['物理', '合成'], '推荐'],
+    ['g2048', '奶蛙 2048', '滑动合并，冲击 2048 与更高。', ['益智', '数字']],
+    ['match3', '奶蛙消消乐', '交换相邻奶蛙，连成三个就消除。', ['消除', '连击']],
+    ['snake', '贪吃蛙', '滑动控制方向，吃苍蝇越长越快。', ['经典', '街机']],
+    ['jump', '跳一跳', '长按蓄力松手起跳，落中心加分。', ['蓄力', '精准']]
+  ];
+  var tagc = ['y', 'b', 'p', ''];
+  $('#grid').innerHTML = G.map(function (g, i) {
+    var best = NW.store.get('best_' + g[0], 0);
+    return '<a class="card reveal" style="transition-delay:' + (i % 3) * 70 + 'ms" href="/' + g[0] + '/"><div class="thumb">' + TH[g[0]] + (g[4] ? '<span class="ribbon">' + g[4] + '</span>' : '') + (best ? '<span class="bestchip">最高 ' + best + '</span>' : '') + '</div><div class="info"><h3>' + g[1] + '</h3><p>' + g[2] + '</p><div class="foot"><span>' + g[3].map(function (t, k) { return '<span class="tag ' + tagc[(i + k) % 4] + '">' + t + '</span> '; }).join('') + '</span><span class="go"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span></div></div></a>';
+  }).join('');
+
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .12 }) : null;
+  document.querySelectorAll('.reveal').forEach(function (el) { io ? io.observe(el) : el.classList.add('in'); });
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) { a.addEventListener('click', function (e) { var t = document.querySelector(a.getAttribute('href')); if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }); });
+})();
+</script>
 </body>
 </html>

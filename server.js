@@ -54,7 +54,8 @@ function serveFile(req, res, file) {
 }
 
 const server = http.createServer((req, res) => {
-  const u = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  let u;
+  try { u = new URL(String(req.url || '/').replace(/^\/{2,}/, '/'), 'http://localhost'); } catch (e) { return send(res, 400, '错误的请求'); }
   let p = u.pathname;
 
   if (p === '/healthz' || p === '/health') {

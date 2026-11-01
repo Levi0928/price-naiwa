@@ -3,102 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#ffd54a">
-<title>狂笑点按 · 奶蛙</title>
+<meta name="theme-color" content="#bfeaff">
+<title>狂笑点按 · 奶蛙小游戏</title>
+<meta name="description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！奶蛙小游戏之狂笑点按。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css">
 <style>
-  .stage {
-    background: #fff; border: 1.5px solid var(--line); border-radius: 22px;
-    box-shadow: var(--shadow); min-height: 360px; display: grid; place-items: center;
-    position: relative; overflow: hidden; touch-action: manipulation; cursor: pointer;
-    user-select: none;
-  }
-  .frog {
-    width: clamp(140px, 42vw, 200px); height: auto; line-height: 0;
-    transition: transform .08s; will-change: transform;
-    filter: drop-shadow(0 10px 12px rgba(200,150,40,.3));
-  }
-  .frog img { width: 100%; height: auto; display: block; pointer-events: none; }
-  .frog.laugh { animation: shake .28s ease; }
-  @keyframes shake {
-    0% { transform: scale(1) rotate(0); }
-    25% { transform: scale(1.18) rotate(-8deg); }
-    50% { transform: scale(1.25) rotate(8deg); }
-    75% { transform: scale(1.12) rotate(-4deg); }
-    100% { transform: scale(1) rotate(0); }
-  }
-  .burst {
-    position: absolute; pointer-events: none; font-weight: 900; color: #e65100;
-    animation: floatUp .7s ease-out forwards; font-size: 1.1rem;
-  }
-  @keyframes floatUp {
-    from { opacity: 1; transform: translateY(0) scale(1); }
-    to { opacity: 0; transform: translateY(-60px) scale(1.3); }
-  }
-  .faces { font-size: 1.4rem; letter-spacing: 2px; margin-top: 10px; text-align: center; min-height: 1.6em; }
+.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #8fdcff 0%, #c9f0ff 55%, #e7f8c8 100%); box-shadow: 0 14px 30px rgba(120, 90, 0, .22), 0 0 0 4px #fff; touch-action: manipulation; }
+.scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
+.scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.grass { position: absolute; left: -5%; right: -5%; bottom: -2px; height: 22%; background: linear-gradient(180deg, #a9e566, #6bb82e); border-radius: 50% 50% 0 0 / 40% 40% 0 0; box-shadow: 0 -6px 0 rgba(255,255,255,.35); }
+.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 400 / 556; transform: translateX(-50%); }
+.fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
+.fwrap svg { position: absolute; inset: 0; opacity: 0; transition: opacity .06s; }
+.scene[data-m="idle"] .m-idle, .scene[data-m="laugh"] .m-laugh, .scene[data-m="cackle"] .m-cackle, .scene[data-m="peace"] .m-peace { opacity: 1; }
+.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 16px; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 0 0 2px #fff; overflow: hidden; z-index: 4; }
+.meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #ffe27a, #ff9f43); transition: width .1s; box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
+.scene.frenzy .meter i { background: linear-gradient(180deg, #ff9a6a, #ff5a5a); }
+.meter-l { position: absolute; left: 0; right: 0; top: 34px; text-align: center; font-weight: 900; font-size: .8rem; color: #b86a00; z-index: 4; letter-spacing: .1em; text-shadow: 0 1px 0 #fff; }
+.combo { position: absolute; right: 16px; top: 54px; z-index: 4; font-weight: 900; font-size: 1.7rem; color: #ff7a00; text-shadow: 0 2px 0 #fff, 0 0 8px #fff; transform-origin: 100% 50%; opacity: 0; }
+.combo.on { opacity: 1; animation: nwpop .2s; }
 </style>
 </head>
-<body>
-  <div class="game-shell">
-    <div class="game-top">
-      <a class="back" href="/">← 合集</a>
-      <h1>狂笑点按</h1>
-      <div class="score">笑点 <span id="score">0</span></div>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage">
+    <div class="scene" id="scene" data-m="idle">
+      <div class="meter"><i id="mt"></i></div><div class="meter-l" id="ml">笑意槽</div><div class="combo" id="cb"></div>
+      <div class="grass"></div>
+      <div class="fwrap"><div class="inner" id="fi"></div></div>
     </div>
-    <div class="stage" id="stage" role="button" aria-label="点按奶蛙狂笑" tabindex="0">
-      <div class="frog" id="frog">
-        <img id="frogImg" src="/assets/frog.svg" alt="金蛙">
-      </div>
-    </div>
-    <div class="faces" id="faces" aria-live="polite"></div>
-    <p class="hint">点青蛙！连点越多笑得越疯。按 R 重置。</p>
-    <p style="text-align:center;margin-top:12px"><button class="hud-btn" type="button" id="reset">重置</button></p>
-  </div>
+  </main>
+  <p class="nw-hint" id="hint">用力点奶蛙！点得越快，连击越高</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
 <script>
-(function(){
-  const faces = ['😆','🤣','😹','😜','😛','🤪','😂','✨'];
-  let score = 0, combo = 0, last = 0;
-  const frog = document.getElementById('frog');
-  const frogImg = document.getElementById('frogImg');
-  const stage = document.getElementById('stage');
-  const scoreEl = document.getElementById('score');
-  const facesEl = document.getElementById('faces');
-  const IDLE = '/assets/frog.svg';
-  const LAUGH = '/assets/frog-laugh.svg';
-
-  function tap(ev){
-    const now = performance.now();
-    combo = (now - last < 420) ? combo + 1 : 1;
-    last = now;
-    const add = 1 + Math.min(9, Math.floor(combo / 3));
-    score += add;
-    scoreEl.textContent = score;
-    frogImg.src = LAUGH;
-    frog.classList.remove('laugh');
-    void frog.offsetWidth;
-    frog.classList.add('laugh');
-    clearTimeout(tap._t);
-    tap._t = setTimeout(() => { frogImg.src = IDLE; }, 320);
-    facesEl.textContent = faces.slice(0, Math.min(8, 2 + combo)).join('');
-    const b = document.createElement('div');
-    b.className = 'burst';
-    b.textContent = '+' + add + (combo > 4 ? ' 狂笑!' : '');
-    const rect = stage.getBoundingClientRect();
-    const x = (ev.clientX != null ? ev.clientX : rect.left + rect.width/2) - rect.left;
-    const y = (ev.clientY != null ? ev.clientY : rect.top + rect.height/2) - rect.top;
-    b.style.left = x + 'px'; b.style.top = y + 'px';
-    stage.appendChild(b);
-    setTimeout(() => b.remove(), 700);
-    if (navigator.vibrate) try { navigator.vibrate(12); } catch(e){}
+(function () {
+  var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
+  var scene = $('#scene'), fi = $('#fi');
+  function layer(cls, o) { o.id = cls + '_'; return F.svg(o).replace('<svg ', '<svg class="' + cls + '" ').replace('class="nf-svg"', 'class="nf-svg ' + cls + '"'); }
+  fi.innerHTML = F.svg({ id: 'li_', anim: true }).replace('class="nf-svg nf-anim"', 'class="nf-svg nf-anim m-idle"') +
+    F.svg({ id: 'll_', mood: 'laugh' }).replace('class="nf-svg"', 'class="nf-svg m-laugh"') +
+    F.svg({ id: 'lc_', mood: 'cackle' }).replace('class="nf-svg"', 'class="nf-svg m-cackle"') +
+    F.svg({ id: 'lp_', mood: 'cackle', pose: 'peace' }).replace('class="nf-svg"', 'class="nf-svg m-peace"');
+  var fx = new NW.FX(), ov = NW.overlay(scene), DUR = 30;
+  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '30 秒内疯狂点奶蛙！连击越高得分越多，笑意槽满了进入 2 倍狂笑模式。', onStart: reset });
+  var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1;
+  function reset() { left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); upd(); }
+  function setM(m) { scene.dataset.m = m; }
+  function upd() { $('#mt').style.width = Math.min(100, meter) + '%'; $('#ml').textContent = frenzy > 0 ? '狂笑模式 ×2 ！' : '笑意槽'; scene.classList.toggle('frenzy', frenzy > 0); }
+  scene.addEventListener('pointerdown', function (e) {
+    var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (!G.running) { NW.sfx.tap(); setM('laugh'); squash(); clearTimeout(laughT); laughT = setTimeout(function () { setM('idle'); }, 700); return; }
+    var now = performance.now(); combo = (now - lastTap < 650) ? combo + 1 : 1; lastTap = now; maxCombo = Math.max(maxCombo, combo); taps++;
+    var mult = 1 + Math.floor(combo / 8), pts = mult * (frenzy > 0 ? 2 : 1);
+    G.setScore(G.score + pts);
+    meter += frenzy > 0 ? 0 : 5.5; if (meter >= 100 && frenzy <= 0) { frenzy = 5; meter = 100; NW.sfx.win(); NW.shake(scene, 12, 400); fx.burst(ov.w / 2, ov.h * .4, { count: 40, speed: 420, size: 10 }); fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 40, color: '#ff4a2a', life: 1.3 }); }
+    setM(frenzy > 0 ? 'peace' : (combo > 12 ? 'cackle' : 'laugh')); clearTimeout(laughT); laughT = setTimeout(function () { setM(frenzy > 0 ? 'peace' : 'idle'); }, 420);
+    squash(); NW.sfx.ha(hahaN++ % 6); NW.vib(12);
+    fx.burst(x, y, { count: 7 + Math.min(10, combo), speed: 260 });
+    fx.text(x + (Math.random() * 50 - 25), y - 20, ['哈', '哈哈', '嘿', '嘻嘻', '哈哈哈'][Math.floor(Math.random() * 5)], { size: 24 + Math.min(18, combo), color: ['#ff8a00', '#ff5a5a', '#e8a800', '#7cc93e'][hahaN % 4] });
+    var c = $('#cb'); if (combo >= 3) { c.textContent = '连击 ×' + combo; c.classList.remove('on'); void c.offsetWidth; c.classList.add('on'); }
+    if (combo > 0 && combo % 10 === 0) { NW.sfx.combo(combo / 10); fx.text(ov.w / 2, ov.h * .22, combo + ' 连击！', { size: 34, color: '#ff4a2a', life: 1.1 }); }
+    upd();
+  });
+  function squash() {
+    tilt = -tilt; fi.animate([{ transform: 'scale(1,1) rotate(0)' }, { transform: 'scale(1.1,.88) rotate(' + tilt * -2 + 'deg)', offset: .2 }, { transform: 'scale(.94,1.1) rotate(' + tilt * 3 + 'deg) translateY(-3%)', offset: .55 }, { transform: 'scale(1,1) rotate(0)' }], { duration: 260, easing: 'ease-out' });
   }
-  function reset(){
-    score = 0; combo = 0; scoreEl.textContent = '0'; facesEl.textContent = '';
-    frogImg.src = IDLE; frog.classList.remove('laugh');
+  var lt = performance.now();
+  function loop(t) {
+    var dt = Math.min(.05, (t - lt) / 1000); lt = t;
+    if (G.running) {
+      left -= dt; G.setExtra(Math.max(0, Math.ceil(left)));
+      if (frenzy > 0) { frenzy -= dt; meter = Math.max(0, frenzy / 5 * 100); if (frenzy <= 0) { frenzy = 0; meter = 0; setM('idle'); } upd(); }
+      else if (meter > 0) { meter = Math.max(0, meter - dt * 6); upd(); }
+      if (combo > 0 && performance.now() - lastTap > 650) { combo = 0; $('#cb').classList.remove('on'); }
+      if (left <= 0) { left = 0; setM('laugh'); G.over('30 秒内点了 ' + taps + ' 下，最高连击 ×' + maxCombo); }
+    }
+    fx.update(dt); ov.ctx.setTransform(ov.dpr, 0, 0, ov.dpr, 0, 0); ov.ctx.clearRect(0, 0, ov.w, ov.h); fx.draw(ov.ctx);
+    requestAnimationFrame(loop);
   }
-  stage.addEventListener('pointerdown', e => { e.preventDefault(); tap(e); });
-  stage.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tap(e); } });
-  document.getElementById('reset').onclick = reset;
-  window.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') reset(); });
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>

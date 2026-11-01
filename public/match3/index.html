@@ -3,150 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#ffd54a">
-<title>青蛙消消乐 · 奶蛙</title>
+<meta name="theme-color" content="#bfeaff">
+<title>奶蛙消消乐 · 奶蛙小游戏</title>
+<meta name="description" content="交换相邻的奶蛙，连成三个就消除！奶蛙小游戏之奶蛙消消乐。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！奶蛙小游戏之奶蛙消消乐。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css">
-<style>
-  .board {
-    display: grid; gap: 4px; background: #ffe9a8; padding: 8px; border-radius: 16px;
-    border: 1.5px solid var(--line); box-shadow: var(--shadow); touch-action: none; user-select: none;
-  }
-  .tile {
-    border-radius: 10px; display: grid; place-items: center;
-    background: #fff; cursor: pointer; aspect-ratio: 1; border: 2px solid transparent;
-    transition: transform .1s; padding: 0; overflow: hidden;
-  }
-  .tile img { width: 72%; height: 72%; object-fit: contain; pointer-events: none; }
-  .tile.sel { border-color: #ff9800; transform: scale(1.06); box-shadow: 0 0 0 2px #ffe082; }
-  .tile.pop { animation: pop .25s ease forwards; }
-  @keyframes pop { to { transform: scale(0); opacity: 0; } }
-</style>
 </head>
-<body>
-  <div class="game-shell">
-    <div class="game-top">
-      <a class="back" href="/">← 合集</a>
-      <h1>青蛙消消乐</h1>
-      <div class="score">分 <span id="score">0</span></div>
-    </div>
-    <div class="board" id="board"></div>
-    <p class="hint">点两只相邻同色青蛙交换；三连及以上消除。步数有限。</p>
-    <p class="hint">剩余步数 <strong id="moves">20</strong></p>
-    <p style="text-align:center;margin-top:8px"><button class="hud-btn" id="restart" type="button">重来</button></p>
-  </div>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
+  <p class="nw-hint" id="hint">点选一只，再点相邻的交换；也可以直接拖动</p>
+</div>
+<script src="/assets/frog.js"></script><script src="/assets/nw.js"></script>
 <script>
-(function(){
-  const N = 7;
-  // kinds: idle gold / laugh / green tint via bg / yellow / leaf
-  const ASSETS = [
-    '/assets/frog.svg',
-    '/assets/frog-laugh.svg',
-    '/assets/frog.svg',
-    '/assets/frog.svg',
-    '/assets/frog-laugh.svg',
-  ];
-  const COLORS = ['#fff8e7','#ffe082','#c8e6c9','#dcedc8','#ffcc80'];
-  let grid, score, moves, sel = null, busy = false;
-  const board = document.getElementById('board');
-  board.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
-
-  function rand(){ return Math.floor(Math.random()*ASSETS.length); }
-  function fillNoMatch(){
-    grid = Array.from({length:N}, () => Array(N).fill(0));
-    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
-      do { grid[r][c] = rand(); }
-      while ((c>=2 && grid[r][c]===grid[r][c-1] && grid[r][c]===grid[r][c-2]) ||
-             (r>=2 && grid[r][c]===grid[r-1][c] && grid[r][c]===grid[r-2][c]));
-    }
+(function () {
+  var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  var N = 7, TYPES = 6, MOVES0 = 25, COLORS = ['#F7C32B', '#8FD14F', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF9F43'], MOODS = ['laugh', 'neutral', 'wow', 'neutral', 'laugh', 'wow'];
+  var CS = 52, PAD = 10, W = N * CS + PAD * 2, H = W + 0;
+  var spr = COLORS.map(function (c, i) { return F.sprite(F.ball({ color: c, mood: MOODS[i] }), CS * 1.12, CS * 1.12); });
+  var sprHi = COLORS.map(function (c, i) { return F.sprite(F.ball({ color: c, mood: 'laugh' }), CS * 1.12, CS * 1.12); });
+  var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, goal, freeze = 0;
+  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻的两只奶蛙，横竖连成 3 只及以上就会消除。25 步内拿高分，连锁越多越高！', onStart: reset });
+  function rnd() { return Math.floor(Math.random() * TYPES); }
+  function reset() {
+    cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
+    moves = MOVES0; G.setScore(0, false); G.setExtra(moves); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null;
+    if (!findMove()) reshuffle();
   }
-  function render(){
-    board.innerHTML = '';
-    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
-      const d = document.createElement('button');
-      d.type = 'button'; d.className = 'tile';
-      d.style.background = COLORS[grid[r][c]];
-      const img = document.createElement('img');
-      img.src = ASSETS[grid[r][c]];
-      img.alt = '';
-      d.appendChild(img);
-      d.dataset.r = r; d.dataset.c = c;
-      if (sel && sel[0]===r && sel[1]===c) d.classList.add('sel');
-      d.onclick = () => click(r,c);
-      board.appendChild(d);
-    }
-    document.getElementById('score').textContent = score;
-    document.getElementById('moves').textContent = moves;
+  function mk(t, r, c, y0) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0 }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
+  function startMove(cl, kind, rows, delay) { cl.fx = cl.x; cl.fy = cl.y; cl.tt = -(delay || 0); cl.kind = kind; cl.dur = kind === 0 ? 220 : Math.min(380, 130 + 44 * rows); }
+  function bez(x1, y1, x2, y2) { return function (x) { var lo = 0, hi = 1, t = x; for (var i = 0; i < 18; i++) { var cx = 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t; if (cx < x) lo = t; else hi = t; t = (lo + hi) / 2; } return 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t; }; }
+  var easeQ = bez(.22, .9, .28, 1);
+  function resize() { var o = NW.fit(cv, box, W / H, 480); view.s = cv.width / W; }
+  window.addEventListener('resize', resize); resize();
+  function cellAt(e) { var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) / rc.width * W - PAD, y = (e.clientY - rc.top) / rc.height * H - PAD; var c = Math.floor(x / CS), r = Math.floor(y / CS); return (r < 0 || c < 0 || r >= N || c >= N) ? null : { r: r, c: c, x: x, y: y }; }
+  cv.addEventListener('pointerdown', function (e) {
+    if (!G.running || state !== 'idle') return; var p = cellAt(e); if (!p) return; hintT = 0; hint = null;
+    if (sel && Math.abs(sel.r - p.r) + Math.abs(sel.c - p.c) === 1) { var a = sel; sel = null; trySwap(a, p); return; }
+    sel = { r: p.r, c: p.c }; drag = { r: p.r, c: p.c, x: e.clientX, y: e.clientY }; NW.sfx.click();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!drag || state !== 'idle') return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, rc = cv.getBoundingClientRect(), th = rc.width / N * .35;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > th) { var tr = drag.r + (Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0), tc = drag.c + (Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0); var a = { r: drag.r, c: drag.c }; drag = null; sel = null; if (tr >= 0 && tc >= 0 && tr < N && tc < N) trySwap(a, { r: tr, c: tc }); }
+  });
+  window.addEventListener('pointerup', function () { drag = null; });
+  function swapCells(a, b, anim) { var t = cells[a.r][a.c]; cells[a.r][a.c] = cells[b.r][b.c]; cells[b.r][b.c] = t; if (anim) { startMove(cells[a.r][a.c], 0); startMove(cells[b.r][b.c], 0); } }
+  function trySwap(a, b) {
+    state = 'swap'; swapCells(a, b, true); NW.sfx.swap();
+    wait(235, function () {
+      var m = findMatches();
+      if (!m.length) { swapCells(a, b, true); NW.sfx.bad(); wait(235, function () { state = 'idle'; }); return; }
+      moves--; G.setExtra(moves); combo = 0; resolve(m);
+    });
   }
-  function findMatches(){
-    const kill = Array.from({length:N}, () => Array(N).fill(false));
-    let any = false;
-    for (let r=0;r<N;r++){
-      let run = 1;
-      for (let c=1;c<=N;c++){
-        if (c<N && grid[r][c]===grid[r][c-1]) run++;
-        else { if (run>=3){ for(let k=0;k<run;k++) kill[r][c-1-k]=true; any=true; } run=1; }
-      }
-    }
-    for (let c=0;c<N;c++){
-      let run = 1;
-      for (let r=1;r<=N;r++){
-        if (r<N && grid[r][c]===grid[r-1][c]) run++;
-        else { if (run>=3){ for(let k=0;k<run;k++) kill[r-1-k][c]=true; any=true; } run=1; }
-      }
-    }
-    return { kill, any };
+  var timers = []; function wait(ms, fn) { timers.push({ t: ms / 1000, fn: fn }); }
+  function findMatches() {
+    var mark = {}, groups = [], r, c, k;
+    for (r = 0; r < N; r++) { c = 0; while (c < N) { var t = cells[r][c] && cells[r][c].t, e = c; while (e + 1 < N && cells[r][e + 1] && cells[r][e + 1].t === t) e++; if (e - c >= 2) { var g = []; for (k = c; k <= e; k++) { mark[r + ',' + k] = 1; g.push([r, k]); } groups.push(g); } c = e + 1; } }
+    for (c = 0; c < N; c++) { r = 0; while (r < N) { var t2 = cells[r][c] && cells[r][c].t, e2 = r; while (e2 + 1 < N && cells[e2 + 1][c] && cells[e2 + 1][c].t === t2) e2++; if (e2 - r >= 2) { var g2 = []; for (k = r; k <= e2; k++) { mark[k + ',' + c] = 1; g2.push([k, c]); } groups.push(g2); } r = e2 + 1; } }
+    var res = []; for (var key in mark) { var p = key.split(','); res.push([+p[0], +p[1]]); } res.groups = groups; return res;
   }
-  function collapse(kill){
-    let gained = 0;
-    for (let c=0;c<N;c++){
-      const stack = [];
-      for (let r=N-1;r>=0;r--){
-        if (!kill[r][c]) stack.push(grid[r][c]);
-        else gained += 10;
-      }
-      for (let r=N-1;r>=0;r--){
-        grid[r][c] = stack.length ? stack.shift() : rand();
-      }
-    }
-    return gained;
+  function resolve(m) {
+    state = 'clear'; combo++; var pts = 0;
+    m.groups.forEach(function (g) { pts += (g.length - 2) * 30 + (g.length >= 4 ? 40 : 0) + (g.length >= 5 ? 80 : 0); });
+    pts = Math.round(pts * (1 + (combo - 1) * .6)); var cx = 0, cy = 0;
+    m.forEach(function (p) { var cl = cells[p[0]][p[1]]; cl.dead = true; cl.dying = 0; cx += cl.x; cy += cl.y; var px = PAD + cl.x + CS / 2, py = PAD + cl.y + CS / 2; fx.burst(px, py, { count: 7, speed: 230, colors: [COLORS[cl.t], '#fff', '#FFE27A'], size: 6 }); });
+    cx = PAD + cx / m.length + CS / 2; cy = PAD + cy / m.length + CS / 2;
+    G.setScore(G.score + pts); fx.text(cx, cy, '+' + pts, { size: 26 + combo * 2, color: combo > 1 ? '#ff4a2a' : '#e8a000' });
+    if (combo > 1) { fx.text(W / 2, H * .16, combo + ' 连消！', { size: 30 + combo * 3, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(combo); shakeT = .15 + combo * .04; } else NW.sfx.pop(Math.min(4, m.length - 3));
+    if (m.length >= 5) { fx.text(W / 2, H * .3, m.length >= 6 ? '太棒了！' : '很不错！', { size: 34, color: '#ff9f00', life: 1.1 }); NW.sfx.perfect(); }
+    NW.vib(10 + combo * 4); freeze = [.045, .062, .078][Math.min(2, combo - 1)];
+    wait(200, function () {
+      for (var c = 0; c < N; c++) { var col = []; for (var r = N - 1; r >= 0; r--) if (!cells[r][c].dead) col.push(cells[r][c]); var miss = N - col.length; for (var i = 0; i < miss; i++) { var nc = mk(rnd(), 0, c, -(i + 1) * CS); col.push(nc); } for (r = N - 1, i = 0; r >= 0; r--, i++) { var q = col[i], rows = Math.max(1, Math.round((r * CS - q.y) / CS)); cells[r][c] = q; if (Math.abs(q.y - r * CS) > 1) startMove(q, 1, rows, 0); } }
+      state = 'fall';
+    });
   }
-  async function resolve(){
-    busy = true;
-    for (;;){
-      const { kill, any } = findMatches();
-      if (!any) break;
-      const tiles = board.querySelectorAll('.tile');
-      tiles.forEach(t => { if (kill[+t.dataset.r][+t.dataset.c]) t.classList.add('pop'); });
-      await new Promise(r => setTimeout(r, 220));
-      score += collapse(kill);
-      render();
-      await new Promise(r => setTimeout(r, 80));
-    }
-    busy = false;
-    if (moves <= 0) document.getElementById('moves').textContent = '0（结束）';
+  function settle() {
+    var m = findMatches();
+    if (m.length) { resolve(m); return; }
+    combo = 0;
+    if (moves <= 0) { state = 'over'; wait(300, function () { state = 'idle'; G.over('25 步用完啦！'); }); return; }
+    if (!findMove()) { G.toast('没有可消除的了，重新洗牌'); reshuffle(); return; }
+    state = 'idle'; hintT = 0;
   }
-  function adj(a,b){ return Math.abs(a[0]-b[0]) + Math.abs(a[1]-b[1]) === 1; }
-  async function click(r,c){
-    if (busy || moves <= 0) return;
-    if (!sel){ sel = [r,c]; render(); return; }
-    if (sel[0]===r && sel[1]===c){ sel=null; render(); return; }
-    if (!adj(sel,[r,c])){ sel=[r,c]; render(); return; }
-    const [r0,c0] = sel; sel = null;
-    const t = grid[r0][c0]; grid[r0][c0]=grid[r][c]; grid[r][c]=t;
-    render();
-    const { any } = findMatches();
-    if (!any){
-      const t2 = grid[r0][c0]; grid[r0][c0]=grid[r][c]; grid[r][c]=t2;
-      await new Promise(r => setTimeout(r, 120));
-      render();
-      return;
-    }
-    moves--;
-    await resolve();
+  function reshuffle() { var all = []; cells.forEach(function (row) { row.forEach(function (c) { all.push(c.t); }); }); var tries = 0; do { all.sort(function () { return Math.random() - .5; }); var i = 0; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) cells[r][c].t = all[i++]; tries++; } while ((findMatches().length || !findMove()) && tries < 80); cells.forEach(function (row) { row.forEach(function (c) { c.sc = 0.3; }); }); }
+  function findMove() {
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var d = [[0, 1], [1, 0]]; for (var k = 0; k < 2; k++) { var r2 = r + d[k][0], c2 = c + d[k][1]; if (r2 >= N || c2 >= N) continue; swapCells({ r: r, c: c }, { r: r2, c: c2 }); var ok = findMatches().length > 0; swapCells({ r: r, c: c }, { r: r2, c: c2 }); if (ok) return [{ r: r, c: c }, { r: r2, c: c2 }]; } }
+    return null;
   }
-  function reset(){ score=0; moves=20; sel=null; fillNoMatch(); render(); }
-  document.getElementById('restart').onclick = reset;
-  reset();
+  var last = performance.now();
+  function frame(t) {
+    var dt = Math.min(.033, (t - last) / 1000); last = t;
+    if (freeze > 0) { freeze -= dt; dt = 0; }
+    for (var i = timers.length - 1; i >= 0; i--) { timers[i].t -= dt; if (timers[i].t <= 0) { var f = timers.splice(i, 1)[0].fn; f(); } }
+    if (cells) {
+      var moving = false;
+      for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var cl = cells[r][c]; if (!cl) continue; var tx = c * CS, ty = r * CS;
+        if (cl.dur > 0) { cl.tt += dt * 1000; if (cl.tt >= cl.dur) { cl.x = tx; cl.y = ty; if (cl.kind === 1) { cl.sc = .8; if (!cl.silent) {} } cl.dur = 0; } else if (cl.tt > 0) { var k = cl.tt / cl.dur, e = cl.kind === 0 ? easeQ(k) : k * k * (1.4 - .4 * k); cl.x = cl.fx + (tx - cl.fx) * e; cl.y = cl.fy + (ty - cl.fy) * e; } moving = true; }
+        else { cl.x = tx; cl.y = ty; }
+        if (cl.dead) { cl.dying += dt; moving = true; var pq = Math.min(1, cl.dying / .2); cl.pq = pq; cl.sc = pq < .42 ? 1 + .3 * (pq / .42) : pq < .72 ? 1.3 - .5 * ((pq - .42) / .3) : .8 * (1 - (pq - .72) / .28); cl.rot = pq < .42 ? -.12 * (pq / .42) : pq < .72 ? -.12 + .22 * ((pq - .42) / .3) : .1 + .15 * ((pq - .72) / .28); cl.a = pq < .72 ? 1 : 1 - (pq - .72) / .28; }
+        else cl.sc += (1 - cl.sc) * Math.min(1, dt * 14); }
+      if (state === 'fall' && !moving) settle();
+      if (state === 'idle' && G.running) { hintT += dt; if (hintT > 5 && !hint) hint = findMove(); }
+    }
+    fx.update(dt); draw(t); requestAnimationFrame(frame);
+  }
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function draw(t) {
+    var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
+    if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
+    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255,255,255,.7)'); g.addColorStop(1, 'rgba(255,240,190,.85)'); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 6; rr(c, 3, 3, W - 6, H - 6, 24); c.stroke();
+    for (var r = 0; r < N; r++) for (var cc = 0; cc < N; cc++) { c.fillStyle = (r + cc) % 2 ? 'rgba(247,195,43,.18)' : 'rgba(124,201,62,.16)'; rr(c, PAD + cc * CS + 2, PAD + r * CS + 2, CS - 4, CS - 4, 12); c.fill(); }
+    if (!cells) { c.restore(); return; }
+    c.save(); c.beginPath(); rr(c, PAD - 4, PAD - 4, N * CS + 8, N * CS + 8, 18); c.clip();
+    for (r = 0; r < N; r++) for (cc = 0; cc < N; cc++) {
+      var cl = cells[r][cc]; if (!cl || cl.sc <= .01) continue; var s = spr[cl.t], sz = s.__w;
+      var sel_ = sel && sel.r === r && sel.c === cc, hn = hint && ((hint[0].r === r && hint[0].c === cc) || (hint[1].r === r && hint[1].c === cc));
+      var sc = cl.sc * (sel_ ? 1.12 + Math.sin(t / 120) * .03 : 1) * (hn ? 1 + Math.sin(t / 150) * .07 : 1);
+      var px = PAD + cl.x + CS / 2, py = PAD + cl.y + CS / 2; c.globalAlpha = cl.a == null ? 1 : cl.a;
+      if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = '#7CC93E'; c.lineWidth = 3; c.stroke(); }
+      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .52, sz, sz); c.filter = 'none'; c.restore(); c.globalAlpha = 1;
+    }
+    c.restore(); fx.draw(c); c.restore();
+  }
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>

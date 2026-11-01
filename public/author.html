@@ -3,39 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#ffd54a">
+<meta name="theme-color" content="#bfeaff">
 <title>作者 · 奶蛙小游戏</title>
+<meta name="description" content="奶蛙小游戏的作者页，信息稍后填写。">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="作者 · 奶蛙小游戏"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css">
+<style>
+body.lobby { min-height: 100vh; min-height: 100dvh; background: linear-gradient(180deg, #8fd6ff 0, #d3f1ff 30%, #fff6d6 62%, #d8f2a8 100%) fixed; }
+.au { max-width: 520px; margin: 0 auto; padding: 96px 16px 40px; }
+.au-card { position: relative; padding: 70px 22px 22px; border-radius: 30px; background: linear-gradient(180deg, #fffdf2, #fff3c4); box-shadow: 0 16px 34px rgba(120, 90, 0, .2), 0 0 0 3px #fff; text-align: center; margin-top: 70px; }
+.au-frog { position: absolute; left: 50%; top: -88px; width: 120px; transform: translateX(-50%); animation: nfidle 3.2s ease-in-out infinite; }
+.au-card h1 { margin: 0 0 6px; font-size: 1.6rem; font-weight: 900; color: #6a4400; }
+.au-card > p { margin: 0 0 14px; color: #8a6a20; font-weight: 600; font-size: .92rem; }
+.slot { text-align: left; padding: 12px 16px; margin: 10px 0; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 2px #ffe58a; color: #a8935a; font-weight: 600; font-size: .92rem; }
+.slot strong { display: block; color: #6a4400; font-size: .85rem; margin-bottom: 2px; }
+.au .row { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.note { margin-top: 14px; font-size: .8rem; color: #a8935a; }
+</style>
 </head>
-<body>
-  <div class="wrap">
-    <a class="back" href="/">← 返回合集</a>
-    <div class="panel">
-      <div style="width:72px;height:86px;margin-bottom:8px" aria-hidden="true">
-        <img src="/assets/frog.svg" alt="" width="72" height="86" style="width:100%;height:100%;object-fit:contain">
-      </div>
-      <h1>作者页</h1>
-      <p style="margin:0 0 8px;color:var(--muted)">作者信息稍后填写。下面先留空壳，Levi 之后按自己的来填。</p>
-
-      <div class="slot">
-        <strong>姓名 / 昵称</strong>
-        （待填写）
-      </div>
-      <div class="slot">
-        <strong>简介</strong>
-        （待填写）
-      </div>
-      <div class="slot">
-        <strong>联系方式</strong>
-        （待填写：邮箱 / 社交账号 / 主页链接）
-      </div>
-
-      <p style="margin:16px 0 0;font-size:.85rem;color:var(--muted)">本合集游戏均为自研前端作品，与其他网站无关。</p>
-      <p style="margin:12px 0 0">
-        <a class="btn" href="/">回游戏列表</a>
-        <a class="btn ghost" href="/" style="margin-left:8px">首页</a>
-      </p>
-    </div>
+<body class="lobby">
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="">奶蛙小游戏</a>
+  <a class="lnk" href="/">首页</a><a class="lnk" href="/#games">游戏</a><a class="lnk on" href="/author.html">作者</a>
+</div></header>
+<main class="au">
+  <div class="au-card">
+    <div class="au-frog" id="af" aria-hidden="true"></div>
+    <h1>作者页</h1>
+    <p>作者信息稍后填写。下面先留空壳，Levi 之后按自己的来填。</p>
+    <div class="slot"><strong>姓名 / 昵称</strong>（待填写）</div>
+    <div class="slot"><strong>简介</strong>（待填写）</div>
+    <div class="slot"><strong>联系方式</strong>（待填写：邮箱 / 社交账号 / 主页链接）</div>
+    <p class="note">本合集游戏均为自研前端作品，与其他网站无关。</p>
+    <div class="row"><a class="btn green" href="/#games">回游戏列表</a><a class="btn white" href="/">首页</a></div>
   </div>
+</main>
+<footer class="site">
+  <div class="fl"><a href="/">首页</a><a href="/#games">游戏</a><a href="/author.html">作者</a></div>
+  纯前端自研 · 无广告 · 不收集隐私 · 仅供娱乐
+</footer>
+<script src="/assets/frog.js"></script>
+<script>document.getElementById('af').innerHTML = NaiwaFrog.svg({ pose: 'peace', mood: 'laugh', width: 120 });</script>
 </body>
 </html>
