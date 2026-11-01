@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="奶蛙小游戏 · 点一下就笑的黄色小胖蛙">
-<meta property="og:description" content="6 款免下载小游戏，手机浏览器直接玩。">
+<meta property="og:description" content="13 款免下载小游戏，手机浏览器直接玩。">
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <meta property="og:url" content="https://price-naiwa.onrender.com/">
 <meta name="twitter:card" content="summary_large_image">
@@ -29,7 +29,7 @@
   <div class="float" style="left:16%;top:62%;width:30px;animation-delay:-4s" id="fl3"></div>
   <div class="txt">
     <h1>奶蛙<span>小游戏</span></h1>
-    <p class="sub">一只软糯糯的黄色小胖蛙，带你笑着玩 6 款小游戏。点它一下试试？</p>
+    <p class="sub">一只软糯糯的黄色小胖蛙，带你笑着玩 13 款小游戏。点它一下试试？</p>
     <div class="hero-cta"><a class="btn green big" href="#games">开始玩</a><button class="btn white big" id="laughBtn" type="button">逗它笑</button></div>
     <div class="laugh-count" id="lc"></div>
   </div>
@@ -61,7 +61,7 @@
   /* 主视觉：三个姿态 */
   $('#hfa').innerHTML = F.svg({ pose: 'peace', mood: 'neutral', anim: true, id: 'hA_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
   $('#hfb').innerHTML = F.svg({ pose: 'peace', mood: 'laugh', anim: true, id: 'hB_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
-  $('#bf').innerHTML = F.svg({ pose: 'stand', mood: 'laugh', crop: 'head', id: 'hC_' });
+  $('#bf').innerHTML = F.bust({ mood: 'laugh', size: 96 });
   [['#fl1', '#F7C32B', 'laugh'], ['#fl2', '#8FD14F', 'neutral'], ['#fl3', '#FF7BAC', 'wow']].forEach(function (a) { $(a[0]).innerHTML = '<img alt="" style="width:100%" src="' + F.url(F.ball({ color: a[1], mood: a[2] })) + '">'; });
 
   /* 点击大笑 */
@@ -105,7 +105,23 @@
     snake: '<div style="position:absolute;inset:0;background:conic-gradient(#c8f08a 25%,#b8e87a 0 50%,#c8f08a 0 75%,#b8e87a 0) 0 0/36px 36px"></div><div class="t-pop" style="position:absolute;inset:0">' +
       [[16, 66, 20], [28, 72, 22], [42, 66, 24], [56, 58, 26], [66, 44, 28]].map(function (p, i) { return im(B(i == 4 ? '#F7C32B' : '#FFD84A', i == 4 ? 'laugh' : 'neutral'), 'left:' + p[0] + '%;top:' + p[1] + '%;width:' + (p[2] + 6) + '%;transform:translate(-30%,-60%)'); }).join('') + im(B('#FF5A5A', 'neutral'), 'right:10%;top:18%;width:16%') + '</div>',
     jump: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#8fdcff,#e8f8ff 70%,#d8f3a8)"></div><div class="t-pop" style="position:absolute;inset:0"><div style="position:absolute;left:6%;bottom:12%;width:30%;height:22%;border-radius:50%/40%;background:linear-gradient(180deg,#b6ea72,#7cc93e);box-shadow:0 12px 0 #4e9a1e"></div><div style="position:absolute;right:6%;bottom:22%;width:26%;height:20%;border-radius:50%/40%;background:linear-gradient(180deg,#ffd0a0,#ff9f43);box-shadow:0 12px 0 #c8721c"></div>' +
-      '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M24 52Q48 6 76 40" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-linecap="round"/></svg>' + im(frogN, 'left:38%;top:6%;width:20%;transform:rotate(-14deg)') + '</div>'
+      '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M24 52Q48 6 76 40" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3" stroke-linecap="round"/></svg>' + im(frogN, 'left:38%;top:6%;width:20%;transform:rotate(-14deg)') + '</div>',
+    milkrain: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#a9e0ff,#e8f8ff 75%,#c9f08f)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      [[16, 10, '#fff', 20], [38, 30, '#FFF3C4', 17], [62, 8, '#fff', 19], [80, 34, '#FFF3C4', 17], [50, 52, '#fff', 15]].map(function (d) { return '<div style="position:absolute;left:' + d[0] + '%;top:' + d[1] + '%;width:' + d[3] + 'px;height:' + (d[3] * 1.15) + 'px;border-radius:50% 50% 50% 50%/62% 62% 40% 40%;background:linear-gradient(160deg,' + d[2] + ',#ffe9a0);box-shadow:inset -3px -4px 0 rgba(255,190,60,.45),0 3px 0 rgba(0,0,0,.08);transform:rotate(' + (d[0] % 3 * 6 - 6) + 'deg)"></div>'; }).join('') + im(frogN, 'left:50%;bottom:-8%;height:56%;transform:translateX(-50%)') + '<div style="position:absolute;left:30%;right:30%;bottom:2%;height:10px;border-radius:6px;background:rgba(255,255,255,.7)"></div></div>',
+    breakout: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#2d3a8c,#5a4bd1)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      ['#FF7BAC', '#FF9F43', '#F7C32B', '#8FD14F', '#5CC8F2'].map(function (col, r) { return '<div style="position:absolute;left:8%;right:8%;top:' + (10 + r * 11) + '%;height:9%;display:flex;gap:3px">' + [0, 1, 2, 3, 4].map(function (k) { return (r === 1 && k === 2) || (r === 3 && k === 1) ? '<i style="flex:1"></i>' : '<i style="flex:1;border-radius:5px;background:linear-gradient(180deg,rgba(255,255,255,.55),' + col + ' 40%);box-shadow:0 2px 0 rgba(0,0,0,.22)"></i>'; }).join('') + '</div>'; }).join('') +
+      im(B('#F7C32B', 'laugh'), 'left:56%;top:60%;width:15%') + '<div style="position:absolute;left:24%;width:40%;bottom:9%;height:11px;border-radius:8px;background:linear-gradient(180deg,#fff,#cfd6ff);box-shadow:0 3px 0 rgba(0,0,0,.25)"></div></div>',
+    tetris: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#ffe9a8,#ffc86a)"></div><div class="t-pop" style="position:absolute;left:27%;right:27%;top:7%;bottom:5%;border-radius:12px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 3px #fff;padding:3px"><svg viewBox="0 0 40 52" style="width:100%;height:100%">' +
+      ['..........', '..........', '..........', '....PP....', '...PPPP...', '..........', '..........', '..........', '.......C..', 'G......C.O', 'G.B....CCO', 'GGB..PPPOO', 'GBBY.PRPOG', 'GBYYRRRRYG'].map(function (row, y) { return row.split('').map(function (ch, x) { var col = { P: '#B28DFF', C: '#5CC8F2', G: '#8FD14F', B: '#5CC8F2', O: '#FF9F43', Y: '#F7C32B', R: '#FF7BAC' }[ch]; return col ? '<rect x="' + (x * 4 + .3) + '" y="' + (y * 3.7 + .2) + '" width="3.4" height="3.3" rx="1" fill="' + col + '"/>' : ''; }).join(''); }).join('') + '</svg></div>' + im(B('#F7C32B', 'laugh'), 'left:5%;top:14%;width:19%') + im(B('#FF7BAC', 'wow'), 'right:4%;bottom:10%;width:19%'),
+    tilematch: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#c6f0a0,#8fd14f)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      [[22, 20, '#F7C32B', 'laugh', -6], [44, 14, '#FF7BAC', 'neutral', 4], [64, 24, '#5CC8F2', 'wow', -3], [30, 38, '#FF7BAC', 'wow', 5], [52, 36, '#F7C32B', 'neutral', -4], [14, 44, '#5CC8F2', 'laugh', 6]].map(function (t) { return '<div style="position:absolute;left:' + t[0] + '%;top:' + t[1] + '%;width:26%;aspect-ratio:1;border-radius:14px;background:linear-gradient(180deg,#fff,#f3ecd4);box-shadow:0 4px 0 #b9b08a,0 7px 8px rgba(0,0,0,.14);transform:rotate(' + t[4] + 'deg)">' + im(B(t[2], t[3]), 'left:10%;top:10%;width:80%') + '</div>'; }).join('') +
+      '<div style="position:absolute;left:10%;right:10%;bottom:6%;height:20%;border-radius:12px;background:rgba(120,90,40,.55);display:flex;gap:4px;padding:4px">' + ['#F7C32B', '#F7C32B', ''].map(function (q) { return '<div style="flex:1;border-radius:8px;background:' + (q ? 'linear-gradient(180deg,#fff,#f3ecd4)' : 'rgba(0,0,0,.18)') + '">' + (q ? im(B(q, 'laugh'), 'position:static;width:80%;margin:6% 10%') : '') + '</div>'; }).join('') + '</div></div>',
+    bubble: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#7fd3ff,#cfeeff)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      ['#FF7BAC', '#FF7BAC', '#5CC8F2', '#8FD14F', '#8FD14F', '#F7C32B', '#B28DFF', '#FF7BAC', '#5CC8F2'].map(function (col, i) { var r = Math.floor(i / 4), k = i % 4; return '<div style="position:absolute;left:' + (11 + k * 20 + (r % 2) * 10) + '%;top:' + (8 + r * 17) + '%;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff,' + col + ' 38%);box-shadow:inset -4px -5px 0 rgba(0,0,0,.12),0 3px 0 rgba(0,0,0,.08)"></div>'; }).join('') + im(B('#F7C32B', 'laugh'), 'left:41%;bottom:6%;width:22%') + '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M52 62V38" stroke="#fff" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg></div>',
+    gomoku: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#ffe0a0,#f3b75a)"></div><div class="t-pop" style="position:absolute;left:14%;right:14%;top:8%;bottom:8%;border-radius:12px;background:#f5cf80;box-shadow:0 5px 0 #b98324,inset 0 0 0 3px #e8b45a;background-image:linear-gradient(rgba(120,70,0,.55) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(120,70,0,.55) 1.5px,transparent 1.5px);background-size:25% 25%;background-position:6% 6%">' +
+      [[12, 12, 0], [37, 12, 1], [37, 37, 0], [62, 37, 1], [62, 62, 0], [12, 62, 1], [37, 62, 0], [12, 37, 1], [62, 12, 0]].map(function (s) { return '<i style="position:absolute;left:' + (s[0] - 1) + '%;top:' + (s[1] - 1) + '%;width:22%;aspect-ratio:1;border-radius:50%;background:' + (s[2] ? 'radial-gradient(circle at 32% 28%,#fff,#ece6d4 55%,#c9c0a4)' : 'radial-gradient(circle at 32% 28%,#777,#1d1d22 60%)') + ';box-shadow:0 3px 3px rgba(0,0,0,.3)"></i>'; }).join('') + '</div>' + im(B('#F7C32B', 'laugh'), 'right:3%;bottom:4%;width:22%'),
+    gravity2048: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#cfe9ff,#9fc5ff)"></div><div class="t-pop" style="position:absolute;left:12%;right:12%;top:8%;bottom:8%;border-radius:20px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px #fff">' +
+      [[8, 52, '#F7C32B', 34, 'laugh'], [40, 56, '#FF9F43', 30, 'neutral'], [68, 60, '#FF7BAC', 24, 'wow'], [26, 18, '#8FD14F', 26, 'neutral'], [60, 26, '#5CC8F2', 24, 'laugh']].map(function (b) { return im(B(b[2], b[4]), 'left:' + b[0] + '%;top:' + b[1] + '%;width:' + b[3] + '%'); }).join('') + '<svg style="position:absolute;right:8px;top:8px;width:26px;height:26px" viewBox="0 0 24 24"><path d="M12 4v13M6 12l6 6 6-6" fill="none" stroke="#3b6fd8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
   };
   var G = [
     ['laugh', '狂笑点按', '30 秒拼手速，点得越快它笑得越疯。', ['点按', '爽'], '热门'],
@@ -113,13 +129,20 @@
     ['g2048', '奶蛙 2048', '滑动合并，冲击 2048 与更高。', ['益智', '数字']],
     ['match3', '奶蛙消消乐', '交换相邻奶蛙，连成三个就消除。', ['消除', '连击']],
     ['snake', '贪吃蛙', '滑动控制方向，吃苍蝇越长越快。', ['经典', '街机']],
-    ['jump', '跳一跳', '长按蓄力松手起跳，落中心加分。', ['蓄力', '精准']]
+    ['jump', '跳一跳', '长按蓄力松手起跳，落中心加分。', ['蓄力', '精准']],
+    ['milkrain', '奶滴接接乐', '拖动小蛙，接住从天而降的奶块。', ['接物', '反应'], '新'],
+    ['breakout', '奶蛙打砖块', '弹球反弹，打光所有彩色砖块。', ['街机', '反弹'], '新'],
+    ['tetris', '俄罗斯奶块', '旋转堆叠，消除整行，越玩越快。', ['经典', '方块']],
+    ['tilematch', '奶了个蛙', '三消叠叠乐：点牌入槽，三张相同就消除。', ['三消', '烧脑']],
+    ['bubble', '泡泡奶蛙', '瞄准发射，三个同色泡泡一起炸。', ['泡泡龙', '瞄准']],
+    ['gomoku', '奶蛙五子棋', '人机对战，先连成五子的获胜。', ['棋类', '人机']],
+    ['gravity2048', '重力 2048', '滑动改变重力，让奶蛙滚在一起合并。', ['物理', '数字'], '新']
   ];
   var tagc = ['y', 'b', 'p', ''];
   $('#grid').innerHTML = G.map(function (g, i) {
     var best = NW.store.get('best_' + g[0], 0);
     return '<a class="card reveal" style="transition-delay:' + (i % 3) * 70 + 'ms" href="/' + g[0] + '/"><div class="thumb">' + TH[g[0]] + (g[4] ? '<span class="ribbon">' + g[4] + '</span>' : '') + (best ? '<span class="bestchip">最高 ' + best + '</span>' : '') + '</div><div class="info"><h3>' + g[1] + '</h3><p>' + g[2] + '</p><div class="foot"><span>' + g[3].map(function (t, k) { return '<span class="tag ' + tagc[(i + k) % 4] + '">' + t + '</span> '; }).join('') + '</span><span class="go"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span></div></div></a>';
-  }).join('');
+  }).join('') + '<div class="card reveal soon" style="transition-delay:70ms;border:3px dashed #f0cf6a;background:rgba(255,255,255,.55);box-shadow:none;display:grid;place-items:center;text-align:center;padding:18px"><div><div style="width:84px;margin:0 auto 8px">' + F.bust({ mood: 'neutral', size: 84 }) + '</div><h3 style="margin:0;font-weight:900;color:#6a4400">更多游戏</h3><p style="margin:4px 0 0;font-size:.85rem;color:#a8935a;font-weight:600">奶蛙还在偷偷做新游戏<br>敬请期待</p></div></div>';
 
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .12 }) : null;
   document.querySelectorAll('.reveal').forEach(function (el) { io ? io.observe(el) : el.classList.add('in'); });
