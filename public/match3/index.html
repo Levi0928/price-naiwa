@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffd54a">
+<title>青蛙消消乐 · 奶蛙</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .board {
+    display: grid; gap: 4px; background: #ffe9a8; padding: 8px; border-radius: 16px;
+    border: 1.5px solid var(--line); box-shadow: var(--shadow); touch-action: none; user-select: none;
+  }
+  .tile {
+    border-radius: 10px; display: grid; place-items: center;
+    background: #fff; cursor: pointer; aspect-ratio: 1; border: 2px solid transparent;
+    transition: transform .1s; padding: 0; overflow: hidden;
+  }
+  .tile img { width: 72%; height: 72%; object-fit: contain; pointer-events: none; }
+  .tile.sel { border-color: #ff9800; transform: scale(1.06); box-shadow: 0 0 0 2px #ffe082; }
+  .tile.pop { animation: pop .25s ease forwards; }
+  @keyframes pop { to { transform: scale(0); opacity: 0; } }
+</style>
+</head>
+<body>
+  <div class="game-shell">
+    <div class="game-top">
+      <a class="back" href="/">← 合集</a>
+      <h1>青蛙消消乐</h1>
+      <div class="score">分 <span id="score">0</span></div>
+    </div>
+    <div class="board" id="board"></div>
+    <p class="hint">点两只相邻同色青蛙交换；三连及以上消除。步数有限。</p>
+    <p class="hint">剩余步数 <strong id="moves">20</strong></p>
+    <p style="text-align:center;margin-top:8px"><button class="hud-btn" id="restart" type="button">重来</button></p>
+  </div>
+<script>
+(function(){
+  const N = 7;
+  // kinds: idle gold / laugh / green tint via bg / yellow / leaf
+  const ASSETS = [
+    '/assets/frog.svg',
+    '/assets/frog-laugh.svg',
+    '/assets/frog.svg',
+    '/assets/frog.svg',
+    '/assets/frog-laugh.svg',
+  ];
+  const COLORS = ['#fff8e7','#ffe082','#c8e6c9','#dcedc8','#ffcc80'];
+  let grid, score, moves, sel = null, busy = false;
+  const board = document.getElementById('board');
+  board.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+
+  function rand(){ return Math.floor(Math.random()*ASSETS.length); }
+  function fillNoMatch(){
+    grid = Array.from({length:N}, () => Array(N).fill(0));
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
+      do { grid[r][c] = rand(); }
+      while ((c>=2 && grid[r][c]===grid[r][c-1] && grid[r][c]===grid[r][c-2]) ||
+             (r>=2 && grid[r][c]===grid[r-1][c] && grid[r][c]===grid[r-2][c]));
+    }
+  }
+  function render(){
+    board.innerHTML = '';
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
+      const d = document.createElement('button');
+      d.type = 'button'; d.className = 'tile';
+      d.style.background = COLORS[grid[r][c]];
+      const img = document.createElement('img');
+      img.src = ASSETS[grid[r][c]];
+      img.alt = '';
+      d.appendChild(img);
+      d.dataset.r = r; d.dataset.c = c;
+      if (sel && sel[0]===r && sel[1]===c) d.classList.add('sel');
+      d.onclick = () => click(r,c);
+      board.appendChild(d);
+    }
+    document.getElementById('score').textContent = score;
+    document.getElementById('moves').textContent = moves;
+  }
+  function findMatches(){
+    const kill = Array.from({length:N}, () => Array(N).fill(false));
+    let any = false;
+    for (let r=0;r<N;r++){
+      let run = 1;
+      for (let c=1;c<=N;c++){
+        if (c<N && grid[r][c]===grid[r][c-1]) run++;
+        else { if (run>=3){ for(let k=0;k<run;k++) kill[r][c-1-k]=true; any=true; } run=1; }
+      }
+    }
+    for (let c=0;c<N;c++){
+      let run = 1;
+      for (let r=1;r<=N;r++){
+        if (r<N && grid[r][c]===grid[r-1][c]) run++;
+        else { if (run>=3){ for(let k=0;k<run;k++) kill[r-1-k][c]=true; any=true; } run=1; }
+      }
+    }
+    return { kill, any };
+  }
+  function collapse(kill){
+    let gained = 0;
+    for (let c=0;c<N;c++){
+      const stack = [];
+      for (let r=N-1;r>=0;r--){
+        if (!kill[r][c]) stack.push(grid[r][c]);
+        else gained += 10;
+      }
+      for (let r=N-1;r>=0;r--){
+        grid[r][c] = stack.length ? stack.shift() : rand();
+      }
+    }
+    return gained;
+  }
+  async function resolve(){
+    busy = true;
+    for (;;){
+      const { kill, any } = findMatches();
+      if (!any) break;
+      const tiles = board.querySelectorAll('.tile');
+      tiles.forEach(t => { if (kill[+t.dataset.r][+t.dataset.c]) t.classList.add('pop'); });
+      await new Promise(r => setTimeout(r, 220));
+      score += collapse(kill);
+      render();
+      await new Promise(r => setTimeout(r, 80));
+    }
+    busy = false;
+    if (moves <= 0) document.getElementById('moves').textContent = '0（结束）';
+  }
+  function adj(a,b){ return Math.abs(a[0]-b[0]) + Math.abs(a[1]-b[1]) === 1; }
+  async function click(r,c){
+    if (busy || moves <= 0) return;
+    if (!sel){ sel = [r,c]; render(); return; }
+    if (sel[0]===r && sel[1]===c){ sel=null; render(); return; }
+    if (!adj(sel,[r,c])){ sel=[r,c]; render(); return; }
+    const [r0,c0] = sel; sel = null;
+    const t = grid[r0][c0]; grid[r0][c0]=grid[r][c]; grid[r][c]=t;
+    render();
+    const { any } = findMatches();
+    if (!any){
+      const t2 = grid[r0][c0]; grid[r0][c0]=grid[r][c]; grid[r][c]=t2;
+      await new Promise(r => setTimeout(r, 120));
+      render();
+      return;
+    }
+    moves--;
+    await resolve();
+  }
+  function reset(){ score=0; moves=20; sel=null; fillNoMatch(); render(); }
+  document.getElementById('restart').onclick = reset;
+  reset();
+})();
+</script>
+</body>
+</html>

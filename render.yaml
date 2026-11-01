@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: price-naiwa
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: "true"
+    startCommand: npm start
+    healthCheckPath: /healthz
+    numInstances: 1

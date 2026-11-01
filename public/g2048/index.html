@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffd54a">
+<title>青蛙 2048 · 奶蛙</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .board {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    background: #ffe9a8; padding: 10px; border-radius: 18px; border: 1.5px solid var(--line);
+    box-shadow: var(--shadow); aspect-ratio: 1; touch-action: none; user-select: none;
+  }
+  .cell {
+    background: #fff8e7; border-radius: 12px; display: grid; place-items: center;
+    font-weight: 900; font-size: clamp(.95rem, 4.5vw, 1.35rem); aspect-ratio: 1;
+    transition: transform .12s ease; position: relative; overflow: hidden;
+  }
+  .cell img.frog-tile { width: 58%; height: 58%; object-fit: contain; pointer-events: none; }
+  .cell .num { position: absolute; bottom: 4px; right: 6px; font-size: .7em; opacity: .9; }
+  .cell[data-v="2"]{ background:#fff8e7; color:#8a6d00 }
+  .cell[data-v="4"]{ background:#ffe082; color:#6d5600 }
+  .cell[data-v="8"]{ background:#ffd54a; color:#5d4037 }
+  .cell[data-v="16"]{ background:#ffca28; color:#3e2723 }
+  .cell[data-v="32"]{ background:#c5e1a5; color:#33691e }
+  .cell[data-v="64"]{ background:#aed581; color:#1b5e20 }
+  .cell[data-v="128"]{ background:#ffb300; color:#fff }
+  .cell[data-v="256"]{ background:#fb8c00; color:#fff }
+  .cell[data-v="512"]{ background:#f4511e; color:#fff }
+  .cell[data-v="1024"]{ background:#e91e63; color:#fff; font-size:clamp(.8rem,3.5vw,1.1rem) }
+  .cell[data-v="2048"]{ background:#9c27b0; color:#fff; font-size:clamp(.75rem,3.2vw,1rem); box-shadow:0 0 0 3px #ffe082 }
+</style>
+</head>
+<body>
+  <div class="game-shell">
+    <div class="game-top">
+      <a class="back" href="/">← 合集</a>
+      <h1>青蛙 2048</h1>
+      <div class="score">分 <span id="score">0</span></div>
+    </div>
+    <div class="board" id="board" aria-label="2048 棋盘"></div>
+    <p class="hint">滑动或方向键合并相同数字。出现 2048 就赢啦。</p>
+    <p style="text-align:center;margin-top:10px"><button class="hud-btn" id="restart" type="button">新开一局</button></p>
+    <p id="msg" class="hint" style="font-weight:700;color:var(--frog-leaf-deep)"></p>
+  </div>
+<script>
+(function(){
+  const N = 4;
+  let grid, score;
+  const board = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const msg = document.getElementById('msg');
+  const FROG = '/assets/frog.svg';
+  const LAUGH = '/assets/frog-laugh.svg';
+
+  function empty(){ return Array.from({length:N}, () => Array(N).fill(0)); }
+  function cells(){ const a=[]; for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(!grid[r][c]) a.push([r,c]); return a; }
+  function spawn(){
+    const e = cells(); if (!e.length) return;
+    const [r,c] = e[Math.floor(Math.random()*e.length)];
+    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  }
+  function render(){
+    board.innerHTML = '';
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
+      const v = grid[r][c];
+      const d = document.createElement('div');
+      d.className = 'cell';
+      if (v){
+        d.dataset.v = v;
+        const img = document.createElement('img');
+        img.className = 'frog-tile';
+        img.src = v >= 128 ? LAUGH : FROG;
+        img.alt = '';
+        d.appendChild(img);
+        if (v > 2){
+          const n = document.createElement('span');
+          n.className = 'num';
+          n.textContent = v;
+          d.appendChild(n);
+        }
+      }
+      board.appendChild(d);
+    }
+    scoreEl.textContent = score;
+  }
+  function slide(line){
+    const a = line.filter(x => x);
+    let gained = 0;
+    for (let i=0;i<a.length-1;i++){
+      if (a[i] === a[i+1]){ a[i]*=2; gained += a[i]; a.splice(i+1,1); }
+    }
+    while (a.length < N) a.push(0);
+    return { line:a, gained };
+  }
+  function move(dir){
+    const prev = JSON.stringify(grid);
+    let gained = 0;
+    if (dir === 'L' || dir === 'R'){
+      for (let r=0;r<N;r++){
+        let row = grid[r].slice();
+        if (dir === 'R') row.reverse();
+        const res = slide(row);
+        if (dir === 'R') res.line.reverse();
+        grid[r] = res.line; gained += res.gained;
+      }
+    } else {
+      for (let c=0;c<N;c++){
+        let col = grid.map(row => row[c]);
+        if (dir === 'D') col.reverse();
+        const res = slide(col);
+        if (dir === 'D') res.line.reverse();
+        for (let r=0;r<N;r++) grid[r][c] = res.line[r];
+        gained += res.gained;
+      }
+    }
+    if (JSON.stringify(grid) !== prev){
+      score += gained; spawn(); render();
+      if (grid.some(row => row.includes(2048))) msg.textContent = '🎉 合成 2048！可以继续冲';
+      else if (!cells().length && !canMove()) msg.textContent = '没有空位了，再开一局吧';
+      else msg.textContent = '';
+    }
+  }
+  function canMove(){
+    for (let r=0;r<N;r++) for (let c=0;c<N;c++){
+      const v = grid[r][c];
+      if ((c+1<N && grid[r][c+1]===v) || (r+1<N && grid[r+1][c]===v)) return true;
+    }
+    return false;
+  }
+  function reset(){ grid = empty(); score = 0; msg.textContent=''; spawn(); spawn(); render(); }
+
+  let sx=0, sy=0;
+  board.addEventListener('pointerdown', e => { sx=e.clientX; sy=e.clientY; board.setPointerCapture(e.pointerId); });
+  board.addEventListener('pointerup', e => {
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.hypot(dx,dy) < 24) return;
+    if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 'R' : 'L');
+    else move(dy > 0 ? 'D' : 'U');
+  });
+  window.addEventListener('keydown', e => {
+    const m = { ArrowLeft:'L', ArrowRight:'R', ArrowUp:'U', ArrowDown:'D', a:'L', d:'R', w:'U', s:'D' };
+    if (m[e.key]){ e.preventDefault(); move(m[e.key]); }
+  });
+  document.getElementById('restart').onclick = reset;
+  reset();
+})();
+</script>
+</body>
+</html>

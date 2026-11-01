@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffd54a">
+<title>贪吃蛙 · 奶蛙</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  canvas { width: 100%; max-width: 420px; display: block; margin: 0 auto; background: #fff8e7; border-radius: 16px; border: 1.5px solid var(--line); box-shadow: var(--shadow); touch-action: none; }
+  .pad { display: grid; grid-template-columns: 64px 64px 64px; gap: 8px; justify-content: center; margin-top: 12px; }
+  .pad button { width: 64px; height: 48px; border: none; border-radius: 12px; background: linear-gradient(180deg,#ffe566,var(--frog)); color: #3d2f00; font-weight: 800; font-size: 1.1rem; box-shadow: 0 3px 0 var(--frog-deep); }
+  .pad button:active { transform: translateY(2px); box-shadow: none; }
+  .pad .u { grid-column: 2; } .pad .l { grid-column: 1; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 2; } .pad .r { grid-column: 3; grid-row: 2; }
+</style>
+</head>
+<body>
+  <div class="game-shell">
+    <div class="game-top">
+      <a class="back" href="/">← 合集</a>
+      <h1>贪吃蛙</h1>
+      <div class="score">分 <span id="score">0</span></div>
+    </div>
+    <canvas id="c" width="360" height="360"></canvas>
+    <div class="pad" aria-label="方向键">
+      <button type="button" class="u" data-d="0,-1">↑</button>
+      <button type="button" class="l" data-d="-1,0">←</button>
+      <button type="button" class="d" data-d="0,1">↓</button>
+      <button type="button" class="r" data-d="1,0">→</button>
+    </div>
+    <p class="hint">方向键 / 滑动 / 下方按钮。吃果子变长，撞墙或咬自己就结束。</p>
+    <p style="text-align:center;margin-top:8px"><button class="hud-btn" id="restart" type="button">再来</button></p>
+  </div>
+<script src="/assets/frog-draw.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+  const COLS = 18, ROWS = 18, CELL = canvas.width / COLS;
+  let snake, dir, nextDir, food, score, alive, timer;
+
+  function placeFood(){
+    for (;;){
+      const x = Math.floor(Math.random()*COLS), y = Math.floor(Math.random()*ROWS);
+      if (!snake.some(s => s.x===x && s.y===y)){ food = {x,y}; return; }
+    }
+  }
+  function reset(){
+    snake = [{x:8,y:9},{x:7,y:9},{x:6,y:9}];
+    dir = {x:1,y:0}; nextDir = {...dir}; score = 0; alive = true;
+    document.getElementById('score').textContent = '0';
+    placeFood(); draw();
+    clearInterval(timer); timer = setInterval(tick, 140);
+  }
+  function setDir(x,y){
+    if (dir.x + x === 0 && dir.y + y === 0) return;
+    nextDir = {x,y};
+  }
+  function tick(){
+    if (!alive) return;
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+    if (head.x<0||head.y<0||head.x>=COLS||head.y>=ROWS || snake.some(s=>s.x===head.x&&s.y===head.y)){
+      alive = false; draw(); return;
+    }
+    snake.unshift(head);
+    if (head.x===food.x && head.y===food.y){
+      score += 10; document.getElementById('score').textContent = score; placeFood();
+    } else snake.pop();
+    draw();
+  }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = 'rgba(230,168,0,.15)';
+    for (let i=0;i<=COLS;i++){ ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,canvas.height); ctx.stroke(); }
+    for (let i=0;i<=ROWS;i++){ ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(canvas.width,i*CELL); ctx.stroke(); }
+    // food as berry
+    const fx = food.x*CELL+CELL/2, fy = food.y*CELL+CELL/2;
+    ctx.beginPath(); ctx.arc(fx, fy, CELL*0.32, 0, Math.PI*2);
+    ctx.fillStyle = '#e53935'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(fx, fy-CELL*0.28, CELL*0.12, CELL*0.08, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#66bb6a'; ctx.fill();
+    snake.forEach((s,i) => {
+      const cx = s.x*CELL+CELL/2, cy = s.y*CELL+CELL/2;
+      if (i===0){
+        NaiwaFrog.drawFrogFace(ctx, cx, cy, CELL*0.48, false);
+      } else {
+        ctx.beginPath(); ctx.arc(cx, cy, CELL*0.4, 0, Math.PI*2);
+        const t = i / Math.max(1, snake.length);
+        ctx.fillStyle = t < 0.5 ? '#ffd54a' : '#f0b429';
+        ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy+CELL*0.08, CELL*0.18, 0, Math.PI*2);
+        ctx.fillStyle = '#fff6d6'; ctx.fill();
+      }
+    });
+    if (!alive){
+      ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#fff'; ctx.font='bold 24px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('咬到了！', canvas.width/2, canvas.height/2);
+    }
+  }
+  document.querySelectorAll('.pad button').forEach(b => {
+    b.addEventListener('click', () => { const [x,y]=b.dataset.d.split(',').map(Number); setDir(x,y); });
+  });
+  window.addEventListener('keydown', e => {
+    const m = { ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0], w:[0,-1], s:[0,1], a:[-1,0], d:[1,0] };
+    if (m[e.key]){ e.preventDefault(); setDir(...m[e.key]); }
+  });
+  let sx=0,sy=0;
+  canvas.addEventListener('pointerdown', e => { sx=e.clientX; sy=e.clientY; });
+  canvas.addEventListener('pointerup', e => {
+    const dx=e.clientX-sx, dy=e.clientY-sy;
+    if (Math.hypot(dx,dy)<20) return;
+    if (Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1, 0); else setDir(0, dy>0?1:-1);
+  });
+  document.getElementById('restart').onclick = reset;
+  reset();
+})();
+</script>
+</body>
+</html>

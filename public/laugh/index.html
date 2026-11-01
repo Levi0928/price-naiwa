@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffd54a">
+<title>狂笑点按 · 奶蛙</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .stage {
+    background: #fff; border: 1.5px solid var(--line); border-radius: 22px;
+    box-shadow: var(--shadow); min-height: 360px; display: grid; place-items: center;
+    position: relative; overflow: hidden; touch-action: manipulation; cursor: pointer;
+    user-select: none;
+  }
+  .frog {
+    width: clamp(140px, 42vw, 200px); height: auto; line-height: 0;
+    transition: transform .08s; will-change: transform;
+    filter: drop-shadow(0 10px 12px rgba(200,150,40,.3));
+  }
+  .frog img { width: 100%; height: auto; display: block; pointer-events: none; }
+  .frog.laugh { animation: shake .28s ease; }
+  @keyframes shake {
+    0% { transform: scale(1) rotate(0); }
+    25% { transform: scale(1.18) rotate(-8deg); }
+    50% { transform: scale(1.25) rotate(8deg); }
+    75% { transform: scale(1.12) rotate(-4deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  .burst {
+    position: absolute; pointer-events: none; font-weight: 900; color: #e65100;
+    animation: floatUp .7s ease-out forwards; font-size: 1.1rem;
+  }
+  @keyframes floatUp {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-60px) scale(1.3); }
+  }
+  .faces { font-size: 1.4rem; letter-spacing: 2px; margin-top: 10px; text-align: center; min-height: 1.6em; }
+</style>
+</head>
+<body>
+  <div class="game-shell">
+    <div class="game-top">
+      <a class="back" href="/">← 合集</a>
+      <h1>狂笑点按</h1>
+      <div class="score">笑点 <span id="score">0</span></div>
+    </div>
+    <div class="stage" id="stage" role="button" aria-label="点按奶蛙狂笑" tabindex="0">
+      <div class="frog" id="frog">
+        <img id="frogImg" src="/assets/frog.svg" alt="金蛙">
+      </div>
+    </div>
+    <div class="faces" id="faces" aria-live="polite"></div>
+    <p class="hint">点青蛙！连点越多笑得越疯。按 R 重置。</p>
+    <p style="text-align:center;margin-top:12px"><button class="hud-btn" type="button" id="reset">重置</button></p>
+  </div>
+<script>
+(function(){
+  const faces = ['😆','🤣','😹','😜','😛','🤪','😂','✨'];
+  let score = 0, combo = 0, last = 0;
+  const frog = document.getElementById('frog');
+  const frogImg = document.getElementById('frogImg');
+  const stage = document.getElementById('stage');
+  const scoreEl = document.getElementById('score');
+  const facesEl = document.getElementById('faces');
+  const IDLE = '/assets/frog.svg';
+  const LAUGH = '/assets/frog-laugh.svg';
+
+  function tap(ev){
+    const now = performance.now();
+    combo = (now - last < 420) ? combo + 1 : 1;
+    last = now;
+    const add = 1 + Math.min(9, Math.floor(combo / 3));
+    score += add;
+    scoreEl.textContent = score;
+    frogImg.src = LAUGH;
+    frog.classList.remove('laugh');
+    void frog.offsetWidth;
+    frog.classList.add('laugh');
+    clearTimeout(tap._t);
+    tap._t = setTimeout(() => { frogImg.src = IDLE; }, 320);
+    facesEl.textContent = faces.slice(0, Math.min(8, 2 + combo)).join('');
+    const b = document.createElement('div');
+    b.className = 'burst';
+    b.textContent = '+' + add + (combo > 4 ? ' 狂笑!' : '');
+    const rect = stage.getBoundingClientRect();
+    const x = (ev.clientX != null ? ev.clientX : rect.left + rect.width/2) - rect.left;
+    const y = (ev.clientY != null ? ev.clientY : rect.top + rect.height/2) - rect.top;
+    b.style.left = x + 'px'; b.style.top = y + 'px';
+    stage.appendChild(b);
+    setTimeout(() => b.remove(), 700);
+    if (navigator.vibrate) try { navigator.vibrate(12); } catch(e){}
+  }
+  function reset(){
+    score = 0; combo = 0; scoreEl.textContent = '0'; facesEl.textContent = '';
+    frogImg.src = IDLE; frog.classList.remove('laugh');
+  }
+  stage.addEventListener('pointerdown', e => { e.preventDefault(); tap(e); });
+  stage.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tap(e); } });
+  document.getElementById('reset').onclick = reset;
+  window.addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') reset(); });
+})();
+</script>
+</body>
+</html>
