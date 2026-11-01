@@ -120,7 +120,7 @@
           if (frog.on === p && state === 'idle') frog.x = p.x + (frog._off != null ? frog._off : 0);
         }
       });
-      if (charging) { charge += dt; frog.sq = 1 - Math.min(1, charge / 1.05) * .22; frog._off = frog.x - (frog.on ? frog.on.x : 0); chargeSfxT -= dt; if (chargeSfxT <= 0) { chargeSfxT = 0.11; try { if (NW.sfx.charge) NW.sfx.charge(Math.min(1, charge / 1.05)); else NW.sfx.click(); } catch (e) {} } }
+      if (charging) { charge += dt; frog.sq = 1 - Math.min(1, charge / 1.05) * .22; if (frog.on) frog.on.sq = Math.max(frog.on.sq, Math.min(1, charge / 1.05)); frog._off = frog.x - (frog.on ? frog.on.x : 0); chargeSfxT -= dt; if (chargeSfxT <= 0) { chargeSfxT = 0.11; try { if (NW.sfx.charge) NW.sfx.charge(Math.min(1, charge / 1.05)); else NW.sfx.click(); } catch (e) {} } }
       else if (state === 'idle') {
         frog.sq += (1 - frog.sq) * Math.min(1, dt * 12);
         if (frog.on) {
@@ -128,7 +128,7 @@
             frog.x += (frog._off >= 0 ? 1 : -1) * 26 * dt;
             frog.slip = Math.max(0, frog.slip - dt);
             var ih = frog.on.kind === 1 ? frog.on.w * 0.42 : frog.on.w / 2;
-            if (Math.abs(frog.x - frog.on.x) > ih) { state = 'dead'; fall(); }
+            if (Math.abs(frog.x - frog.on.x) > ih && state === 'idle') fall();
           }
           frog._off = frog.x - frog.on.x;
         }

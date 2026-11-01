@@ -5,74 +5,152 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
 <title>奶蛙消消乐 · 奶蛙小游戏</title>
-<meta name="description" content="交换相邻的奶蛙，连成三个就消除！有条纹/炸弹特殊块与关卡目标。">
+<meta name="description" content="交换相邻的奶蛙，连成三个就消除！20+ 关、冰层、条纹/炸弹/彩虹与道具。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=model3">
+<link rel="stylesheet" href="/style.css?v=juice1">
+<style>
+.tools{display:flex;gap:8px;justify-content:center;padding:6px 10px 2px;flex-wrap:wrap}
+.tools button{appearance:none;border:0;border-radius:16px;padding:10px 12px;min-width:72px;font-weight:900;font-size:.78rem;background:#fff;color:#6a4400;box-shadow:0 3px 0 rgba(26,22,18,.12);cursor:pointer}
+.tools button.on{background:linear-gradient(180deg,#ffe27a,#ff9f43);box-shadow:0 3px 0 #d97820}
+.tools button:disabled{opacity:.45}
+.tools button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(26,22,18,.12)}
+.tools b{display:block;font-size:.65rem;font-weight:800;color:#948876}
+</style>
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
+  <div class="tools" id="tools" aria-label="道具">
+    <button type="button" id="tool-hammer">🔨 锤子<b id="n-hammer">3</b></button>
+    <button type="button" id="tool-shuf">🔀 洗牌<b id="n-shuf">3</b></button>
+    <button type="button" id="tool-moves">➕ 加步<b id="n-moves">3</b></button>
+  </div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint" id="hint">四连→条纹，五连/L型→炸弹；完成收集目标过关</p>
+  <p class="nw-hint" id="hint">四连→条纹 · 五连→彩虹 · L/T→炸弹 · 冰要多消一次 · 道具各 3 次</p>
 </div>
-<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script>
+<script src="/assets/frog.js?v=juice1"></script><script src="/assets/nw.js?v=juice1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var N = 7, TYPES = 6, COLORS = ['#F7C32B', '#8FD14F', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF9F43'], MOODS = ['laugh', 'neutral', 'wow', 'neutral', 'laugh', 'wow'];
-  var CS = 52, PAD = 10, HUDH = 54, W = N * CS + PAD * 2, H = W + HUDH;
+  var CS = 52, PAD = 10, HUDH = 58, W = N * CS + PAD * 2, H = W + HUDH;
   var spr = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: MOODS[i] }, CS * 1.15, CS * 1.15); });
   var sprHi = COLORS.map(function (c, i) { return F.pieceSprite({ shape: 'ball', color: c, mood: 'laugh' }, CS * 1.15, CS * 1.15); });
-  // level table: moves + collect goals [type, count]
-  var LEVELS = [
-    { moves: 25, goals: [[0, 15], [1, 12], [2, 10]] },
-    { moves: 24, goals: [[3, 14], [4, 12], [5, 10]] },
-    { moves: 22, goals: [[0, 18], [2, 14], [4, 12]] },
-    { moves: 22, goals: [[1, 16], [3, 16], [5, 12]] },
-    { moves: 20, goals: [[0, 12], [1, 12], [2, 12], [3, 12]] },
-    { moves: 20, goals: [[4, 18], [5, 18], [0, 10]] },
-    { moves: 18, goals: [[1, 20], [3, 16], [5, 14]] },
-    { moves: 18, goals: [[2, 22], [4, 18]] },
-    { moves: 16, goals: [[0, 14], [1, 14], [2, 14], [3, 14], [4, 10]] },
-    { moves: 15, goals: [[0, 20], [2, 20], [4, 20]] }
+  // ≥20 levels: moves, goals [type,count], ice count, theme
+  var THEMES = [
+    { bg0: '#fffaf0', bg1: '#ffe9c8', particle: 'bubble' },
+    { bg0: '#fff5f8', bg1: '#ffd6e8', particle: 'spark' },
+    { bg0: '#f0fbff', bg1: '#d6f0ff', particle: 'milk' },
+    { bg0: '#f6fff0', bg1: '#dff5c8', particle: 'bubble' },
+    { bg0: '#fff8e8', bg1: '#ffe0a8', particle: 'spark' }
   ];
+  function L(moves, goals, ice, theme) { return { moves: moves, goals: goals, ice: ice || 0, theme: theme || 0 }; }
+  var LEVELS = [
+    L(25, [[0, 15], [1, 12], [2, 10]], 0, 0),
+    L(24, [[3, 14], [4, 12], [5, 10]], 0, 1),
+    L(22, [[0, 18], [2, 14], [4, 12]], 0, 2),
+    L(22, [[1, 16], [3, 16], [5, 12]], 2, 3),
+    L(20, [[0, 12], [1, 12], [2, 12], [3, 12]], 3, 4),
+    L(20, [[4, 18], [5, 18], [0, 10]], 4, 0),
+    L(18, [[1, 20], [3, 16], [5, 14]], 4, 1),
+    L(18, [[2, 22], [4, 18]], 5, 2),
+    L(16, [[0, 14], [1, 14], [2, 14], [3, 14], [4, 10]], 6, 3),
+    L(15, [[0, 20], [2, 20], [4, 20]], 6, 4),
+    L(22, [[1, 18], [5, 16], [3, 12]], 5, 0),
+    L(20, [[0, 16], [2, 16], [4, 16]], 7, 1),
+    L(18, [[1, 22], [3, 18]], 8, 2),
+    L(18, [[5, 24], [0, 14], [2, 12]], 8, 3),
+    L(16, [[1, 15], [2, 15], [3, 15], [4, 15]], 9, 4),
+    L(16, [[0, 22], [5, 22]], 10, 0),
+    L(15, [[1, 18], [3, 18], [5, 18]], 10, 1),
+    L(14, [[0, 16], [2, 16], [4, 16], [1, 10]], 11, 2),
+    L(14, [[3, 26], [4, 20]], 12, 3),
+    L(12, [[0, 18], [1, 18], [2, 18], [5, 14]], 12, 4),
+    L(14, [[4, 24], [5, 20], [0, 12]], 10, 0),
+    L(12, [[1, 20], [2, 20], [3, 20]], 14, 1)
+  ];
+  var POP_MS = { normal: 200, stripe: 380, vortex: 640 };
   var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, freeze = 0;
-  var level = 0, goals = [], collected = [], pendingSpecials = [];
-  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连生成条纹（清行/列），五连或 L/T 生成炸弹（清周围）。完成关卡收集目标过关，共 ' + LEVELS.length + ' 关。', onStart: reset });
+  var level = 0, goals = [], collected = [], pendingSpecials = [], theme = THEMES[0], scanFlash = null, toolMode = null;
+  var items = { hammer: 3, shuf: 3, moves: 3 }, stars = NW.store.get('m3_stars', []) || [];
+  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连→条纹，五连→彩虹（清同色），L/T→炸弹。冰层要多消一次。锤/洗牌/+5 步各 3 次。共 ' + LEVELS.length + ' 关。', onStart: reset });
   function rnd() { return Math.floor(Math.random() * TYPES); }
+  function syncTools() {
+    document.getElementById('n-hammer').textContent = items.hammer;
+    document.getElementById('n-shuf').textContent = items.shuf;
+    document.getElementById('n-moves').textContent = items.moves;
+    document.getElementById('tool-hammer').disabled = items.hammer <= 0;
+    document.getElementById('tool-shuf').disabled = items.shuf <= 0;
+    document.getElementById('tool-moves').disabled = items.moves <= 0;
+    document.getElementById('tool-hammer').classList.toggle('on', toolMode === 'hammer');
+  }
   function loadLevel(i) {
     level = Math.min(i, LEVELS.length - 1);
-    var L = LEVELS[level];
-    goals = L.goals.map(function (g) { return g.slice(); });
+    var Lv = LEVELS[level];
+    goals = Lv.goals.map(function (g) { return g.slice(); });
     collected = goals.map(function () { return 0; });
-    moves = L.moves; G.setExtra(moves);
+    moves = Lv.moves; G.setExtra(moves); theme = THEMES[Lv.theme % THEMES.length];
+  }
+  function placeIce(count) {
+    var spots = [];
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) spots.push([r, c]);
+    spots.sort(function () { return Math.random() - .5; });
+    for (var i = 0; i < Math.min(count, spots.length); i++) {
+      var p = spots[i]; cells[p[0]][p[1]].ice = 1 + (Math.random() < .35 ? 1 : 0);
+    }
   }
   function reset() {
     loadLevel(+(NW.store.get('m3_lv', 0) || 0));
+    items = { hammer: level === 0 ? 3 : 3, shuf: 3, moves: 3 };
+    toolMode = null; syncTools();
     cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
-    G.setScore(0, false); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = [];
+    placeIce(LEVELS[level].ice || 0);
+    G.setScore(0, false); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = []; scanFlash = null;
     if (!findMove()) reshuffle();
-    document.getElementById('hint').textContent = '第 ' + (level + 1) + ' 关 · 完成收集目标过关';
+    document.getElementById('hint').textContent = '第 ' + (level + 1) + '/' + LEVELS.length + ' 关 · 完成收集目标过关';
   }
-  function mk(t, r, c, y0, spec) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0, spec: spec || 0 }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
+  function mk(t, r, c, y0, spec) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0, spec: spec || 0, ice: 0, popMs: POP_MS.normal }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
   function startMove(cl, kind, rows, delay) { cl.fx = cl.x; cl.fy = cl.y; cl.tt = -(delay || 0); cl.kind = kind; cl.dur = kind === 0 ? 220 : Math.min(380, 130 + 44 * rows); }
   function bez(x1, y1, x2, y2) { return function (x) { var lo = 0, hi = 1, t = x; for (var i = 0; i < 18; i++) { var cx = 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t; if (cx < x) lo = t; else hi = t; t = (lo + hi) / 2; } return 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t; }; }
   var easeQ = bez(.22, .9, .28, 1);
   function resize() { var o = NW.fit(cv, box, W / H, 480); view.s = cv.width / W; }
   window.addEventListener('resize', resize); resize();
   function cellAt(e) { var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) / rc.width * W - PAD, y = (e.clientY - rc.top) / rc.height * H - PAD - HUDH; var c = Math.floor(x / CS), r = Math.floor(y / CS); return (r < 0 || c < 0 || r >= N || c >= N) ? null : { r: r, c: c, x: x, y: y }; }
+
+  document.getElementById('tool-hammer').onclick = function () {
+    if (items.hammer <= 0 || state !== 'idle' || !G.running) return;
+    toolMode = toolMode === 'hammer' ? null : 'hammer'; syncTools(); NW.sfx.click();
+    NW.toast(toolMode ? '点一格砸掉（冰先砸开）' : '取消锤子');
+  };
+  document.getElementById('tool-shuf').onclick = function () {
+    if (items.shuf <= 0 || state !== 'idle' || !G.running) return;
+    items.shuf--; syncTools(); reshuffle(); NW.sfx.spark && NW.sfx.spark(); NW.toast('洗牌！');
+  };
+  document.getElementById('tool-moves').onclick = function () {
+    if (items.moves <= 0 || !G.running) return;
+    items.moves--; moves += 5; G.setExtra(moves); syncTools(); if (NW.sfx.reward) NW.sfx.reward(); else NW.sfx.win(); NW.toast('+5 步');
+  };
+
   cv.addEventListener('pointerdown', function (e) {
     if (!G.running || state !== 'idle') return; var p = cellAt(e); if (!p) return; hintT = 0; hint = null;
-    // tap special alone activates
+    if (toolMode === 'hammer') {
+      var cl = cells[p.r][p.c]; if (!cl) return;
+      items.hammer--; toolMode = null; syncTools();
+      if (cl.ice > 0) { cl.ice--; NW.sfx.click(); fx.burst(PAD + cl.x + CS / 2, HUDH + PAD + cl.y + CS / 2, { count: 8, colors: ['#d6f0ff', '#fff'] }); if (cl.ice > 0) return; }
+      state = 'swap'; moves = Math.max(0, moves); // hammer doesn't cost move
+      var marks = {}; marks[p.r + ',' + p.c] = 1;
+      var m = [[p.r, p.c]]; m.groups = [m.slice()];
+      NW.sfx.pop(2); resolve(m, true); return;
+    }
     var cl = cells[p.r][p.c];
     if (cl && cl.spec && sel && sel.r === p.r && sel.c === p.c) { sel = null; activateSpecial(p.r, p.c); return; }
     if (sel && Math.abs(sel.r - p.r) + Math.abs(sel.c - p.c) === 1) { var a = sel; sel = null; trySwap(a, p); return; }
     sel = { r: p.r, c: p.c }; drag = { r: p.r, c: p.c, x: e.clientX, y: e.clientY }; NW.sfx.click();
   });
   cv.addEventListener('pointermove', function (e) {
-    if (!drag || state !== 'idle') return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, rc = cv.getBoundingClientRect(), th = rc.width / N * .35;
+    if (!drag || state !== 'idle' || toolMode) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, rc = cv.getBoundingClientRect(), th = rc.width / N * .35;
     if (Math.max(Math.abs(dx), Math.abs(dy)) > th) { var tr = drag.r + (Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 1 : -1) : 0), tc = drag.c + (Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 1 : -1) : 0); var a = { r: drag.r, c: drag.c }; drag = null; sel = null; if (tr >= 0 && tc >= 0 && tr < N && tc < N) trySwap(a, { r: tr, c: tc }); }
   });
   window.addEventListener('pointerup', function () { drag = null; });
@@ -80,16 +158,16 @@
   function trySwap(a, b) {
     state = 'swap';
     var A = cells[a.r][a.c], B = cells[b.r][b.c];
-    // special + special or special swap: activate
     if (A.spec || B.spec) {
       swapCells(a, b, true); NW.sfx.swap();
       wait(235, function () {
         moves--; G.setExtra(moves); combo = 0;
-        var marks = {};
-        function mark(r, c) { if (r >= 0 && c >= 0 && r < N && c < N) marks[r + ',' + c] = 1; }
-        if (A.spec) blastSpec(b.r, b.c, A.spec, mark); // A moved to b
-        if (B.spec) blastSpec(a.r, a.c, B.spec, mark);
-        // also clear the swapped cells
+        var marks = {}; function mark(r, c) { if (r >= 0 && c >= 0 && r < N && c < N) marks[r + ',' + c] = 1; }
+        // rainbow clears color of other piece
+        if (A.spec === 4) clearColor(B.t, mark);
+        else if (A.spec) blastSpec(b.r, b.c, A.spec, mark);
+        if (B.spec === 4) clearColor(A.t, mark);
+        else if (B.spec) blastSpec(a.r, a.c, B.spec, mark);
         mark(a.r, a.c); mark(b.r, b.c);
         var m = []; for (var k in marks) { var p = k.split(','); m.push([+p[0], +p[1]]); }
         m.groups = [m.slice()];
@@ -106,10 +184,12 @@
       resolve(m, false);
     });
   }
+  function clearColor(t, mark) { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (cells[r][c] && cells[r][c].t === t) mark(r, c); }
   function blastSpec(r, c, spec, mark) {
-    if (spec === 1) { for (var cc = 0; cc < N; cc++) mark(r, cc); } // horiz
-    else if (spec === 2) { for (var rr = 0; rr < N; rr++) mark(rr, c); } // vert
-    else if (spec === 3) { for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) mark(r + dr, c + dc); } // bomb 3x3
+    if (spec === 1) { for (var cc = 0; cc < N; cc++) mark(r, cc); scanFlash = { kind: 'row', i: r, t: 0 }; if (NW.sfx.spark) NW.sfx.spark(); }
+    else if (spec === 2) { for (var rr = 0; rr < N; rr++) mark(rr, c); scanFlash = { kind: 'col', i: c, t: 0 }; if (NW.sfx.spark) NW.sfx.spark(); }
+    else if (spec === 3) { for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) mark(r + dr, c + dc); if (fx.ring) fx.ring(PAD + c * CS + CS / 2, HUDH + PAD + r * CS + CS / 2, { maxR: 70, life: 0.4 }); }
+    else if (spec === 4) { clearColor(cells[r][c].t, mark); if (fx.ring) fx.ring(PAD + c * CS + CS / 2, HUDH + PAD + r * CS + CS / 2, { maxR: 120, life: 0.55, color: 'rgba(255,74,42,.7)' }); }
   }
   function activateSpecial(r, c) {
     var cl = cells[r][c]; if (!cl || !cl.spec) return;
@@ -124,20 +204,19 @@
     pendingSpecials = [];
     groups.forEach(function (g) {
       if (g.length < 4) return;
-      // pick spawn cell: prefer swapped cell in group, else center
       var sr = g[Math.floor(g.length / 2)][0], sc = g[Math.floor(g.length / 2)][1];
       if (a) for (var i = 0; i < g.length; i++) if (g[i][0] === a.r && g[i][1] === a.c) { sr = a.r; sc = a.c; }
       if (b) for (var i = 0; i < g.length; i++) if (g[i][0] === b.r && g[i][1] === b.c) { sr = b.r; sc = b.c; }
       var horiz = g.every(function (p) { return p[0] === g[0][0]; });
       var vert = g.every(function (p) { return p[1] === g[0][1]; });
-      var spec = 3; // default bomb for L/T or 5+
+      var spec = 3;
       if (g.length === 4 && (horiz || vert)) spec = horiz ? 1 : 2;
+      else if (g.length >= 5 && (horiz || vert)) spec = 4; // rainbow for 5+ straight
       else if (g.length >= 5) spec = 3;
-      else if (!horiz && !vert) spec = 3; // L/T shape when groups merge oddly — treat as bomb
+      else if (!horiz && !vert) spec = 3;
       var t = cells[sr][sc] ? cells[sr][sc].t : 0;
       pendingSpecials.push({ r: sr, c: sc, t: t, spec: spec });
     });
-    // detect L/T: cell in two groups
     var seen = {};
     groups.forEach(function (g, gi) { g.forEach(function (p) { var k = p[0] + ',' + p[1]; if (seen[k] != null && seen[k] !== gi) pendingSpecials.push({ r: p[0], c: p[1], t: cells[p[0]][p[1]].t, spec: 3 }); else seen[k] = gi; }); });
   }
@@ -148,35 +227,40 @@
     for (c = 0; c < N; c++) { r = 0; while (r < N) { var t2 = cells[r][c] && cells[r][c].t, e2 = r; while (e2 + 1 < N && cells[e2 + 1][c] && cells[e2 + 1][c].t === t2) e2++; if (e2 - r >= 2) { var g2 = []; for (k = r; k <= e2; k++) { mark[k + ',' + c] = 1; g2.push([k, c]); } groups.push(g2); } r = e2 + 1; } }
     var res = []; for (var key in mark) { var p = key.split(','); res.push([+p[0], +p[1]]); } res.groups = groups; return res;
   }
-  function countCollect(t) {
-    for (var i = 0; i < goals.length; i++) if (goals[i][0] === t) collected[i] = Math.min(goals[i][1], collected[i] + 1);
-  }
+  function countCollect(t) { for (var i = 0; i < goals.length; i++) if (goals[i][0] === t) collected[i] = Math.min(goals[i][1], collected[i] + 1); }
   function goalsDone() { for (var i = 0; i < goals.length; i++) if (collected[i] < goals[i][1]) return false; return true; }
   function resolve(m, fromSpecial) {
     state = 'clear'; combo++; var pts = 0;
     if (!fromSpecial && m.groups) m.groups.forEach(function (g) { pts += (g.length - 2) * 30 + (g.length >= 4 ? 40 : 0) + (g.length >= 5 ? 80 : 0); });
     else pts = m.length * 20;
     pts = Math.round(pts * (1 + (combo - 1) * .6)); var cx = 0, cy = 0;
-    // protect pending special spawn cells from dying this wave — leave as new special
     var protect = {};
     pendingSpecials.forEach(function (s) { protect[s.r + ',' + s.c] = s; });
+    // ice first: chip instead of clear
+    var iced = {};
+    m.forEach(function (p) {
+      var cl = cells[p[0]][p[1]];
+      if (cl && cl.ice > 0 && !protect[p[0] + ',' + p[1]]) { cl.ice--; iced[p[0] + ',' + p[1]] = 1; fx.burst(PAD + cl.x + CS / 2, HUDH + PAD + cl.y + CS / 2, { count: 6, colors: ['#d6f0ff', '#fff'], size: 4 }); }
+    });
     m.forEach(function (p) {
       var key = p[0] + ',' + p[1], cl = cells[p[0]][p[1]];
-      if (protect[key]) return;
-      // cascading specials: if clearing a special, expand
+      if (protect[key] || iced[key]) return;
       if (cl.spec && !fromSpecial) {
         var extra = {}; function mark(rr, cc) { if (rr >= 0 && cc >= 0 && rr < N && cc < N) extra[rr + ',' + cc] = 1; }
         blastSpec(p[0], p[1], cl.spec, mark);
         for (var ek in extra) { var ep = ek.split(','); if (!m.some(function (q) { return q[0] === +ep[0] && q[1] === +ep[1]; })) m.push([+ep[0], +ep[1]]); }
       }
-      cl.dead = true; cl.dying = 0; cx += cl.x; cy += cl.y; countCollect(cl.t);
-      var px = PAD + cl.x + CS / 2, py = HUDH + PAD + cl.y + CS / 2; fx.burst(px, py, { count: 7, speed: 230, colors: [COLORS[cl.t], '#fff', '#FFE27A'], size: 6 });
+      var popMs = POP_MS.normal;
+      if (cl.spec === 1 || cl.spec === 2) popMs = POP_MS.stripe;
+      if (cl.spec === 3 || cl.spec === 4) popMs = POP_MS.vortex;
+      cl.dead = true; cl.dying = 0; cl.popMs = popMs / 1000; cx += cl.x; cy += cl.y; countCollect(cl.t);
+      var px = PAD + cl.x + CS / 2, py = HUDH + PAD + cl.y + CS / 2; fx.burst(px, py, { count: 8, speed: 240, colors: [COLORS[cl.t], '#fff', '#FFE27A'], size: 6 });
     });
-    // place specials
     pendingSpecials.forEach(function (s) {
       var cl = cells[s.r][s.c];
-      cl.dead = false; cl.dying = 0; cl.a = 1; cl.sc = 1.2; cl.spec = s.spec; cl.t = s.t;
-      fx.text(PAD + s.c * CS + CS / 2, HUDH + PAD + s.r * CS + CS / 2, s.spec === 3 ? '💣' : '⚡', { size: 28, color: '#ff4a2a', life: .9 });
+      cl.dead = false; cl.dying = 0; cl.a = 1; cl.sc = 1.2; cl.spec = s.spec; cl.t = s.t; cl.ice = 0;
+      if (NW.sfx.spark) NW.sfx.spark();
+      fx.text(PAD + s.c * CS + CS / 2, HUDH + PAD + s.r * CS + CS / 2, s.spec === 4 ? '彩' : (s.spec === 3 ? '炸' : '⚡'), { size: 28, color: '#ff4a2a', life: .9 });
     });
     pendingSpecials = [];
     var alive = m.filter(function (p) { return cells[p[0]][p[1]].dead; });
@@ -185,8 +269,14 @@
     G.setScore(G.score + pts); fx.text(cx, cy, '+' + pts, { size: 26 + combo * 2, color: combo > 1 ? '#ff4a2a' : '#e8a000' });
     if (combo > 1) { fx.text(W / 2, HUDH + 8, combo + ' 连消！', { size: 28 + combo * 2, color: '#ff4a2a', life: 1.1 }); NW.sfx.combo(combo); shakeT = .15 + combo * .04; } else NW.sfx.pop(Math.min(4, m.length - 3));
     if (m.length >= 5) { fx.text(W / 2, H * .35, m.length >= 6 ? '太棒了！' : '很不错！', { size: 34, color: '#ff9f00', life: 1.1 }); NW.sfx.perfect(); }
-    NW.vib(10 + combo * 4); freeze = [.045, .062, .078][Math.min(2, combo - 1)];
-    wait(200, function () {
+    NW.vib(10 + combo * 4);
+    var hs = [.045, .062, .078][Math.min(2, combo - 1)];
+    if (fromSpecial) hs = Math.min(0.1, hs + 0.02);
+    freeze = hs;
+    var clearWait = 200;
+    if (alive.some(function (p) { return (cells[p[0]][p[1]].popMs || 0.2) > 0.3; })) clearWait = 380;
+    if (alive.some(function (p) { return (cells[p[0]][p[1]].popMs || 0.2) > 0.5; })) clearWait = 640;
+    wait(clearWait, function () {
       for (var c = 0; c < N; c++) {
         var col = []; for (var r = N - 1; r >= 0; r--) if (!cells[r][c].dead) col.push(cells[r][c]);
         var miss = N - col.length; for (var i = 0; i < miss; i++) { var nc = mk(rnd(), 0, c, -(i + 1) * CS); col.push(nc); }
@@ -195,33 +285,41 @@
       state = 'fall';
     });
   }
+  function starForLevel() {
+    var Lv = LEVELS[level], ratio = moves / Math.max(1, Lv.moves);
+    if (ratio >= 0.45) return 3; if (ratio >= 0.2) return 2; return 1;
+  }
   function settle() {
     var m = findMatches();
     if (m.length) { spawnSpecialsFromGroups(m.groups, null, null); resolve(m, false); return; }
     combo = 0;
     if (goalsDone()) {
       state = 'over';
+      var st = starForLevel();
+      stars[level] = Math.max(stars[level] || 0, st); NW.store.set('m3_stars', stars);
       var next = level + 1;
       if (next < LEVELS.length) {
         NW.store.set('m3_lv', next);
         var keepScore = G.score;
-        wait(400, function () { NW.sfx.win(); fx.text(W / 2, H * .4, '过关！进入第 ' + (next + 1) + ' 关', { size: 34, color: '#ff9f00', life: 1.2 }); wait(700, function () {
+        wait(400, function () { NW.sfx.win(); fx.text(W / 2, H * .4, '过关！★'.repeat(st) + ' → 第 ' + (next + 1) + ' 关', { size: 30, color: '#ff9f00', life: 1.3 }); wait(800, function () {
           loadLevel(next);
+          items = { hammer: 3, shuf: 3, moves: 3 }; toolMode = null; syncTools();
           cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var tt; do { tt = rnd(); } while ((c >= 2 && cells[r][c - 1].t === tt && cells[r][c - 2].t === tt) || (r >= 2 && cells[r - 1][c].t === tt && cells[r - 2][c].t === tt)); cells[r].push(mk(tt, r, c, -(N - r) * CS - 40 - c * 6)); } }
+          placeIce(LEVELS[level].ice || 0);
           sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = []; state = 'fall';
           if (!findMove()) reshuffle();
-          G.setScore(keepScore, false); document.getElementById('hint').textContent = '第 ' + (level + 1) + ' 关 · 完成收集目标过关';
+          G.setScore(keepScore, false); document.getElementById('hint').textContent = '第 ' + (level + 1) + '/' + LEVELS.length + ' 关 · 完成收集目标过关';
         }); });
       } else {
-        wait(300, function () { state = 'idle'; NW.store.set('m3_lv', 0); G.over('全部 ' + LEVELS.length + ' 关通关！'); });
+        wait(300, function () { state = 'idle'; NW.store.set('m3_lv', 0); G.over('全部 ' + LEVELS.length + ' 关通关！★'.repeat(st)); });
       }
       return;
     }
-    if (moves <= 0) { state = 'over'; wait(300, function () { state = 'idle'; G.over('第 ' + (level + 1) + ' 关步数用完'); }); return; }
+    if (moves <= 0) { state = 'over'; wait(300, function () { state = 'idle'; NW.sfx.lose(); G.over('第 ' + (level + 1) + ' 关步数用完'); }); return; }
     if (!findMove()) { G.toast('没有可消除的了，重新洗牌'); reshuffle(); return; }
     state = 'idle'; hintT = 0;
   }
-  function reshuffle() { var all = []; cells.forEach(function (row) { row.forEach(function (c) { all.push({ t: c.t, spec: c.spec }); }); }); var tries = 0; do { all.sort(function () { return Math.random() - .5; }); var i = 0; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { cells[r][c].t = all[i].t; cells[r][c].spec = all[i].spec; i++; } tries++; } while ((findMatches().length || !findMove()) && tries < 80); cells.forEach(function (row) { row.forEach(function (c) { c.sc = 0.3; }); }); }
+  function reshuffle() { var all = []; cells.forEach(function (row) { row.forEach(function (c) { all.push({ t: c.t, spec: c.spec, ice: c.ice }); }); }); var tries = 0; do { all.sort(function () { return Math.random() - .5; }); var i = 0; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { cells[r][c].t = all[i].t; cells[r][c].spec = all[i].spec; cells[r][c].ice = all[i].ice; i++; } tries++; } while ((findMatches().length || !findMove()) && tries < 80); cells.forEach(function (row) { row.forEach(function (c) { c.sc = 0.3; }); }); }
   function findMove() {
     for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
       if (cells[r][c].spec) return [{ r: r, c: c }, { r: r, c: c }];
@@ -234,15 +332,16 @@
     var dt = Math.min(.033, (t - last) / 1000); last = t;
     if (freeze > 0) { freeze -= dt; dt = 0; }
     for (var i = timers.length - 1; i >= 0; i--) { timers[i].t -= dt; if (timers[i].t <= 0) { var f = timers.splice(i, 1)[0].fn; f(); } }
+    if (scanFlash) { scanFlash.t += dt; if (scanFlash.t > 0.18) scanFlash = null; }
     if (cells) {
       var moving = false;
       for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var cl = cells[r][c]; if (!cl) continue; var tx = c * CS, ty = r * CS;
         if (cl.dur > 0) { cl.tt += dt * 1000; if (cl.tt >= cl.dur) { cl.x = tx; cl.y = ty; cl.dur = 0; } else if (cl.tt > 0) { var k = cl.tt / cl.dur, e = cl.kind === 0 ? easeQ(k) : k * k * (1.4 - .4 * k); cl.x = cl.fx + (tx - cl.fx) * e; cl.y = cl.fy + (ty - cl.fy) * e; } moving = true; }
         else { cl.x = tx; cl.y = ty; }
-        if (cl.dead) { cl.dying += dt; moving = true; var pq = Math.min(1, cl.dying / .2); cl.pq = pq; cl.sc = pq < .42 ? 1 + .3 * (pq / .42) : pq < .72 ? 1.3 - .5 * ((pq - .42) / .3) : .8 * (1 - (pq - .72) / .28); cl.rot = pq < .42 ? -.12 * (pq / .42) : pq < .72 ? -.12 + .22 * ((pq - .42) / .3) : .1 + .15 * ((pq - .72) / .28); cl.a = pq < .72 ? 1 : 1 - (pq - .72) / .28; }
+        if (cl.dead) { cl.dying += dt; moving = true; var span = cl.popMs || .2; var pq = Math.min(1, cl.dying / span); cl.pq = pq; cl.sc = pq < .42 ? 1 + .3 * (pq / .42) : pq < .72 ? 1.3 - .5 * ((pq - .42) / .3) : .8 * (1 - (pq - .72) / .28); cl.rot = pq < .42 ? -.12 * (pq / .42) : pq < .72 ? -.12 + .22 * ((pq - .42) / .3) : .1 + .15 * ((pq - .72) / .28); cl.a = pq < .72 ? 1 : 1 - (pq - .72) / .28; }
         else cl.sc += (1 - cl.sc) * Math.min(1, dt * 14); }
       if (state === 'fall' && !moving) settle();
-      if (state === 'idle' && G.running) { hintT += dt; if (hintT > 5 && !hint) hint = findMove(); }
+      if (state === 'idle' && G.running) { hintT += dt; if (hintT > 5 && !hint) hint = findMove(); if (hint && hintT > 8) { hint = null; hintT = 0; } }
     }
     fx.update(dt); draw(t); requestAnimationFrame(frame);
   }
@@ -250,35 +349,55 @@
   function drawSpecBadge(c, cl, px, py) {
     if (!cl.spec) return;
     c.save();
-    if (cl.spec === 1) { c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.moveTo(px - 14, py); c.lineTo(px + 14, py); c.stroke(); c.strokeStyle = '#ff9f00'; c.lineWidth = 2; c.beginPath(); c.moveTo(px - 14, py); c.lineTo(px + 14, py); c.stroke(); }
-    else if (cl.spec === 2) { c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, py - 14); c.lineTo(px, py + 14); c.stroke(); c.strokeStyle = '#ff9f00'; c.lineWidth = 2; c.beginPath(); c.moveTo(px, py - 14); c.lineTo(px, py + 14); c.stroke(); }
-    else { c.fillStyle = 'rgba(255,74,42,.95)'; c.beginPath(); c.arc(px + 12, py - 12, 8, 0, 7); c.fill(); c.fillStyle = '#fff'; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('炸', px + 12, py - 11); }
+    if (cl.spec === 1) { c.strokeStyle = '#ff9f00'; c.lineWidth = 3; c.beginPath(); c.moveTo(px - 14, py); c.lineTo(px + 14, py); c.stroke(); }
+    else if (cl.spec === 2) { c.strokeStyle = '#ff9f00'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, py - 14); c.lineTo(px, py + 14); c.stroke(); }
+    else if (cl.spec === 4) {
+      c.fillStyle = 'rgba(255,74,42,.95)'; c.beginPath(); c.arc(px + 12, py - 12, 9, 0, 7); c.fill();
+      c.fillStyle = '#fff'; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('彩', px + 12, py - 11);
+    } else {
+      c.fillStyle = 'rgba(255,74,42,.95)'; c.beginPath(); c.arc(px + 12, py - 12, 8, 0, 7); c.fill();
+      c.fillStyle = '#fff'; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('炸', px + 12, py - 11);
+    }
+    c.restore();
+  }
+  function drawIce(c, cl, px, py) {
+    if (!cl.ice) return;
+    c.save(); c.globalAlpha = 0.55 + cl.ice * 0.15;
+    c.fillStyle = 'rgba(180,220,255,.55)'; rr(c, px - CS / 2 + 4, py - CS / 2 + 4, CS - 8, CS - 8, 12); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.beginPath(); c.moveTo(px - 10, py - 4); c.lineTo(px - 2, py - 12); c.lineTo(px + 6, py - 2); c.lineTo(px + 12, py - 10); c.stroke();
+    if (cl.ice > 1) { c.fillStyle = '#fff'; c.font = '800 11px system-ui'; c.textAlign = 'center'; c.fillText('x' + cl.ice, px, py + 16); }
     c.restore();
   }
   function draw(t) {
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
-    if (shakeT > 0) { shakeT -= .016; c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
-    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#ffe9c8'); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
-    // goal HUD
+    if (shakeT > 0) { shakeT -= .016; if (!(NW.reduceMotion && NW.reduceMotion())) c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
+    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, theme.bg0); g.addColorStop(1, theme.bg1); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
     c.fillStyle = 'rgba(255,255,255,.75)'; rr(c, 10, 8, W - 20, HUDH - 12, 14); c.fill();
-    c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('第 ' + (level + 1) + ' 关', 20, 28);
-    var gx = 90; goals.forEach(function (goal, i) {
+    c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('第 ' + (level + 1) + '/' + LEVELS.length, 20, 30);
+    var gx = 100; goals.forEach(function (goal, i) {
       var s = spr[goal[0]], done = collected[i] >= goal[1];
-      c.globalAlpha = done ? .45 : 1; c.drawImage(s, gx, 12, 28, 28); c.globalAlpha = 1;
-      c.fillStyle = done ? '#7CC93E' : '#4a3325'; c.font = '800 11px system-ui'; c.fillText(collected[i] + '/' + goal[1], gx + 30, 30);
-      gx += 78;
+      c.globalAlpha = done ? .45 : 1; c.drawImage(s, gx, 14, 26, 26); c.globalAlpha = 1;
+      c.fillStyle = done ? '#7CC93E' : '#4a3325'; c.font = '800 11px system-ui'; c.fillText(collected[i] + '/' + goal[1], gx + 28, 32);
+      gx += 72;
     });
     for (var r = 0; r < N; r++) for (var cc = 0; cc < N; cc++) { c.fillStyle = (r + cc) % 2 ? 'rgba(247,195,43,.18)' : 'rgba(124,201,62,.16)'; rr(c, PAD + cc * CS + 2, HUDH + PAD + r * CS + 2, CS - 4, CS - 4, 12); c.fill(); }
+    if (scanFlash) {
+      c.save(); c.globalAlpha = 1 - scanFlash.t / 0.18; c.fillStyle = 'rgba(255,210,63,.45)';
+      if (scanFlash.kind === 'row') c.fillRect(PAD, HUDH + PAD + scanFlash.i * CS, N * CS, CS);
+      else c.fillRect(PAD + scanFlash.i * CS, HUDH + PAD, CS, N * CS);
+      c.restore();
+    }
     if (!cells) { c.restore(); return; }
     c.save(); c.beginPath(); rr(c, PAD - 4, HUDH + PAD - 4, N * CS + 8, N * CS + 8, 18); c.clip();
     for (r = 0; r < N; r++) for (cc = 0; cc < N; cc++) {
       var cl = cells[r][cc]; if (!cl || cl.sc <= .01) continue; var s = spr[cl.t], sz = s.__w;
       var sel_ = sel && sel.r === r && sel.c === cc, hn = hint && ((hint[0].r === r && hint[0].c === cc) || (hint[1].r === r && hint[1].c === cc));
-      var sc = cl.sc * (sel_ ? 1.12 + Math.sin(t / 120) * .03 : 1) * (hn ? 1 + Math.sin(t / 150) * .07 : 1);
+      var breath = sel_ ? 1.04 + Math.sin(t / 140) * .04 : 1;
+      var sc = cl.sc * breath * (hn ? 1 + Math.sin(t / 150) * .07 : 1);
       var px = PAD + cl.x + CS / 2, py = HUDH + PAD + cl.y + CS / 2; c.globalAlpha = cl.a == null ? 1 : cl.a;
-      if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, HUDH + PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = '#7CC93E'; c.lineWidth = 3; c.stroke(); }
-      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); c.fillStyle = 'rgba(70,45,0,.14)'; c.beginPath(); c.ellipse(1, sz * .36, sz * .32, sz * .09, 0, 0, 6.3); c.fill(); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .5, sz, sz); c.filter = 'none'; c.restore();
-      drawSpecBadge(c, cl, px, py); c.globalAlpha = 1;
+      if (sel_) { c.fillStyle = 'rgba(255,255,255,.9)'; rr(c, PAD + cl.x + 1, HUDH + PAD + cl.y + 1, CS - 2, CS - 2, 14); c.fill(); c.strokeStyle = toolMode === 'hammer' ? '#ff4a2a' : '#7CC93E'; c.lineWidth = 3; c.stroke(); }
+      var br = cl.dead ? 1 : 1 + .017 * (1 + Math.sin(t / 700 + cl.ph)); c.save(); c.translate(px, py); c.rotate(cl.rot || 0); c.scale(sc * br, sc * br); if (cl.dead && cl.pq < .72) c.filter = 'brightness(1.4)'; c.drawImage(cl.dead ? sprHi[cl.t] : s, -sz * .5, -sz * .5, sz, sz); c.filter = 'none'; c.restore();
+      drawSpecBadge(c, cl, px, py); drawIce(c, cl, px, py); c.globalAlpha = 1;
     }
     c.restore(); fx.draw(c); c.restore();
   }

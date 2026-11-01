@@ -170,6 +170,7 @@
       if (chainT > 0) { chainT -= dt; if (chainT <= 0) chain = 0; }
       var over = false; balls.forEach(function (b) { if (b.age > 1 && b.y - b.r < DANGER && Math.hypot(b.vx, b.vy) < 140) over = true; });
       dangerT = over ? dangerT + dt : Math.max(0, dangerT - dt * 2);
+      if (dangerT > 1.0 && dangerT <= 1.5 && Math.floor(dangerT * 10) !== Math.floor((dangerT - dt) * 10)) { try { NW.sfx.bad(); } catch (e) {} }
       if (dangerT > 1.5) {
         if (coins > 0) { dangerT = 1.4; offerRevive(); }
         else { shakeT = .5; shakeA = 12; fx.burst(W / 2, DANGER, { count: 30, colors: ['#ff5a5a', '#fff'] }); G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级'); }
@@ -221,6 +222,12 @@
     // coin chip
     c.fillStyle = 'rgba(255,255,255,.82)'; rr(c, 10, 10, 78, 36, 14); c.fill();
     c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('币 ' + coins, 22, 33);
+    // drop cooldown ring near aim
+    if (!canDrop && dropT > 0 && G.running && !paused) {
+      var pw = 1 - dropT / .36, ax2 = clampX(aimX);
+      c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 4; c.beginPath(); c.arc(ax2, DROPY - R[cur] - 18, 12, -Math.PI/2, -Math.PI/2 + pw * 6.28); c.stroke();
+      c.strokeStyle = '#7CC93E'; c.lineWidth = 2.5; c.beginPath(); c.arc(ax2, DROPY - R[cur] - 18, 12, -Math.PI/2, -Math.PI/2 + pw * 6.28); c.stroke();
+    }
     fx.draw(c); c.restore();
     if (flash > 0) { c.globalAlpha = Math.min(1, flash * .35); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
   }
