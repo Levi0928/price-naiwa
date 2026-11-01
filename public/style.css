@@ -102,6 +102,8 @@ body.lobby { background: #fff6d6; overflow-x: hidden; }
 .nav a.lnk { text-decoration: none; font-weight: 800; font-size: .92rem; color: #7a5a10; padding: 8px 12px; border-radius: 999px; transition: background .2s; }
 .nav a.lnk:hover { background: rgba(247, 195, 43, .3); }
 .nav a.lnk.on { background: var(--y); color: #5a3a00; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6); }
+.nav .nw-mute-btn, #lobby-snd { margin-left: auto; width: 40px; height: 40px; flex: none; }
+.nav-in { padding-right: 8px; }
 
 .hero { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; padding: calc(86px + var(--safe-t)) 20px 0; overflow: hidden; background: radial-gradient(520px 520px at 50% 52%, rgba(255, 244, 170, .95), rgba(255, 244, 170, 0) 65%), linear-gradient(180deg, #7fd3ff 0%, #b5e8ff 38%, #e9f9ff 62%, #fff6d6 100%); }
 .hero::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 62%, rgba(255, 255, 255, .22) 0deg 7deg, rgba(255, 255, 255, 0) 7deg 20deg); animation: spin 60s linear infinite; mask-image: radial-gradient(circle at 50% 62%, #000 0%, transparent 70%); -webkit-mask-image: radial-gradient(circle at 50% 62%, #000 0%, transparent 70%); }
