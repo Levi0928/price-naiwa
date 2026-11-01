@@ -114,7 +114,7 @@
       if (a.y > FLOOR - a.r) { a.y = FLOOR - a.r; if (a.vy > 55) { a.sq = Math.max(a.sq, Math.min(.3, a.vy / 1500)); a.sa = Math.PI / 2; a.vy = -a.vy * .45; } else a.vy = 0; a.vx *= .955; }
     }
     var merged = [];
-    for (var it = 0; it < 3; it++) for (i = 0; i < balls.length; i++) for (j = i + 1; j < balls.length; j++) {
+    for (var it = 0; it < 6; it++) for (i = 0; i < balls.length; i++) for (j = i + 1; j < balls.length; j++) {
       a = balls[i]; b = balls[j]; if (a.dead || b.dead) continue;
       var dx = b.x - a.x, dy = b.y - a.y, rr = a.r + b.r, d2 = dx * dx + dy * dy;
       if (d2 >= rr * rr) continue; var d = Math.sqrt(d2) || .01;
@@ -149,7 +149,7 @@
   function frame(t) {
     var dt = Math.min(.033, (t - last) / 1000); last = t;
     if (G.running && !paused) {
-      if (hitstop > 0) hitstop -= dt; else for (var k = 0; k < 3; k++) step(dt / 3);
+      if (hitstop > 0) hitstop -= dt; else for (var k = 0; k < 3; k++) step(dt / 3); /* 3 substeps × 6 collision iters */
       if (dropT > 0) { dropT -= dt; if (dropT <= 0) canDrop = true; }
       if (chainT > 0) { chainT -= dt; if (chainT <= 0) chain = 0; }
       var over = false; balls.forEach(function (b) { if (b.age > 1 && b.y - b.r < DANGER && Math.hypot(b.vx, b.vy) < 140) over = true; });
