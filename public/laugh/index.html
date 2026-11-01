@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#bfeaff">
 <title>狂笑点按 · 奶蛙小游戏</title>
 <meta name="description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！奶蛙小游戏之狂笑点按。">
-<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="30 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css">
@@ -16,9 +16,9 @@
 .scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .grass { position: absolute; left: -5%; right: -5%; bottom: -2px; height: 22%; background: linear-gradient(180deg, #a9e566, #6bb82e); border-radius: 50% 50% 0 0 / 40% 40% 0 0; box-shadow: 0 -6px 0 rgba(255,255,255,.35); }
-.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 400 / 556; transform: translateX(-50%); }
+.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 567 / 946; transform: translateX(-50%); }
 .fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
-.fwrap svg { position: absolute; inset: 0; opacity: 0; transition: opacity .06s; }
+.fwrap img, .fwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .06s; }
 .scene[data-m="idle"] .m-idle, .scene[data-m="laugh"] .m-laugh, .scene[data-m="cackle"] .m-cackle, .scene[data-m="peace"] .m-peace { opacity: 1; }
 .meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 16px; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 0 0 2px #fff; overflow: hidden; z-index: 4; }
 .meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #ffe27a, #ff9f43); transition: width .1s; box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
@@ -45,11 +45,11 @@
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
   var scene = $('#scene'), fi = $('#fi');
-  function layer(cls, o) { o.id = cls + '_'; return F.svg(o).replace('<svg ', '<svg class="' + cls + '" ').replace('class="nf-svg"', 'class="nf-svg ' + cls + '"'); }
-  fi.innerHTML = F.svg({ id: 'li_', anim: true }).replace('class="nf-svg nf-anim"', 'class="nf-svg nf-anim m-idle"') +
-    F.svg({ id: 'll_', mood: 'laugh' }).replace('class="nf-svg"', 'class="nf-svg m-laugh"') +
-    F.svg({ id: 'lc_', mood: 'cackle' }).replace('class="nf-svg"', 'class="nf-svg m-cackle"') +
-    F.svg({ id: 'lp_', mood: 'cackle', pose: 'peace' }).replace('class="nf-svg"', 'class="nf-svg m-peace"');
+  fi.innerHTML =
+    F.html({ pose: 'stand', className: 'm-idle nf-anim', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
+    F.html({ mood: 'laugh', className: 'm-laugh', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
+    F.html({ mood: 'laugh', className: 'm-cackle', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scale(1.04)' }) +
+    F.html({ pose: 'peace', className: 'm-peace', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
   var fx = new NW.FX(), ov = NW.overlay(scene), DUR = 30;
   var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '30 秒内疯狂点奶蛙！连击越高得分越多，笑意槽满了进入 2 倍狂笑模式。', onStart: reset });
   var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1;

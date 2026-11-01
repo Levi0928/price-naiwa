@@ -26,9 +26,13 @@
     if (rot) { c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(im, -size / 2, -size / 2, size, size); c.restore(); }
     else c.drawImage(im, x - size / 2, y - size / 2, size, size);
   };
-  K.body = function (color, mood, h) { // 整只蛙（站姿）svg 图像，底部居中绘制
+  K.body = function (color, mood, h) { // 整只蛙：金色用 3D PNG，其它色仍用 SVG
     var k = 'B' + color + mood + h;
-    if (!cache[k]) cache[k] = NaiwaFrog.image(NaiwaFrog.svg({ color: color, mood: mood || 'neutral', pose: 'stand', width: Math.round(h * .72) }));
+    if (!cache[k]) {
+      var gold = !color || color === '#F7C32B' || color.toLowerCase() === '#f7c32b';
+      if (gold) cache[k] = NaiwaFrog.load({ pose: 'stand', mood: mood || 'neutral' });
+      else cache[k] = NaiwaFrog.image(NaiwaFrog.svg({ color: color, mood: mood || 'neutral', pose: 'stand', width: Math.round(h * .72) }));
+    }
     return cache[k];
   };
   K.preload = function (colors, moods) { colors.forEach(function (c) { moods.forEach(function (m) { K.bust(c, m); }); }); };

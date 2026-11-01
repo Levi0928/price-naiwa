@@ -71,6 +71,7 @@ canvas.nw-canvas { display: block; touch-action: none; border-radius: 22px; }
 .nw-dialog { width: min(360px, 100%); text-align: center; padding: 70px 22px 22px; border-radius: 30px; position: relative; background: linear-gradient(180deg, #fffdf2, #fff1c2); box-shadow: 0 24px 50px rgba(80, 50, 0, .35), 0 0 0 4px #fff, inset 0 -6px 0 rgba(247, 195, 43, .35); transform: translateY(30px) scale(.9); transition: transform .35s cubic-bezier(.3, 1.5, .5, 1); }
 .nw-modal.show .nw-dialog { transform: none; }
 .nw-dialog .mascot { position: absolute; left: 50%; top: -74px; width: 122px; transform: translateX(-50%); filter: drop-shadow(0 8px 8px rgba(120, 80, 0, .3)); animation: nwbob 2.4s ease-in-out infinite; }
+.nw-dialog .mascot img { width: 100%; height: auto; display: block; }
 @keyframes nwbob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-6px); } }
 .nw-dialog h2 { margin: 0 0 6px; font-size: 1.7rem; font-weight: 900; color: #6a4400; letter-spacing: .04em; }
 .nw-dialog p { margin: 0 0 14px; color: var(--muted); font-size: .92rem; font-weight: 600; }
@@ -117,9 +118,13 @@ body.lobby { background: #fff6d6; overflow-x: hidden; }
 .hero h1 span { color: var(--y-hi); }
 @keyframes titleIn { from { opacity: 0; transform: translateY(-24px) scale(.8); } }
 .hero .sub { position: relative; margin: 14px 0 0; max-width: 24rem; font-size: 1.05rem; font-weight: 700; color: #3a6a8a; text-shadow: 0 1px 0 rgba(255, 255, 255, .8); animation: titleIn .8s .12s cubic-bezier(.3, 1.6, .5, 1) both; }
-.hero-frog { position: relative; width: min(66vw, 360px, 46vh); aspect-ratio: 400 / 556; margin-top: auto; margin-bottom: 38px; cursor: pointer; z-index: 3; -webkit-user-select: none; user-select: none; touch-action: manipulation; transition: transform .35s cubic-bezier(.3, 1.8, .5, 1); animation: frogIn 1s .2s cubic-bezier(.3, 1.4, .5, 1) both; }
+.hero-frog { position: relative; width: min(66vw, 360px, 46vh); aspect-ratio: 567 / 946; margin-top: auto; margin-bottom: 38px; cursor: pointer; z-index: 3; -webkit-user-select: none; user-select: none; touch-action: manipulation; transition: transform .35s cubic-bezier(.3, 1.8, .5, 1); animation: frogIn 1s .2s cubic-bezier(.3, 1.4, .5, 1) both; }
 @keyframes frogIn { from { opacity: 0; transform: translateY(80px) scale(.7); } }
-.hero-frog svg { position: absolute; inset: 0; transition: opacity .12s; }
+.hero-frog svg, .hero-frog img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity .12s; pointer-events: none; }
+.nf-png { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.nf-png.nf-anim { animation: nfpngbob 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes nfpngbob { 0%,100% { transform: translateY(0) scale(1,1); } 50% { transform: translateY(-6px) scale(1.02,.97); } }
+.hero-frog .a, .hero-frog .b { position:absolute; inset:0; }
 .hero-frog .a { opacity: 1; } .hero-frog .b { opacity: 0; }
 .hero-frog.laughing .a { opacity: 0; } .hero-frog.laughing .b { opacity: 1; }
 .hero-frog.hop { animation: hop .6s cubic-bezier(.3, 1.2, .5, 1); }

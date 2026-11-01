@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#8fdcff">
 <title>奶蛙小游戏 · 点一下就笑的黄色小胖蛙</title>
 <meta name="description" content="奶蛙小游戏合集：狂笑点按、合成大奶蛙、奶蛙2048、奶蛙消消乐、贪吃蛙、跳一跳。手机浏览器直接玩，免下载免注册。">
-<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="奶蛙小游戏 · 点一下就笑的黄色小胖蛙">
@@ -18,7 +18,7 @@
 </head>
 <body class="lobby">
 <header class="nav"><div class="nav-in">
-  <a class="brand" href="/"><img src="/assets/favicon.svg" alt="">奶蛙小游戏</a>
+  <a class="brand" href="/"><img src="/assets/favicon-frog.png" alt="">奶蛙小游戏</a>
   <a class="lnk on" href="/">首页</a><a class="lnk" href="#games">游戏</a><a class="lnk" href="/author.html">作者</a>
 </div></header>
 
@@ -58,10 +58,10 @@
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
-  /* 主视觉：三个姿态 */
-  $('#hfa').innerHTML = F.svg({ pose: 'peace', mood: 'neutral', anim: true, id: 'hA_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
-  $('#hfb').innerHTML = F.svg({ pose: 'peace', mood: 'laugh', anim: true, id: 'hB_' }).replace('<svg ', '<svg style="position:absolute;inset:0" ');
-  $('#bf').innerHTML = F.bust({ mood: 'laugh', size: 96 });
+  /* 主视觉：3D PNG 姿态 */
+  $('#hfa').innerHTML = F.html({ pose: 'peace', anim: true, style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
+  $('#hfb').innerHTML = F.html({ pose: 'stand', mood: 'laugh', anim: true, style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
+  $('#bf').innerHTML = F.html({ crop: 'head', sm: true, width: 96, style: 'width:96px;height:96px;object-fit:contain;display:block' });
   [['#fl1', '#F7C32B', 'laugh'], ['#fl2', '#8FD14F', 'neutral'], ['#fl3', '#FF7BAC', 'wow']].forEach(function (a) { $(a[0]).innerHTML = '<img alt="" style="width:100%" src="' + F.url(F.ball({ color: a[1], mood: a[2] })) + '">'; });
 
   /* 点击大笑 */
@@ -93,7 +93,7 @@
   /* 游戏卡片（插画缩略图：用角色素材绘制，无 emoji） */
   var B = function (c, m, extra) { return F.url(F.ball(Object.assign({ color: c, mood: m || 'neutral' }, extra || {}))); };
   function im(src, st) { return '<img alt="" src="' + src + '" style="' + st + '">'; }
-  var frogUrl = F.url(F.svg({ id: 't1_', mood: 'laugh' })), peaceUrl = F.url(F.svg({ id: 't2_', pose: 'peace', mood: 'laugh' })), frogN = F.url(F.svg({ id: 't3_', mood: 'neutral' }));
+  var frogUrl = F.png({ mood: 'laugh', sm: true }), peaceUrl = F.png({ pose: 'peace', sm: true }), frogN = F.png({ pose: 'stand', sm: true });
   var TH = {
     laugh: '<div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 70%,#ffe27a 0 10deg,#ffd23f 10deg 20deg)"></div><div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 70%,rgba(255,255,255,.65),transparent 60%)"></div>' + im(peaceUrl, 'left:50%;bottom:-6%;height:104%;transform:translateX(-50%)').replace('<img', '<img class="t-pop"') + '<b style="position:absolute;left:8%;top:12%;font-size:1.7rem;color:#ff8a00;text-shadow:0 2px 0 #fff;transform:rotate(-12deg)">哈</b><b style="position:absolute;right:9%;top:20%;font-size:1.4rem;color:#ff6a3a;text-shadow:0 2px 0 #fff;transform:rotate(10deg)">哈哈</b>',
     merge: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#bdeaff,#e8f8ff)"></div><div class="t-pop" style="position:absolute;left:14%;right:14%;top:12%;bottom:8%;border:4px solid #fff;border-top:0;border-radius:0 0 22px 22px;background:rgba(255,255,255,.45);box-shadow:inset 0 -10px 18px rgba(80,160,200,.25)">' +
@@ -142,7 +142,7 @@
   $('#grid').innerHTML = G.map(function (g, i) {
     var best = NW.store.get('best_' + g[0], 0);
     return '<a class="card reveal" style="transition-delay:' + (i % 3) * 70 + 'ms" href="/' + g[0] + '/"><div class="thumb">' + TH[g[0]] + (g[4] ? '<span class="ribbon">' + g[4] + '</span>' : '') + (best ? '<span class="bestchip">最高 ' + best + '</span>' : '') + '</div><div class="info"><h3>' + g[1] + '</h3><p>' + g[2] + '</p><div class="foot"><span>' + g[3].map(function (t, k) { return '<span class="tag ' + tagc[(i + k) % 4] + '">' + t + '</span> '; }).join('') + '</span><span class="go"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span></div></div></a>';
-  }).join('') + '<div class="card reveal soon" style="transition-delay:70ms;border:3px dashed #f0cf6a;background:rgba(255,255,255,.55);box-shadow:none;display:grid;place-items:center;text-align:center;padding:18px"><div><div style="width:84px;margin:0 auto 8px">' + F.bust({ mood: 'neutral', size: 84 }) + '</div><h3 style="margin:0;font-weight:900;color:#6a4400">更多游戏</h3><p style="margin:4px 0 0;font-size:.85rem;color:#a8935a;font-weight:600">奶蛙还在偷偷做新游戏<br>敬请期待</p></div></div>';
+  }).join('') + '<div class="card reveal soon" style="transition-delay:70ms;border:3px dashed #f0cf6a;background:rgba(255,255,255,.55);box-shadow:none;display:grid;place-items:center;text-align:center;padding:18px"><div><div style="width:84px;margin:0 auto 8px">' + F.html({ pose: 'stand', sm: true, width: 84, style: 'width:84px;height:auto;display:block;margin:0 auto' }) + '</div><h3 style="margin:0;font-weight:900;color:#6a4400">更多游戏</h3><p style="margin:4px 0 0;font-size:.85rem;color:#a8935a;font-weight:600">奶蛙还在偷偷做新游戏<br>敬请期待</p></div></div>';
 
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .12 }) : null;
   document.querySelectorAll('.reveal').forEach(function (el) { io ? io.observe(el) : el.classList.add('in'); });

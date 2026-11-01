@@ -1,14 +1,96 @@
-/* 奶蛙 · 原创矢量角色生成器（分层 SVG 渐变，软胶 3D 质感）
- * NaiwaFrog.svg({pose,mood,look,lid,anim,width,id})  整只蛙
- * NaiwaFrog.bust({color,mood,size})                  头像（游戏棋子/图标）
- * NaiwaFrog.url(svgString)                           -> data URL
- * NaiwaFrog.image(svgString)                         -> Image（供 canvas 使用）
+/* 奶蛙 · 角色：3D PNG 主形象 + 原创矢量棋子（bust/ball）
+ * NaiwaFrog.png({pose,mood,sm})          -> PNG 路径
+ * NaiwaFrog.html({pose,mood,width,className,style,anim,sm}) -> <img>
+ * NaiwaFrog.load(opts|url, cb)           -> Image
+ * NaiwaFrog.spritePng(src, w, h)         -> canvas 精灵
+ * NaiwaFrog.svg / bust / ball            -> 彩色棋子仍用矢量
  */
 (function (root) {
   'use strict';
   var uid = 0;
+  var ASSET = {
+    stand: '/assets/frog/frog-front.png',
+    front: '/assets/frog/frog-front.png',
+    peace: '/assets/frog/frog-peace.png',
+    laugh: '/assets/frog/frog-laugh.png',
+    head: '/assets/frog/frog-head.png'
+  };
+  var ASSET_SM = {
+    stand: '/assets/frog/frog-front-sm.png',
+    front: '/assets/frog/frog-front-sm.png',
+    peace: '/assets/frog/frog-peace-sm.png',
+    laugh: '/assets/frog/frog-laugh-sm.png',
+    head: '/assets/frog/frog-head-sm.png'
+  };
 
-  /* ---------- color helpers ---------- */
+  function poseKey(o) {
+    o = o || {};
+    if (o.pose === 'peace') return 'peace';
+    if (o.pose === 'cheer') return 'peace';
+    if (o.pose === 'front' || o.pose === 'stand') {
+      if (o.mood === 'laugh' || o.mood === 'cackle') return 'laugh';
+      return 'stand';
+    }
+    if (o.mood === 'laugh' || o.mood === 'cackle') return 'laugh';
+    if (o.crop === 'head') return 'head';
+    return 'stand';
+  }
+
+  function png(o) {
+    o = o || {};
+    var key = poseKey(o);
+    return (o.sm ? ASSET_SM : ASSET)[key] || ASSET.stand;
+  }
+
+  function html(o) {
+    o = o || {};
+    var src = png(o);
+    var cls = 'nf-png' + (o.anim ? ' nf-anim' : '') + (o.className ? ' ' + o.className : '');
+    var st = o.style || '';
+    if (o.width && st.indexOf('width') < 0) st = 'width:' + (typeof o.width === 'number' ? o.width + 'px' : o.width) + ';' + st;
+    if (o.height && st.indexOf('height') < 0) st = 'height:' + (typeof o.height === 'number' ? o.height + 'px' : o.height) + ';' + st;
+    return '<img class="' + cls + '" src="' + src + '" alt="奶蛙" draggable="false" decoding="async"' +
+      (o.width && typeof o.width === 'number' ? ' width="' + o.width + '"' : '') +
+      ' style="' + st + '">';
+  }
+
+  var imgCache = {};
+  function load(srcOrOpts, cb) {
+    var src = typeof srcOrOpts === 'string' ? srcOrOpts : png(srcOrOpts);
+    var im = imgCache[src];
+    if (!im) {
+      im = new Image();
+      im.decoding = 'async';
+      im.src = src;
+      imgCache[src] = im;
+    }
+    if (cb) {
+      if (im.complete && im.naturalWidth) cb(im);
+      else im.addEventListener('load', function () { cb(im); });
+    }
+    return im;
+  }
+
+  function spritePng(src, w, h, dpr) {
+    dpr = dpr || Math.min(window.devicePixelRatio || 1, 2.5);
+    var c = document.createElement('canvas');
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    c.__w = w; c.__h = h;
+    load(src, function (im) {
+      var ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      /* contain */
+      var ir = im.naturalWidth / im.naturalHeight, cr = w / h;
+      var dw, dh;
+      if (ir > cr) { dw = c.width; dh = dw / ir; }
+      else { dh = c.height; dw = dh * ir; }
+      ctx.drawImage(im, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh);
+      if (c.onready) c.onready();
+    });
+    return c;
+  }
+
+  /* ---------- color helpers（棋子用） ---------- */
   function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.replace(/(.)/g, '$1$1'); var n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
   function rgb2hex(r, g, b) { return '#' + [r, g, b].map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
   function mix(a, b, t) { var x = hex2rgb(a), y = hex2rgb(b); return rgb2hex(x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t); }
@@ -25,10 +107,8 @@
   var GOLD = '#F7C32B';
   var BELLY = ['#FAEDCB', '#F1DDB2', '#E3C68E'];
   var OLIVE = ['#9a8a3a', '#6f6228', '#4a4219'];
-
   function f(n) { return Math.round(n * 100) / 100; }
 
-  /* ---------- reusable parts ---------- */
   function defs(id, P, o) {
     var s = '<defs>';
     s += '<linearGradient id="' + id + 'b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + P.hi + '"/><stop offset=".22" stop-color="' + P.lite + '"/><stop offset=".6" stop-color="' + P.base + '"/><stop offset="1" stop-color="' + P.mid + '"/></linearGradient>';
@@ -51,18 +131,15 @@
   var TORSO = 'M200 26C164 26 148 52 146 92C144 132 128 152 108 178C80 212 68 266 78 334C88 390 140 426 200 426C260 426 312 390 322 334C332 266 320 212 292 178C272 152 256 132 254 92C252 52 236 26 200 26Z';
 
   function tube(pts, w0, w1, id, P) {
-    // 软胶管状肢体：深色底 + 本色 + 高光
     var d = 'M' + pts.map(function (p) { return f(p[0]) + ' ' + f(p[1]); }).join('L');
     var s = '<path d="' + d + '" fill="none" stroke="' + P.shade + '" stroke-width="' + (w0 + 4) + '" stroke-linecap="round" stroke-linejoin="round"/>';
     s += '<path d="' + d + '" fill="none" stroke="url(#' + id + 'b)" stroke-width="' + w0 + '" stroke-linecap="round" stroke-linejoin="round"/>';
     return s;
   }
-
   function ctube(d, w, id, P) {
     return '<path d="' + d + '" fill="none" stroke="' + P.shade + '" stroke-width="' + (w + 4) + '" stroke-linecap="round"/>' +
       '<path d="' + d + '" fill="none" stroke="url(#' + id + 'b)" stroke-width="' + w + '" stroke-linecap="round"/>';
   }
-
   function hand(x, y, rot, id, big) {
     var k = big || 1;
     var s = '<g transform="translate(' + x + ' ' + y + ') rotate(' + rot + ') scale(' + k + ')">';
@@ -74,9 +151,7 @@
     s += '</g>';
     return s;
   }
-
   function foot(side, id) {
-    // side=-1 左脚, 1 右脚（正面，脚趾向外张开）
     var g = '<g transform="translate(' + (200 + side * 60) + ' 516) scale(' + (side*1.1) + ' 1.1)">';
     g += '<ellipse cx="0" cy="-2" rx="30" ry="13" transform="rotate(-6)" fill="url(#' + id + 'ol)"/>';
     [[-26, 6, 7.5, -50], [-17, 10, 7.5, -28], [-6, 12, 7.5, -8], [6, 11, 7, 10], [-33, 0, 6.5, -70]].forEach(function (t) {
@@ -86,13 +161,11 @@
     g += '</g>';
     return g;
   }
-
   function eye(cx, cy, id, o) {
     var r = o.big ? 12.6 : 11.4;
     var px = (o.look && o.look[0] || 0) * 2.6, py = (o.look && o.look[1] || 0) * 2.6;
     var cid = id + 'ec' + (cx | 0);
     var s = '<clipPath id="' + cid + '"><circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 3) + '"/></clipPath>';
-    // 眼眶隆起（鼓眼）：软阴影 + 凸起的眼睑环
     s += '<ellipse cx="' + cx + '" cy="' + (cy + 3) + '" rx="' + (r + 7) + '" ry="' + (r + 7) + '" fill="url(#' + id + 'gs)"/>';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 3.4) + '" fill="url(#' + id + 'ey)"/>';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + 0.9) + '" fill="#6a9d4a"/>';
@@ -118,7 +191,6 @@
     s += '</g>';
     return s;
   }
-
   function mouth(id, P, mood) {
     if (mood === 'laugh' || mood === 'cackle') {
       var s = '<path d="M168 128Q200 122 232 128Q230 156 200 158Q170 156 168 128Z" fill="url(#' + id + 'mo)" stroke="' + P.deep + '" stroke-width="2.4" stroke-linejoin="round"/>';
@@ -136,7 +208,9 @@
     return '<path d="M181 136Q200 142 219 136" fill="none" stroke="#6a4208" stroke-width="2.6" stroke-linecap="round"/><path d="M183 139.8Q200 145.5 217 139.8" fill="none" stroke="#fff" stroke-opacity=".32" stroke-width="1.6" stroke-linecap="round"/>';
   }
 
-  /* ---------- 整只蛙 ---------- */
+  /* 整只蛙：默认金色走 3D PNG 的 data-url 包装不适用；保留 SVG 供彩色/特殊。
+     若未指定 color 或 color 为金色，且未强制 forceSvg，返回空并建议用 html()/png()。
+     为兼容旧调用：金色默认仍生成 SVG，但主要页面已切到 html()。 */
   function svg(o) {
     o = o || {};
     var id = o.id || ('nf' + (++uid) + '_');
@@ -147,12 +221,10 @@
     var vb = o.crop === 'head' ? '110 20 180 190' : '0 0 400 556';
     var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb + '"' + (width ? ' width="' + width + '"' : '') + ' class="nf-svg' + (o.anim ? ' nf-anim' : '') + '" role="img" aria-label="奶蛙">';
     s += defs(id, P, o);
-    // 地面影子
     s += '<ellipse cx="200" cy="534" rx="130" ry="13" fill="#6b4a00" opacity=".15"/><ellipse cx="200" cy="532" rx="88" ry="7" fill="#6b4a00" opacity=".16"/>';
     s += '<g class="nf-body">';
     var hands = '';
     var X = function (sd, x) { return sd < 0 ? x : 400 - x; };
-    // 手臂（躯干后面，肩部自然融合）
     [-1, 1].forEach(function (sd) {
       var x = function (v) { return X(sd, v); };
       if (pose === 'peace') {
@@ -169,7 +241,6 @@
         hands += hand(x(62), 356, sd < 0 ? 4 : -4, id, 1.25);
       }
     });
-    // 腿 + 脚
     [-1, 1].forEach(function (sd) {
       s += '<g transform="translate(' + (sd < 0 ? 0 : 400) + ' 0) scale(' + sd * -1 + ' 1)">';
       s += '<path d="M142 396C134 436 128 474 124 506L166 508C170 476 182 440 194 406Z" fill="url(#' + id + 'lg)"/>';
@@ -178,7 +249,6 @@
       s += '</g>';
     });
     s += foot(-1, id) + foot(1, id);
-    // 躯干 + 头
     s += '<path d="' + TORSO + '" fill="url(#' + id + 'b)"/>';
     s += '<g clip-path="url(#' + id + 'tc)">';
     s += '<rect x="60" y="20" width="280" height="420" fill="url(#' + id + 'sd)"/>';
@@ -188,7 +258,6 @@
     s += '<ellipse cx="200" cy="322" rx="118" ry="92" fill="url(#' + id + 'bl)"/>';
     s += '<ellipse cx="164" cy="250" rx="50" ry="22" fill="#fff" opacity=".22" transform="rotate(-14 164 250)"/>';
     s += '</g>';
-    // 手臂内侧折痕（让手臂看起来在身体前）
     if (pose === 'stand') {
       s += '<path d="M112 206C88 240 80 290 84 330" fill="none" stroke="' + P.shade + '" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/><path d="M288 206C312 240 320 290 316 330" fill="none" stroke="' + P.shade + '" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>';
     }
@@ -204,9 +273,9 @@
     return s;
   }
 
-  /* ---------- 头像（棋子/图标） ---------- */
   function bust(o) {
     o = o || {};
+    /* 金色默认头像：用 3D 头图（通过 html 路径更合适；bust 仍返回 SVG 以兼容棋子尺寸） */
     var id = 'nb' + (++uid) + '_';
     var P = pal(o.color || GOLD);
     var mood = o.mood || 'neutral';
@@ -239,8 +308,6 @@
   }
   var BUST = 'M50 8C34 8 25 20 24 36C23 50 16 56 11 68C7 80 12 92 28 92L72 92C88 92 93 80 89 68C84 56 77 50 76 36C75 20 66 8 50 8Z';
 
-
-  /* ---------- 圆球表情（棋子） ---------- */
   function ball(o) {
     o = o || {};
     var id = 'nl' + (++uid) + '_';
@@ -277,7 +344,6 @@
     return s;
   }
 
-  /* 把 SVG 预渲染成 canvas 精灵，绘制时无需重新栅格化 */
   function sprite(svgStr, w, h, dpr) {
     dpr = dpr || Math.min(window.devicePixelRatio || 1, 2.5);
     var c = document.createElement('canvas');
@@ -288,7 +354,6 @@
     im.src = url(svgStr);
     return c;
   }
-
   function url(s) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); }
   var cache = {};
   function image(s, cb) {
@@ -302,6 +367,11 @@
 
   var COLORS = ['#F7C32B', '#8FD14F', '#FF9F43', '#FF7BAC', '#5CC8F2', '#B28DFF', '#FF6B5E', '#3ED3B5'];
 
-  root.NaiwaFrog = { svg: svg, bust: bust, ball: ball, sprite: sprite, url: url, image: image, COLORS: COLORS, pal: pal, mix: mix };
+  root.NaiwaFrog = {
+    svg: svg, bust: bust, ball: ball, sprite: sprite, spritePng: spritePng,
+    url: url, image: image, load: load, png: png, html: html,
+    ASSET: ASSET, ASSET_SM: ASSET_SM, poseKey: poseKey,
+    COLORS: COLORS, pal: pal, mix: mix
+  };
   if (typeof module !== 'undefined') module.exports = root.NaiwaFrog;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -126,17 +126,16 @@
     var top = $('#nw-top'), hud = $('#nw-hud');
     top.className = 'nw-top';
     top.innerHTML = '<a class="round-btn" href="/" aria-label="返回合集" id="nw-back">' + ICON.back + '</a>' +
-      '<h1><img src="/assets/favicon.svg" alt="">' + o.title + '</h1>' +
+      '<h1><img src="/assets/favicon-frog.png" alt="">' + o.title + '</h1>' +
       '<button class="round-btn" id="nw-snd" aria-label="音效开关">' + (muted ? ICON.off : ICON.on) + '</button>' +
       '<button class="round-btn" id="nw-redo" aria-label="重新开始">' + ICON.redo + '</button>';
     hud.className = 'nw-hud';
     hud.innerHTML = '<div class="nw-card"><small>' + (o.scoreLabel || '分数') + '</small><b id="nw-score">0</b></div>' +
       (o.extraCard ? '<div class="nw-card"><small>' + o.extraCard + '</small><b id="nw-extra">-</b></div>' : '') +
       '<div class="nw-card hi"><small>最高</small><b id="nw-best">' + best + '</b></div>';
-    var fx1 = NaiwaFrog.svg({ mood: 'laugh', pose: 'peace', width: 122, crop: 'head' });
     var m = document.createElement('div');
     m.innerHTML =
-      '<div class="nw-modal show" id="nw-start"><div class="nw-dialog"><div class="mascot">' + NaiwaFrog.svg({ mood: 'laugh', pose: 'peace' }).replace('<svg ', '<svg style="height:150px;width:auto;margin:0 auto" ') + '</div>' +
+      '<div class="nw-modal show" id="nw-start"><div class="nw-dialog"><div class="mascot">' + NaiwaFrog.html({ pose: 'peace', style: 'height:150px;width:auto;margin:0 auto;display:block;object-fit:contain' }) + '</div>' +
       '<h2>' + o.title + '</h2><p>' + (o.rules || '') + '</p><div class="row"><button class="btn green big" id="nw-go">开始游戏</button><a class="btn white small" href="/">返回合集</a></div></div></div>' +
       '<div class="nw-modal" id="nw-over"><div class="nw-dialog"><div class="mascot" id="nw-over-m"></div><div id="nw-over-badge"></div><h2 id="nw-over-title">游戏结束</h2><p id="nw-over-sub"></p><div class="big-score" id="nw-over-score">0</div><p>最高分 <b id="nw-over-best">0</b></p>' +
       '<div class="row"><button class="btn green big" id="nw-again">再来一局</button><div class="row2"><button class="btn small" id="nw-share">分享战绩</button><a class="btn white small" href="/">返回合集</a></div></div></div></div>';
@@ -153,7 +152,7 @@
         $('#nw-over-score').textContent = score; $('#nw-over-best').textContent = Math.max(best, prev);
         $('#nw-over-title').textContent = title || (isNew ? '新纪录！' : '游戏结束'); $('#nw-over-sub').textContent = sub || '';
         $('#nw-over-badge').innerHTML = isNew ? '<span class="badge">新纪录</span>' : '';
-        $('#nw-over-m').innerHTML = NaiwaFrog.svg({ mood: isNew ? 'laugh' : 'wow', pose: isNew ? 'peace' : 'stand' }).replace('<svg ', '<svg style="height:150px;width:auto;margin:0 auto" ');
+        $('#nw-over-m').innerHTML = NaiwaFrog.html({ pose: isNew ? 'peace' : 'stand', mood: isNew ? 'laugh' : 'neutral', style: 'height:150px;width:auto;margin:0 auto;display:block;object-fit:contain' });
         isNew ? sfx.win() : sfx.lose();
         setTimeout(function () { $('#nw-over').classList.add('show'); }, 450);
       },

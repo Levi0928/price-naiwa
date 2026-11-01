@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#bfeaff">
 <title>奶蛙跳一跳 · 奶蛙小游戏</title>
 <meta name="description" content="按住蓄力，松手起跳，落在平台中心有加分！奶蛙小游戏之奶蛙跳一跳。">
-<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙跳一跳 · 奶蛙小游戏"><meta property="og:description" content="按住蓄力，松手起跳，落在平台中心有加分！奶蛙小游戏之奶蛙跳一跳。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css">
@@ -23,7 +23,7 @@
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var W = 360, H = 600, view = { s: 1 }, GY = 430; // frog baseline on screen
   var FW = 70, FH = 97;
-  var sprN = F.sprite(F.svg({ pose: 'stand', mood: 'neutral', width: FW }), FW, FH), sprC = F.sprite(F.svg({ pose: 'stand', mood: 'wow', width: FW }), FW, FH), sprL = F.sprite(F.svg({ pose: 'peace', mood: 'laugh', width: FW }), FW, FH);
+  var sprN = F.spritePng(F.png({ pose: 'stand' }), FW, FH), sprC = F.spritePng(F.png({ pose: 'stand' }), FW, FH), sprL = F.spritePng(F.png({ mood: 'laugh' }), FW, FH);
   var PC = [['#8FD14F', '#6BAE2E'], ['#5CC8F2', '#3A9FCC'], ['#FF9F43', '#D97A1C'], ['#FF7BAC', '#D95A8A'], ['#B28DFF', '#8B66D9'], ['#F7C32B', '#D39F0E']];
   var fx = new NW.FX(), plats, frog, cam, camT, charge, charging, combo, perfectN, shakeT, state, clouds = [];
   var G = NW.mount({ key: 'jump', title: '奶蛙跳一跳', scoreLabel: '分数', rules: '按住屏幕蓄力，松手起跳。落在平台正中心有额外加分，连续命中中心连击更高！', onStart: reset });
