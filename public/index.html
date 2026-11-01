@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <meta property="og:url" content="https://price-naiwa.onrender.com/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/style.css?v=snd1">
+<link rel="stylesheet" href="/style.css?v=run2">
 </head>
 <body class="lobby">
 <header class="nav"><div class="nav-in">
@@ -54,8 +54,8 @@
   纯前端自研 · 无广告 · 不收集隐私 · 仅供娱乐
 </footer>
 
-<script src="/assets/frog.js?v=snd1"></script>
-<script src="/assets/nw.js?v=snd1"></script>
+<script src="/assets/frog.js?v=run2"></script>
+<script src="/assets/nw.js?v=run2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -63,7 +63,7 @@
   $('#hfa').innerHTML = F.html({ pose: 'peace', anim: true, style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
   $('#hfb').innerHTML = F.html({ pose: 'stand', mood: 'laugh', anim: true, style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
   $('#bf').innerHTML = F.html({ crop: 'head', sm: true, width: 96, style: 'width:96px;height:96px;object-fit:contain;display:block' });
-  [['#fl1', '#F7C32B', 'laugh'], ['#fl2', '#8FD14F', 'neutral'], ['#fl3', '#FF7BAC', 'wow']].forEach(function (a) { $(a[0]).innerHTML = '<img alt="" style="width:100%" src="' + F.url(F.ball({ color: a[1], mood: a[2] })) + '">'; });
+  [['#fl1', '#F7C32B', 'laugh'], ['#fl2', '#8FD14F', 'neutral'], ['#fl3', '#FF7BAC', 'wow']].forEach(function (a) { $(a[0]).innerHTML = '<img alt="" style="width:100%" src="' + F.pieceUrl({ shape: 'ball', color: a[1], mood: a[2] }) + '">'; });
 
   /* 点击大笑 */
   var hf = $('#hf'), count = NW.store.get('laughs', 0), lc = $('#lc'), t1, t2, laughN = 0;
@@ -97,13 +97,13 @@
   document.addEventListener('pointerdown', function once() { ensureBgm(); document.removeEventListener('pointerdown', once); }, { passive: true });
 
   /* 游戏卡片（插画缩略图：用角色素材绘制，无 emoji） */
-  var B = function (c, m, extra) { return F.url(F.ball(Object.assign({ color: c, mood: m || 'neutral' }, extra || {}))); };
+  var B = function (c, m) { return F.pieceUrl({ shape: 'ball', color: c, mood: m || 'neutral' }); };
   function im(src, st) { return '<img alt="" src="' + src + '" style="' + st + '">'; }
   var frogUrl = F.png({ mood: 'laugh', sm: true }), peaceUrl = F.png({ pose: 'peace', sm: true }), frogN = F.png({ pose: 'stand', sm: true });
   var TH = {
     laugh: '<div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 70%,#ffe27a 0 10deg,#ffd23f 10deg 20deg)"></div><div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 70%,rgba(255,255,255,.65),transparent 60%)"></div>' + im(peaceUrl, 'left:50%;bottom:-6%;height:104%;transform:translateX(-50%)').replace('<img', '<img class="t-pop"') + '<b style="position:absolute;left:8%;top:12%;font-size:1.7rem;color:#ff8a00;text-shadow:0 2px 0 #fff;transform:rotate(-12deg)">哈</b><b style="position:absolute;right:9%;top:20%;font-size:1.4rem;color:#ff6a3a;text-shadow:0 2px 0 #fff;transform:rotate(10deg)">哈哈</b>',
     merge: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#bdeaff,#e8f8ff)"></div><div class="t-pop" style="position:absolute;left:14%;right:14%;top:12%;bottom:8%;border:4px solid #fff;border-top:0;border-radius:0 0 22px 22px;background:rgba(255,255,255,.45);box-shadow:inset 0 -10px 18px rgba(80,160,200,.25)">' +
-      im(B('#F7C32B', 'laugh', { crown: 1 }), 'left:22%;bottom:2%;width:56%') + im(B('#8FD14F'), 'left:-6%;bottom:2%;width:34%') + im(B('#FF9F43', 'wow'), 'right:-6%;bottom:2%;width:36%') + im(B('#FF7BAC'), 'left:6%;bottom:42%;width:24%') + im(B('#5CC8F2', 'laugh'), 'right:6%;bottom:46%;width:24%') + '</div>',
+      im(B('#F7C32B', 'laugh'), 'left:22%;bottom:2%;width:56%') + im(B('#8FD14F'), 'left:-6%;bottom:2%;width:34%') + im(B('#FF9F43', 'wow'), 'right:-6%;bottom:2%;width:36%') + im(B('#FF7BAC'), 'left:6%;bottom:42%;width:24%') + im(B('#5CC8F2', 'laugh'), 'right:6%;bottom:46%;width:24%') + '</div>',
     g2048: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#ffe9a8,#ffd266)"></div><div class="t-pop" style="position:absolute;left:18%;right:18%;top:12%;bottom:12%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:7px;border-radius:16px;background:#c98a07;box-shadow:0 6px 0 #9a6700">' +
       [['2', '#fff3c4', '#8a6a20'], ['4', '#ffe38a', '#8a6a20'], ['8', '#ffb86a', '#fff'], ['', '#e2b84a', ''], ['16', '#ff9a5a', '#fff'], ['32', '#ff7a4a', '#fff'], ['', '#e2b84a', ''], ['64', '#ff5a5a', '#fff'], ['128', '#F7C32B', '#fff']].map(function (t) { return '<div style="border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:1.05rem;color:' + t[2] + ';background:' + t[1] + ';box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 2px 0 rgba(0,0,0,.15)">' + t[0] + '</div>'; }).join('') + '</div>',
     match3: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#d9c8ff,#ffd6ec)"></div><div class="t-pop" style="position:absolute;left:12%;right:12%;top:10%;bottom:10%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:4px;padding:6px;border-radius:18px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px #fff">' +
@@ -123,9 +123,14 @@
       [[22, 20, '#F7C32B', 'laugh', -6], [44, 14, '#FF7BAC', 'neutral', 4], [64, 24, '#5CC8F2', 'wow', -3], [30, 38, '#FF7BAC', 'wow', 5], [52, 36, '#F7C32B', 'neutral', -4], [14, 44, '#5CC8F2', 'laugh', 6]].map(function (t) { return '<div style="position:absolute;left:' + t[0] + '%;top:' + t[1] + '%;width:26%;aspect-ratio:1;border-radius:14px;background:linear-gradient(180deg,#fff,#f3ecd4);box-shadow:0 4px 0 #b9b08a,0 7px 8px rgba(0,0,0,.14);transform:rotate(' + t[4] + 'deg)">' + im(B(t[2], t[3]), 'left:10%;top:10%;width:80%') + '</div>'; }).join('') +
       '<div style="position:absolute;left:10%;right:10%;bottom:6%;height:20%;border-radius:12px;background:rgba(120,90,40,.55);display:flex;gap:4px;padding:4px">' + ['#F7C32B', '#F7C32B', ''].map(function (q) { return '<div style="flex:1;border-radius:8px;background:' + (q ? 'linear-gradient(180deg,#fff,#f3ecd4)' : 'rgba(0,0,0,.18)') + '">' + (q ? im(B(q, 'laugh'), 'position:static;width:80%;margin:6% 10%') : '') + '</div>'; }).join('') + '</div></div>',
     bubble: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#7fd3ff,#cfeeff)"></div><div class="t-pop" style="position:absolute;inset:0">' +
-      ['#FF7BAC', '#FF7BAC', '#5CC8F2', '#8FD14F', '#8FD14F', '#F7C32B', '#B28DFF', '#FF7BAC', '#5CC8F2'].map(function (col, i) { var r = Math.floor(i / 4), k = i % 4; return '<div style="position:absolute;left:' + (11 + k * 20 + (r % 2) * 10) + '%;top:' + (8 + r * 17) + '%;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff,' + col + ' 38%);box-shadow:inset -4px -5px 0 rgba(0,0,0,.12),0 3px 0 rgba(0,0,0,.08)"></div>'; }).join('') + im(B('#F7C32B', 'laugh'), 'left:41%;bottom:6%;width:22%') + '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M52 62V38" stroke="#fff" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg></div>',
+      ['#FF7BAC', '#FF7BAC', '#5CC8F2', '#8FD14F', '#8FD14F', '#F7C32B', '#B28DFF', '#FF7BAC', '#5CC8F2'].map(function (col, i) { var r = Math.floor(i / 4), k = i % 4; return im(B(col, i % 3 === 0 ? 'laugh' : 'neutral'), 'left:' + (11 + k * 20 + (r % 2) * 10) + '%;top:' + (8 + r * 17) + '%;width:19%'); }).join('') + im(B('#F7C32B', 'laugh'), 'left:41%;bottom:6%;width:22%') + '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75" preserveAspectRatio="none"><path d="M52 62V38" stroke="#fff" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg></div>',
     gomoku: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#ffe0a0,#f3b75a)"></div><div class="t-pop" style="position:absolute;left:14%;right:14%;top:8%;bottom:8%;border-radius:12px;background:#f5cf80;box-shadow:0 5px 0 #b98324,inset 0 0 0 3px #e8b45a;background-image:linear-gradient(rgba(120,70,0,.55) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(120,70,0,.55) 1.5px,transparent 1.5px);background-size:25% 25%;background-position:6% 6%">' +
-      [[12, 12, 0], [37, 12, 1], [37, 37, 0], [62, 37, 1], [62, 62, 0], [12, 62, 1], [37, 62, 0], [12, 37, 1], [62, 12, 0]].map(function (s) { return '<i style="position:absolute;left:' + (s[0] - 1) + '%;top:' + (s[1] - 1) + '%;width:22%;aspect-ratio:1;border-radius:50%;background:' + (s[2] ? 'radial-gradient(circle at 32% 28%,#fff,#ece6d4 55%,#c9c0a4)' : 'radial-gradient(circle at 32% 28%,#777,#1d1d22 60%)') + ';box-shadow:0 3px 3px rgba(0,0,0,.3)"></i>'; }).join('') + '</div>' + im(B('#F7C32B', 'laugh'), 'right:3%;bottom:4%;width:22%'),
+      [[12, 12, 0], [37, 12, 1], [37, 37, 0], [62, 37, 1], [62, 62, 0], [12, 62, 1], [37, 62, 0], [12, 37, 1], [62, 12, 0]].map(function (s) { return im(B(s[2] ? '#F7C32B' : '#8FD14F', 'neutral'), 'left:' + (s[0] - 1) + '%;top:' + (s[1] - 1) + '%;width:22%'); }).join('') + '</div>' + im(B('#F7C32B', 'laugh'), 'right:3%;bottom:4%;width:22%'),
+    run: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#9fd9ff,#e8f8ff 55%,#d4ef9a)"></div><div class="t-pop" style="position:absolute;inset:0"><div style="position:absolute;left:0;right:0;bottom:8%;height:18%;background:linear-gradient(180deg,#9ada55,#4e9a1e);border-radius:8px 8px 0 0"></div><div style="position:absolute;left:55%;bottom:26%;width:14%;height:22%;border-radius:6px;background:linear-gradient(180deg,#ffb090,#d63a2a)"></div>' +
+      im(frogN, 'left:22%;bottom:18%;height:58%') + im(B('#F7C32B', 'laugh'), 'left:62%;top:18%;width:16%') + im(B('#FF7BAC', 'wow'), 'left:78%;top:28%;width:14%') + '</div>',
+    cut: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#b4e4ff,#eef9ff 60%,#dff3b0)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+      im(B('#F7C32B', 'laugh'), 'left:18%;top:22%;width:28%;transform:rotate(-18deg)') + im(B('#5CC8F2', 'wow'), 'left:48%;top:12%;width:26%;transform:rotate(12deg)') + im(B('#FF7BAC', 'laugh'), 'left:58%;top:42%;width:24%;transform:rotate(-8deg)') +
+      '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75"><path d="M12 48Q40 20 88 28" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M12 48Q40 20 88 28" fill="none" stroke="#FFD23F" stroke-width="1.4" stroke-linecap="round"/></svg></div>',
     gravity2048: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#cfe9ff,#9fc5ff)"></div><div class="t-pop" style="position:absolute;left:12%;right:12%;top:8%;bottom:8%;border-radius:20px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px #fff">' +
       [[8, 52, '#F7C32B', 34, 'laugh'], [40, 56, '#FF9F43', 30, 'neutral'], [68, 60, '#FF7BAC', 24, 'wow'], [26, 18, '#8FD14F', 26, 'neutral'], [60, 26, '#5CC8F2', 24, 'laugh']].map(function (b) { return im(B(b[2], b[4]), 'left:' + b[0] + '%;top:' + b[1] + '%;width:' + b[3] + '%'); }).join('') + '<svg style="position:absolute;right:8px;top:8px;width:26px;height:26px" viewBox="0 0 24 24"><path d="M12 4v13M6 12l6 6 6-6" fill="none" stroke="#3b6fd8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
   };
@@ -137,6 +142,8 @@
     ['snake', '贪吃蛙', '滑动控制方向，吃苍蝇越长越快。', ['经典', '街机']],
     ['jump', '跳一跳', '长按蓄力松手起跳，落中心加分。', ['蓄力', '精准']],
     ['milkrain', '奶滴接接乐', '拖动小蛙，接住从天而降的奶块。', ['接物', '反应'], '新'],
+    ['run', '奶蛙神跑', '方向键移动，空格二段跳，滑铲躲障，无尽跑酷。', ['跑酷', '街机'], '新'],
+    ['cut', '切奶蛙', '滑动切开飞来的奶蛙，连击翻倍，别切坏奶。', ['切割', '反应'], '新'],
     ['breakout', '奶蛙打砖块', '弹球反弹，打光所有彩色砖块。', ['街机', '反弹'], '新'],
     ['tetris', '俄罗斯奶块', '旋转堆叠，消除整行，越玩越快。', ['经典', '方块']],
     ['tilematch', '奶了个蛙', '三消叠叠乐：点牌入槽，三张相同就消除。', ['三消', '烧脑']],
