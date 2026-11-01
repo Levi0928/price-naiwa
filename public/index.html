@@ -128,7 +128,7 @@
       [[12, 12, 0], [37, 12, 1], [37, 37, 0], [62, 37, 1], [62, 62, 0], [12, 62, 1], [37, 62, 0], [12, 37, 1], [62, 12, 0]].map(function (s) { return im(B(s[2] ? '#F7C32B' : '#8FD14F', 'neutral'), 'left:' + (s[0] - 1) + '%;top:' + (s[1] - 1) + '%;width:22%'); }).join('') + '</div>' + im(B('#F7C32B', 'laugh'), 'right:3%;bottom:4%;width:22%'),
     run: '<div style="position:absolute;inset:0;background:linear-gradient(180deg,#9fd9ff,#e8f8ff 55%,#d4ef9a)"></div><div class="t-pop" style="position:absolute;inset:0"><div style="position:absolute;left:0;right:0;bottom:8%;height:18%;background:linear-gradient(180deg,#9ada55,#4e9a1e);border-radius:8px 8px 0 0"></div><div style="position:absolute;left:55%;bottom:26%;width:14%;height:22%;border-radius:6px;background:linear-gradient(180deg,#ffb090,#d63a2a)"></div>' +
       im(frogN, 'left:22%;bottom:18%;height:58%') + im(B('#F7C32B', 'laugh'), 'left:62%;top:18%;width:16%') + im(B('#FF7BAC', 'wow'), 'left:78%;top:28%;width:14%') + '</div>',
-    cut: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#b4e4ff,#eef9ff 60%,#dff3b0)"></div><div class="t-pop" style="position:absolute;inset:0">' +
+    slice: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#b4e4ff,#eef9ff 60%,#dff3b0)"></div><div class="t-pop" style="position:absolute;inset:0">' +
       im(B('#F7C32B', 'laugh'), 'left:18%;top:22%;width:28%;transform:rotate(-18deg)') + im(B('#5CC8F2', 'wow'), 'left:48%;top:12%;width:26%;transform:rotate(12deg)') + im(B('#FF7BAC', 'laugh'), 'left:58%;top:42%;width:24%;transform:rotate(-8deg)') +
       '<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 75"><path d="M12 48Q40 20 88 28" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M12 48Q40 20 88 28" fill="none" stroke="#FFD23F" stroke-width="1.4" stroke-linecap="round"/></svg></div>',
     gravity2048: '<div style="position:absolute;inset:0;background:linear-gradient(160deg,#cfe9ff,#9fc5ff)"></div><div class="t-pop" style="position:absolute;left:12%;right:12%;top:8%;bottom:8%;border-radius:20px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 3px #fff">' +
@@ -143,7 +143,7 @@
     ['jump', '跳一跳', '长按蓄力松手起跳，落中心加分。', ['蓄力', '精准']],
     ['milkrain', '奶滴接接乐', '拖动小蛙，接住从天而降的奶块。', ['接物', '反应'], '新'],
     ['run', '奶蛙神跑', '方向键移动，空格二段跳，滑铲躲障，无尽跑酷。', ['跑酷', '街机'], '新'],
-    ['cut', '切奶蛙', '滑动切开飞来的奶蛙，连击翻倍，别切坏奶。', ['切割', '反应'], '新'],
+    ['slice', '切奶蛙', '滑动切开飞来的奶蛙，连击翻倍，别切坏奶。', ['切割', '反应'], '新'],
     ['breakout', '奶蛙打砖块', '弹球反弹，打光所有彩色砖块。', ['街机', '反弹'], '新'],
     ['tetris', '俄罗斯奶块', '旋转堆叠，消除整行，越玩越快。', ['经典', '方块']],
     ['tilematch', '奶了个蛙', '三消叠叠乐：点牌入槽，三张相同就消除。', ['三消', '烧脑']],

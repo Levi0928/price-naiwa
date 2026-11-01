@@ -5,25 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
 <title>奶蛙神跑 · 奶蛙小游戏</title>
-<meta name="description" content="方向键/WASD 移动，空格跳跃，手机滑动。无尽跑酷，躲开障碍，捡奶币！">
+<meta name="description" content="方向键/WASD 移动，空格二段跳，手机滑动。无尽跑酷，近失有反馈，段位结算。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="奶蛙神跑 · 奶蛙小游戏"><meta property="og:description" content="方向键/WASD 移动，空格二段跳，手机滑动。无尽跑酷！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=run2">
+<meta property="og:title" content="奶蛙神跑 · 奶蛙小游戏"><meta property="og:description" content="无尽跑酷：二段跳、滑铲、近失反馈、铜银金段位。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=run3">
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 手机：左右滑、上滑跳、下滑铲</p>
+  <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 手机左右滑/上滑跳/下滑铲</p>
 </div>
-<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=model3"></script>
+<script src="/assets/frog.js?v=run3"></script><script src="/assets/nw.js?v=run3"></script>
 <script>
 (function () {
+  /* CFG — quality-bar §5 */
+  var CFG = {
+    RUN_BASE: 220, GRAV: 2400, JUMP_V: -620, DJUMP_V: -540,
+    SLIDE_T: 0.45, BAR_IFRAMES: 0.05, NEAR_PX: 6,
+    SPEED_DIST: 4500, SPEED_CAP: 0.75, /* mul = 1 + min(0.75, dist/4500) → ~1.75 */
+    RANK: [300, 800, 1500], /* 铜银金 米 */
+    MAX_SAME_SYNTAX: 2
+  };
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-  var W = 360, H = 600, view = { s: 1 };
+  var W = 360, H = 600, view = { s: 1 }, RM = NW.reduceMotion && NW.reduceMotion();
   var FW = 64, FH = 88;
-  var __nfBody = F.load({ pose: 'stand' });
   var spr = {
     run: F.spritePng(F.png({ pose: 'stand' }), FW, FH),
     jump: F.spritePng(F.png({ pose: 'peace' }), FW, FH),
@@ -34,24 +41,41 @@
   var fx = new NW.FX();
   var G = NW.mount({
     key: 'run', title: '奶蛙神跑', scoreLabel: '分数', extraCard: '奶币',
-    rules: '无尽侧视跑酷。←→/AD 左右移动，空格或 W/↑ 跳跃（可二段跳），S/↓ 滑铲躲矮障。手机左右滑移动、上滑跳、下滑铲。捡奶币、踩弹簧、连跳加分。撞障或掉落结束。',
+    rules: '无尽侧视跑酷。←→/AD 移动，空格或 W 二段跳，S 滑铲躲矮杆。速度随距离平滑升高。擦障有近失提示。结算铜/银/金段位（300/800/1500 米）。',
     onStart: reset
   });
 
-  var GRAV = 2550, JUMP_V = -640, DJUMP_V = -560, RUN_BASE = 235;
   var keys = { L: 0, R: 0, U: 0, D: 0 };
-  var frog, plats, coins, hazards, dust, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, airJumps, shakeT, clouds, hills, tRun, landCool, perfectAir, streak;
+  var frog, plats, coins, hazards, dust, ghosts, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, barIframe, airJumps, shakeT, clouds, hills, tRun, landCool, streak, lastSyntax, syntaxStreak, nearFlash, milestone, hitstop;
 
-  function plat(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h || 24, kind: kind || 'ground', bob: Math.random() * 6.28 }; }
-  function hz(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h, kind: kind || 'block' }; }
-  function coinAt(x, y, special) { return { x: x, y: y, r: special ? 14 : 11, got: 0, ph: Math.random() * 6.28, special: !!special }; }
+  var SYNTAX = ['flat', 'gap', 'float', 'spring', 'bar', 'spike'];
+
+  function plat(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h || 24, kind: kind || 'ground', bob: Math.random() * 6.28, move: 0 }; }
+  function hz(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h, kind: kind || 'block', near: 0 }; }
+  function coinAt(x, y, special, lane) { return { x: x, y: y, r: special ? 14 : 11, got: 0, ph: Math.random() * 6.28, special: !!special, lane: lane || 'safe' }; }
+
+  function rankName(m) {
+    if (m >= CFG.RANK[2]) return '金蛙跑者';
+    if (m >= CFG.RANK[1]) return '银蛙跑者';
+    if (m >= CFG.RANK[0]) return '铜蛙跑者';
+    return '练腿中';
+  }
+
+  function pickSyntax() {
+    var pool = SYNTAX.slice();
+    if (syntaxStreak >= CFG.MAX_SAME_SYNTAX) pool = pool.filter(function (s) { return s !== lastSyntax; });
+    var s = pool[(Math.random() * pool.length) | 0];
+    if (s === lastSyntax) syntaxStreak++; else { lastSyntax = s; syntaxStreak = 1; }
+    return s;
+  }
 
   function reset() {
-    frog = { x: 90, y: 430, vx: 0, vy: 0, on: null, w: 36, h: 50, slide: false, facing: 1, sq: 1, runPhase: 0, blink: 0 };
+    frog = { x: 90, y: 430, vx: 0, vy: 0, on: null, w: 36, h: 50, slide: false, facing: 1, sq: 1, runPhase: 0 };
     plats = [plat(-60, 480, 320, 28, 'ground'), plat(280, 480, 220, 28, 'ground'), plat(540, 480, 260, 28, 'ground')];
-    coins = []; hazards = []; dust = [];
+    coins = []; hazards = []; dust = []; ghosts = [];
     camX = 0; dist = 0; coinsGot = 0; speedMul = 1; spawnX = 740; dead = false;
-    slideT = 0; airJumps = 2; shakeT = 0; tRun = 0; landCool = 0; perfectAir = 0; streak = 0;
+    slideT = 0; barIframe = 0; airJumps = 2; shakeT = 0; tRun = 0; landCool = 0; streak = 0;
+    lastSyntax = 'flat'; syntaxStreak = 0; nearFlash = 0; milestone = 500; hitstop = 0;
     clouds = []; hills = [];
     for (var i = 0; i < 10; i++) clouds.push({ x: i * 160 + Math.random() * 80, y: 36 + Math.random() * 140, s: 0.55 + Math.random() * 0.85, a: 0.5 + Math.random() * 0.4 });
     for (var h = 0; h < 8; h++) hills.push({ x: h * 200, w: 180 + Math.random() * 100, c: h % 2 ? '#c5e69a' : '#b4dc84' });
@@ -60,46 +84,55 @@
   }
 
   function spawnChunk() {
+    var syn = pickSyntax();
     var n = Math.min(1, dist / 3200);
-    var gap = 62 + Math.random() * (48 + n * 78);
-    var w = 150 + Math.random() * (110 - n * 45); if (w < 88) w = 88;
-    var baseY = 480, roll = Math.random(), px = spawnX + gap;
+    var gap = 58 + Math.random() * (42 + n * 70);
+    var w = 145 + Math.random() * (100 - n * 40); if (w < 88) w = 88;
+    var baseY = 480, px = spawnX + gap;
 
-    if (roll < 0.48) {
+    if (syn === 'flat') {
       plats.push(plat(px, baseY, w, 28, 'ground'));
-      if (Math.random() < 0.5 + n * 0.35) {
-        var hx = px + 36 + Math.random() * Math.max(24, w - 90);
-        if (Math.random() < 0.5) hazards.push(hz(hx, baseY - 50, 30, 50, 'block'));
-        else if (Math.random() < 0.55) hazards.push(hz(hx, baseY - 82, 54, 18, 'bar'));
-        else hazards.push(hz(hx, baseY - 38, 40, 38, 'spike'));
-      }
-      if (Math.random() < 0.78) {
-        var cx = px + w * 0.28, cy = baseY - 72 - Math.random() * 55;
-        for (var i = 0; i < 4; i++) coins.push(coinAt(cx + i * 26, cy - Math.sin(i * 0.9) * 14, i === 3 && Math.random() < 0.25));
-      }
+      if (Math.random() < 0.4) hazards.push(hz(px + w * 0.45, baseY - 48, 28, 48, 'block'));
+      // safe low coins vs adventure high
+      for (var i = 0; i < 3; i++) coins.push(coinAt(px + 30 + i * 28, baseY - 55, false, 'safe'));
+      if (Math.random() < 0.55) for (var j = 0; j < 3; j++) coins.push(coinAt(px + 40 + j * 26, baseY - 130 - j * 8, j === 2, 'risk'));
       spawnX = px + w;
-    } else if (roll < 0.78) {
-      var fy = baseY - (75 + Math.random() * 95);
-      var fw = 72 + Math.random() * 54;
-      var kind = Math.random() < 0.22 ? 'spring' : 'float';
-      plats.push(plat(px, fy, fw, 20, kind));
-      coins.push(coinAt(px + fw / 2, fy - 38, kind === 'spring'));
-      var px2 = px + fw + 50 + Math.random() * 55;
-      var fy2 = Math.min(baseY - 42, Math.max(270, fy + (Math.random() < 0.5 ? -48 : 36)));
-      plats.push(plat(px2, fy2, 68 + Math.random() * 42, 20, Math.random() < 0.15 ? 'spring' : 'float'));
-      coins.push(coinAt(px2 + 36, fy2 - 36, false));
-      if (Math.random() < 0.55) {
-        plats.push(plat(px2 + 110 + Math.random() * 40, baseY, 170, 28, 'ground'));
-        spawnX = px2 + 280;
-      } else spawnX = px2 + 140;
-    } else {
-      var mid = px + 45 + Math.random() * 35;
-      plats.push(plat(mid, baseY - 105 - Math.random() * 45, 64, 20, 'float'));
-      coins.push(coinAt(mid + 32, baseY - 155, true));
-      var land = mid + 125 + Math.random() * 50;
-      plats.push(plat(land, baseY, 190, 28, 'ground'));
-      if (Math.random() < 0.6) hazards.push(hz(land + 50, baseY - 40, 34, 40, Math.random() < 0.5 ? 'spike' : 'block'));
-      spawnX = land + 200;
+    } else if (syn === 'gap') {
+      var mid = px + 40 + Math.random() * 30;
+      plats.push(plat(mid, baseY - 100 - Math.random() * 40, 64, 20, 'float'));
+      coins.push(coinAt(mid + 32, baseY - 150, true, 'risk'));
+      var land = mid + 120 + Math.random() * 45;
+      plats.push(plat(land, baseY, 180, 28, 'ground'));
+      spawnX = land + 190;
+    } else if (syn === 'float') {
+      var fy = baseY - (80 + Math.random() * 90);
+      var fw = 70 + Math.random() * 50;
+      var p1 = plat(px, fy, fw, 20, 'float');
+      if (Math.random() < 0.35) { p1.move = 1; p1.ox = px; p1.amp = 28 + Math.random() * 24; }
+      plats.push(p1);
+      coins.push(coinAt(px + fw / 2, fy - 36, false, 'risk'));
+      var px2 = px + fw + 55 + Math.random() * 40;
+      var fy2 = Math.min(baseY - 42, Math.max(270, fy + (Math.random() < 0.5 ? -44 : 32)));
+      plats.push(plat(px2, fy2, 66 + Math.random() * 40, 20, 'float'));
+      plats.push(plat(px2 + 120, baseY, 160, 28, 'ground'));
+      spawnX = px2 + 290;
+    } else if (syn === 'spring') {
+      plats.push(plat(px, baseY, w * 0.7, 28, 'ground'));
+      plats.push(plat(px + w * 0.55, baseY - 20, 70, 20, 'spring'));
+      coins.push(coinAt(px + w * 0.55 + 35, baseY - 120, true, 'risk'));
+      plats.push(plat(px + w + 40, baseY, 150, 28, 'ground'));
+      spawnX = px + w + 200;
+    } else if (syn === 'bar') {
+      plats.push(plat(px, baseY, w, 28, 'ground'));
+      hazards.push(hz(px + w * 0.4, baseY - 80, 56, 18, 'bar'));
+      coins.push(coinAt(px + w * 0.4 + 28, baseY - 40, false, 'safe'));
+      spawnX = px + w;
+    } else { // spike
+      plats.push(plat(px, baseY, w, 28, 'ground'));
+      hazards.push(hz(px + w * 0.35, baseY - 38, 42, 38, 'spike'));
+      if (Math.random() < 0.5) hazards.push(hz(px + w * 0.65, baseY - 50, 28, 50, 'block'));
+      for (var k = 0; k < 2; k++) coins.push(coinAt(px + 24 + k * 30, baseY - 100, false, 'risk'));
+      spawnX = px + w;
     }
   }
 
@@ -141,41 +174,48 @@
   box.addEventListener('pointercancel', function () { touch0 = null; swiped = false; });
 
   function tryJump() {
-    if (!G.running || dead) return;
+    if (!G.running || dead || hitstop > 0) return;
     if (frog.on || airJumps > 0) {
       var first = !!frog.on;
-      frog.vy = first ? JUMP_V : DJUMP_V;
+      frog.vy = first ? CFG.JUMP_V : CFG.DJUMP_V;
       frog.on = null;
-      if (!first) airJumps--; else airJumps = 1;
+      if (!first) { airJumps--; NW.sfx.djump ? NW.sfx.djump() : NW.sfx.jump(0.4); fx.text(frog.x - camX, frog.y - 70, '二段！', { size: 18, color: '#5CC8F2', life: 0.55 }); }
+      else { airJumps = 1; NW.sfx.jump(0.75); }
       frog.slide = false; slideT = 0; frog.sq = 1.22;
-      NW.sfx.jump(first ? 0.75 : 0.42);
-      fx.burst(frog.x - camX, frog.y - 8, { count: first ? 10 : 6, speed: 150, colors: ['#fff', '#FFD23F', '#8FD14F'], size: 4 });
-      if (!first) { perfectAir++; fx.text(frog.x - camX, frog.y - 70, '二段！', { size: 18, color: '#5CC8F2', life: 0.55 }); }
+      fx.burst(frog.x - camX, frog.y - 8, { count: RM ? 3 : (first ? 10 : 6), speed: 150, colors: ['#fff', '#FFD23F', '#8FD14F'], size: 4 });
     }
   }
   function startSlide() {
     if (!G.running || dead) return;
     if (frog.on || frog.vy > -100) {
-      frog.slide = true; slideT = 0.48; frog.sq = 0.85;
-      NW.sfx.land();
-      fx.burst(frog.x - camX, frog.y + 6, { count: 7, speed: 110, colors: ['#fff', '#dff5b8'], size: 3 });
+      frog.slide = true; slideT = CFG.SLIDE_T; barIframe = CFG.BAR_IFRAMES; frog.sq = 0.85;
+      NW.sfx.slide ? NW.sfx.slide() : NW.sfx.land();
+      fx.burst(frog.x - camX, frog.y + 6, { count: RM ? 2 : 7, speed: 110, colors: ['#fff', '#dff5b8'], size: 3 });
     }
   }
 
   function aabb(ax, ay, aw, ah, bx, by, bw, bh) {
     return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
   }
+  function nearAabb(ax, ay, aw, ah, bx, by, bw, bh, pad) {
+    return aabb(ax - pad, ay - pad, aw + pad * 2, ah + pad * 2, bx, by, bw, bh) && !aabb(ax, ay, aw, ah, bx, by, bw, bh);
+  }
 
   function kill(why) {
     if (dead) return;
-    dead = true; frog.vy = -300; frog.vx *= 0.25;
-    NW.sfx.lose(); NW.vib(45); shakeT = 0.4;
-    fx.burst(frog.x - camX, frog.y - 24, { count: 28, speed: 300, colors: ['#F7C32B', '#fff', '#FF7BAC', '#FFD23F'], size: 8 });
+    dead = true; frog.vy = -300; frog.vx *= 0.25; hitstop = RM ? 0 : 0.1;
+    NW.sfx.hit ? NW.sfx.hit() : NW.sfx.lose(); NW.vib(45); if (!RM) shakeT = 0.4;
+    // death ghosts last ~2s trail already sampled
+    fx.burst(frog.x - camX, frog.y - 24, { count: RM ? 8 : 28, speed: 300, colors: ['#F7C32B', '#fff', '#FF7BAC', '#FFD23F'], size: 8 });
     fx.text(W / 2, 150, why || '撞到了！', { size: 30, color: '#ff4a2a', life: 1.15 });
-    setTimeout(function () { G.over('跑了 ' + Math.floor(dist) + ' 米 · 奶币 ' + coinsGot + (streak > 2 ? ' · 连跳' + streak : '')); }, 780);
+    var m = Math.floor(dist), rk = rankName(m);
+    setTimeout(function () {
+      G.over('跑了 ' + m + ' 米 · 奶币 ' + coinsGot + ' · ' + rk);
+    }, 780);
   }
 
   function addDust(x, y) {
+    if (RM) return;
     if (dust.length > 40) dust.shift();
     dust.push({ x: x, y: y, life: 0.35 + Math.random() * 0.2, vx: -40 - Math.random() * 60, vy: -20 - Math.random() * 30, s: 3 + Math.random() * 4 });
   }
@@ -184,19 +224,30 @@
   function frame(t) {
     var dt = Math.min(0.033, (t - last) / 1000); last = t;
     if (!frog) { requestAnimationFrame(frame); return; }
+    if (hitstop > 0) { hitstop -= dt; draw(t); fx.draw(ctx); requestAnimationFrame(frame); return; }
     tRun += dt;
     if (shakeT > 0) shakeT -= dt;
+    if (nearFlash > 0) nearFlash -= dt;
     if (slideT > 0) { slideT -= dt; if (slideT <= 0) frog.slide = false; }
+    if (barIframe > 0) barIframe -= dt;
     if (landCool > 0) landCool -= dt;
 
     if (G.running && !dead) {
+      // sample ghost every 0.08s
+      if (!RM && (ghosts.length === 0 || tRun - ghosts[ghosts.length - 1].t > 0.08)) {
+        ghosts.push({ x: frog.x, y: frog.y, slide: frog.slide, facing: frog.facing, t: tRun });
+        while (ghosts.length && tRun - ghosts[0].t > 2) ghosts.shift();
+      }
+
       var steer = (keys.R - keys.L);
-      var targetSpeed = RUN_BASE * speedMul;
+      speedMul = 1 + Math.min(CFG.SPEED_CAP, dist / CFG.SPEED_DIST);
+      var targetSpeed = CFG.RUN_BASE * speedMul;
       frog.vx += (targetSpeed + steer * 100 - frog.vx) * Math.min(1, dt * 7);
+      // friction when no steer relative to run — keep auto run
       if (steer) frog.facing = steer > 0 ? 1 : -1;
       else if (frog.vx > 50) frog.facing = 1;
 
-      frog.vy += GRAV * dt;
+      frog.vy += CFG.GRAV * dt;
       frog.x += frog.vx * dt;
       frog.y += frog.vy * dt;
       if (frog.on) { frog.runPhase += dt * (8 + speedMul * 3); if (Math.random() < dt * 14) addDust(frog.x - 10, frog.y); }
@@ -204,45 +255,60 @@
       var fh = frog.slide ? 30 : 50, fw = frog.slide ? 50 : 36;
       frog.h = fh; frog.w = fw;
 
+      // moving plats
+      plats.forEach(function (p) {
+        if (p.move) {
+          p.phase = (p.phase || 0) + dt;
+          p.x = p.ox + Math.sin(p.phase * 1.3) * p.amp;
+        }
+      });
+
       var wasOn = frog.on;
       frog.on = null;
       if (frog.vy >= -20) {
         for (var i = 0; i < plats.length; i++) {
           var p = plats[i];
-          var py = p.y + (p.kind === 'float' ? Math.sin((tRun + p.bob) * 2.2) * 3 : 0);
+          var py = p.y + (p.kind === 'float' && !p.move ? Math.sin((tRun + p.bob) * 2.2) * 3 : 0);
           if (frog.x + fw * 0.32 > p.x && frog.x - fw * 0.32 < p.x + p.w) {
             var prevFoot = frog.y - frog.vy * dt;
             if (prevFoot <= py + 6 && frog.y >= py && frog.y - fh < py + p.h + 8) {
               frog.y = py; frog.vy = 0; frog.on = p; airJumps = 2;
               if (!wasOn && landCool <= 0) {
-                landCool = 0.15; frog.sq = 0.72;
-                NW.sfx.land(); NW.vib(6);
-                fx.burst(frog.x - camX, py, { count: 8, speed: 120, colors: ['#fff', '#8FD14F'], size: 4 });
+                landCool = 0.15; frog.sq = 0.72; NW.sfx.land(); NW.vib(6);
+                fx.burst(frog.x - camX, py, { count: RM ? 3 : 8, speed: 120, colors: ['#fff', '#8FD14F'], size: 4 });
                 streak++;
                 if (streak >= 3 && streak % 3 === 0) {
-                  var bonus = streak; G.setScore(G.score + bonus);
-                  fx.text(frog.x - camX, py - 50, '连跳 +' + bonus, { size: 20, color: '#ff8a00', life: 0.7 });
+                  G.setScore(G.score + streak);
+                  fx.text(frog.x - camX, py - 50, '连跳 +' + streak, { size: 20, color: '#ff8a00', life: 0.7 });
                   NW.sfx.combo(Math.min(5, Math.floor(streak / 3)));
                 }
               }
               if (p.kind === 'spring') {
-                frog.vy = JUMP_V * 1.2; frog.on = null; airJumps = 1; frog.sq = 1.25;
-                NW.sfx.jump(1); NW.vib(12);
+                frog.vy = CFG.JUMP_V * 1.2; frog.on = null; airJumps = 1; frog.sq = 1.25;
+                NW.sfx.spring ? NW.sfx.spring() : NW.sfx.jump(1); NW.vib(12);
                 fx.text(p.x + p.w / 2 - camX, py - 36, '弹！', { size: 24, color: '#7CC93E', life: 0.75 });
-                fx.burst(frog.x - camX, py, { count: 14, speed: 220, colors: ['#b6ea72', '#fff'], size: 5 });
               }
               break;
             }
           }
         }
       }
-      if (!frog.on && wasOn) streak = Math.max(0, streak); // keep streak through air until miss
       if (frog.y > H + 90) kill('掉下去了');
 
       var left = frog.x - fw / 2, top = frog.y - fh;
       for (var h = 0; h < hazards.length; h++) {
         var z = hazards[h];
-        var hit = frog.slide && z.kind === 'bar' ? false : aabb(left + 5, top + 5, fw - 10, fh - 8, z.x, z.y, z.w, z.h);
+        // near miss
+        if (nearAabb(left + 5, top + 5, fw - 10, fh - 8, z.x, z.y, z.w, z.h, CFG.NEAR_PX)) {
+          if (!z.near) {
+            z.near = 1; nearFlash = 0.22;
+            NW.sfx.nearMiss && NW.sfx.nearMiss();
+            fx.text(frog.x - camX, frog.y - 80, '好险！', { size: 18, color: '#fff', life: 0.5 });
+          }
+        }
+        var ignoreBar = frog.slide && z.kind === 'bar';
+        var iframeBar = barIframe > 0 && z.kind === 'bar';
+        var hit = !ignoreBar && !iframeBar && aabb(left + 5, top + 5, fw - 10, fh - 8, z.x, z.y, z.w, z.h);
         if (hit) { streak = 0; kill(z.kind === 'bar' ? '矮障！下滑铲' : (z.kind === 'spike' ? '刺到了！' : '撞到了')); break; }
       }
 
@@ -251,17 +317,21 @@
         if (Math.hypot(o.x - frog.x, o.y - (frog.y - fh * 0.45)) < o.r + 20) {
           o.got = 1; coinsGot++; G.setExtra(coinsGot);
           var pts = o.special ? 30 : 10; G.setScore(G.score + pts);
-          NW.sfx.pop(Math.min(coinsGot, 8)); if (o.special) NW.sfx.perfect();
+          NW.sfx.coin ? NW.sfx.coin() : NW.sfx.pop(Math.min(coinsGot, 8));
+          if (o.special) NW.sfx.perfect();
           NW.vib(o.special ? 14 : 7);
-          fx.burst(o.x - camX, o.y, { count: o.special ? 16 : 10, speed: 200, colors: ['#FFD23F', '#fff', '#F7C32B'], size: o.special ? 6 : 4 });
+          fx.burst(o.x - camX, o.y, { count: RM ? 4 : (o.special ? 16 : 10), speed: 200, colors: ['#FFD23F', '#fff', '#F7C32B'], size: o.special ? 6 : 4 });
           fx.text(o.x - camX, o.y - 22, '+' + pts, { size: o.special ? 24 : 18, color: '#e8a000' });
-          if (coinsGot % 10 === 0) { NW.sfx.combo(3); fx.text(W / 2, 118, '奶币 ×' + coinsGot, { size: 28, color: '#ff8a00', life: 1 }); }
         }
       }
 
       dist = Math.max(dist, frog.x / 10);
       G.setScore(Math.floor(dist) + coinsGot * 10 + Math.max(0, streak - 1) * 2, false);
-      speedMul = 1 + Math.min(1.4, dist / 2600) + Math.min(0.45, tRun * 0.012);
+      if (dist >= milestone) {
+        NW.sfx.fanfare && NW.sfx.fanfare();
+        fx.text(W / 2, 130, milestone + ' 米！', { size: 28, color: '#ff8a00', life: 1.1 });
+        milestone += 500;
+      }
 
       while (spawnX < frog.x + 950) spawnChunk();
       var cull = frog.x - 420;
@@ -269,7 +339,7 @@
       hazards = hazards.filter(function (z) { return z.x + z.w > cull; });
       coins = coins.filter(function (o) { return !o.got && o.x > cull; });
     } else if (dead) {
-      frog.vy += GRAV * dt; frog.y += frog.vy * dt; frog.x += frog.vx * dt; frog.sq += (1.15 - frog.sq) * dt * 4;
+      frog.vy += CFG.GRAV * dt; frog.y += frog.vy * dt; frog.x += frog.vx * dt;
     }
 
     for (var d = dust.length - 1; d >= 0; d--) {
@@ -294,49 +364,56 @@
   }
 
   function draw(t) {
-    var c = ctx, shx = shakeT > 0 ? (Math.random() - 0.5) * 12 * shakeT : 0, shy = shakeT > 0 ? (Math.random() - 0.5) * 9 * shakeT : 0;
+    var c = ctx, shx = (!RM && shakeT > 0) ? (Math.random() - 0.5) * 12 * shakeT : 0, shy = (!RM && shakeT > 0) ? (Math.random() - 0.5) * 9 * shakeT : 0;
     c.setTransform(view.s, 0, 0, view.s, 0, 0);
     var sky = c.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, '#9fd9ff'); sky.addColorStop(0.45, '#e4f6ff'); sky.addColorStop(0.78, '#eef8d4'); sky.addColorStop(1, '#d4ef9a');
     c.fillStyle = sky; c.fillRect(0, 0, W, H);
-
-    // sun
     c.fillStyle = 'rgba(255,220,100,.35)'; c.beginPath(); c.arc(W - 56, 70, 42, 0, 6.28); c.fill();
     c.fillStyle = 'rgba(255,236,150,.85)'; c.beginPath(); c.arc(W - 56, 70, 26, 0, 6.28); c.fill();
 
-    c.save(); c.translate(shx - camX * 0.28, shy);
-    hills.forEach(function (h, i) {
-      var hx = h.x - camX * 0.28;
-      hx = ((hx % (W + 260)) + (W + 260)) % (W + 260) - 80;
-      c.fillStyle = h.c;
-      c.beginPath(); c.ellipse(hx + 90, 455, h.w * 0.5, 78, 0, Math.PI, 0); c.fill();
+    var par = RM ? 0.1 : 0.28;
+    c.save(); c.translate(shx - camX * par, shy);
+    hills.forEach(function (h) {
+      var hx = ((h.x - camX * par) % (W + 260) + (W + 260)) % (W + 260) - 80;
+      c.fillStyle = h.c; c.beginPath(); c.ellipse(hx + 90, 455, h.w * 0.5, 78, 0, Math.PI, 0); c.fill();
     });
-    clouds.forEach(function (cl) {
+    if (!RM) clouds.forEach(function (cl) {
       var cx = ((cl.x - camX * 0.18) % (W + 220) + (W + 220)) % (W + 220) - 50;
       c.globalAlpha = cl.a; c.fillStyle = '#fff';
-      c.beginPath();
-      c.ellipse(cx, cl.y, 38 * cl.s, 17 * cl.s, 0, 0, 6.28);
+      c.beginPath(); c.ellipse(cx, cl.y, 38 * cl.s, 17 * cl.s, 0, 0, 6.28);
       c.ellipse(cx + 24 * cl.s, cl.y + 2, 30 * cl.s, 15 * cl.s, 0, 0, 6.28);
-      c.ellipse(cx - 22 * cl.s, cl.y + 3, 26 * cl.s, 13 * cl.s, 0, 0, 6.28);
-      c.fill(); c.globalAlpha = 1;
+      c.ellipse(cx - 22 * cl.s, cl.y + 3, 26 * cl.s, 13 * cl.s, 0, 0, 6.28); c.fill(); c.globalAlpha = 1;
     });
     c.restore();
 
     c.save(); c.translate(shx - camX, shy);
 
+    // death ghosts
+    if (dead && ghosts.length) {
+      ghosts.forEach(function (g, i) {
+        c.globalAlpha = 0.12 + (i / ghosts.length) * 0.25;
+        var img = g.slide ? spr.slide : spr.run;
+        c.save(); c.translate(g.x, g.y); c.scale(g.facing, g.slide ? 0.7 : 1);
+        if (img && img.width) c.drawImage(img, -FW / 2, -FH + 6, FW, FH);
+        c.restore();
+      });
+      c.globalAlpha = 1;
+    }
+
     plats.forEach(function (p) {
-      var py = p.y + (p.kind === 'float' ? Math.sin((tRun + p.bob) * 2.2) * 3 : 0);
+      var py = p.y + (p.kind === 'float' && !p.move ? Math.sin((tRun + p.bob) * 2.2) * 3 : 0);
       var col1 = p.kind === 'spring' ? '#c5f07a' : (p.kind === 'float' ? '#ffd8b0' : '#9ada55');
       var col2 = p.kind === 'spring' ? '#6bb82e' : (p.kind === 'float' ? '#f08a2e' : '#4e9a1e');
       var grd = c.createLinearGradient(0, py, 0, py + p.h);
       grd.addColorStop(0, col1); grd.addColorStop(1, col2);
       c.fillStyle = grd; roundRect(c, p.x, py, p.w, p.h, 11); c.fill();
       c.fillStyle = 'rgba(255,255,255,.5)'; roundRect(c, p.x + 5, py + 3, p.w - 10, 7, 4); c.fill();
-      c.fillStyle = 'rgba(0,0,0,.14)'; c.fillRect(p.x + 3, py + p.h, p.w - 6, 7);
       if (p.kind === 'spring') {
-        c.strokeStyle = '#3F8E1C'; c.lineWidth = 2.5; c.lineJoin = 'round';
+        c.strokeStyle = '#3F8E1C'; c.lineWidth = 2.5;
         c.beginPath(); c.moveTo(p.x + 14, py + 5); c.lineTo(p.x + p.w / 2, py - 10); c.lineTo(p.x + p.w - 14, py + 5); c.stroke();
       }
+      if (p.move) { c.fillStyle = 'rgba(255,255,255,.7)'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.fillText('↔', p.x + p.w / 2, py + 15); }
     });
 
     hazards.forEach(function (z) {
@@ -344,72 +421,60 @@
         var bg = c.createLinearGradient(z.x, z.y, z.x, z.y + z.h);
         bg.addColorStop(0, '#ff8a60'); bg.addColorStop(1, '#e04530');
         c.fillStyle = bg; roundRect(c, z.x, z.y, z.w, z.h, 7); c.fill();
-        c.fillStyle = 'rgba(255,255,255,.45)'; c.fillRect(z.x + 5, z.y + 3, z.w - 10, 4);
-        c.fillStyle = '#fff'; c.font = 'bold 12px system-ui,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillStyle = '#fff'; c.font = 'bold 12px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
         c.fillText('滑', z.x + z.w / 2, z.y + z.h / 2 + 1);
       } else if (z.kind === 'spike') {
-        c.fillStyle = '#e85068';
-        c.beginPath();
+        c.fillStyle = '#e85068'; c.beginPath();
         var n = Math.max(2, Math.floor(z.w / 13));
-        for (var i = 0; i < n; i++) {
-          var sx = z.x + (i + 0.5) * (z.w / n);
-          c.moveTo(sx - 7, z.y + z.h); c.lineTo(sx, z.y); c.lineTo(sx + 7, z.y + z.h);
-        }
+        for (var i = 0; i < n; i++) { var sx = z.x + (i + 0.5) * (z.w / n); c.moveTo(sx - 7, z.y + z.h); c.lineTo(sx, z.y); c.lineTo(sx + 7, z.y + z.h); }
         c.closePath(); c.fill();
-        c.fillStyle = 'rgba(255,255,255,.25)';
-        c.beginPath(); for (var j = 0; j < n; j++) { var sx2 = z.x + (j + 0.5) * (z.w / n); c.moveTo(sx2 - 3, z.y + z.h * 0.7); c.lineTo(sx2, z.y + 6); c.lineTo(sx2 + 2, z.y + z.h * 0.7); } c.fill();
       } else {
         var b = c.createLinearGradient(z.x, z.y, z.x, z.y + z.h);
         b.addColorStop(0, '#ffb090'); b.addColorStop(1, '#d63a2a');
         c.fillStyle = b; roundRect(c, z.x, z.y, z.w, z.h, 7); c.fill();
-        c.fillStyle = 'rgba(255,255,255,.35)'; roundRect(c, z.x + 4, z.y + 4, z.w - 8, 8, 4); c.fill();
       }
     });
 
     coins.forEach(function (o) {
       if (o.got) return;
-      o.ph += 0.1;
-      var bob = Math.sin(o.ph) * 5;
+      o.ph += 0.1; var bob = Math.sin(o.ph) * 5;
       c.save(); c.translate(o.x, o.y + bob);
-      if (spr.coin && spr.coin.width) {
-        var sz = o.special ? 40 : 32;
-        c.drawImage(spr.coin, -sz / 2, -sz / 2, sz, sz);
-      } else {
-        c.fillStyle = '#FFD23F'; c.beginPath(); c.arc(0, 0, o.r, 0, 6.28); c.fill();
-      }
-      if (o.special) { c.strokeStyle = 'rgba(255,140,0,.7)'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, o.r + 6 + Math.sin(o.ph * 2) * 2, 0, 6.28); c.stroke(); }
+      if (o.lane === 'risk') { c.strokeStyle = 'rgba(255,140,0,.35)'; c.lineWidth = 2; c.setLineDash([4, 4]); c.beginPath(); c.arc(0, 0, o.r + 8, 0, 6.28); c.stroke(); c.setLineDash([]); }
+      var sz = o.special ? 40 : 32;
+      if (spr.coin && spr.coin.width) c.drawImage(spr.coin, -sz / 2, -sz / 2, sz, sz);
+      else { c.fillStyle = '#FFD23F'; c.beginPath(); c.arc(0, 0, o.r, 0, 6.28); c.fill(); }
       c.restore();
     });
 
     dust.forEach(function (du) {
       c.globalAlpha = Math.max(0, du.life * 2); c.fillStyle = '#fff';
-      c.beginPath(); c.arc(du.x, du.y, du.s * du.life * 2, 0, 6.28); c.fill();
-      c.globalAlpha = 1;
+      c.beginPath(); c.arc(du.x, du.y, du.s * du.life * 2, 0, 6.28); c.fill(); c.globalAlpha = 1;
     });
 
-    // frog shadow
-    var shY = frog.on ? frog.on.y + (frog.on.kind === 'float' ? Math.sin((tRun + frog.on.bob) * 2.2) * 3 : 0) : Math.min(frog.y + 6, 505);
-    c.fillStyle = 'rgba(0,0,0,.14)';
-    c.beginPath(); c.ellipse(frog.x, shY + 5, frog.slide ? 30 : 20, 7, 0, 0, 6.28); c.fill();
+    var shY = frog.on ? frog.on.y : Math.min(frog.y + 6, 505);
+    c.fillStyle = 'rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(frog.x, shY + 5, frog.slide ? 30 : 20, 7, 0, 0, 6.28); c.fill();
 
     var img = dead ? spr.wow : (frog.slide ? spr.slide : (!frog.on && frog.vy < -50 ? spr.jump : spr.run));
     c.save();
     c.translate(frog.x, frog.y + (frog.on && !frog.slide ? Math.sin(frog.runPhase) * 2 : 0));
-    var sy = (frog.slide ? 0.7 : 1) * (2 - frog.sq);
-    c.scale(frog.facing * frog.sq, sy);
+    c.scale(frog.facing * frog.sq, (frog.slide ? 0.7 : 1) * (2 - frog.sq));
     if (img && img.width) c.drawImage(img, -FW / 2, -FH + 6, FW, FH);
-    else if (spr && spr.run && spr.run.width) c.drawImage(spr.run, -FW / 2, -FH + 6, FW, FH);
+    c.restore();
     c.restore();
 
-    c.restore();
+    if (nearFlash > 0 && !RM) {
+      c.strokeStyle = 'rgba(255,255,255,' + (nearFlash * 2) + ')'; c.lineWidth = 4;
+      c.strokeRect(3, 3, W - 6, H - 6);
+    }
 
     if (G.running) {
       c.fillStyle = 'rgba(255,255,255,.78)'; roundRect(c, 10, 8, 118, 30, 15); c.fill();
-      c.fillStyle = '#6a4400'; c.font = 'bold 13px system-ui,sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.fillStyle = '#6a4400'; c.font = 'bold 13px system-ui'; c.textAlign = 'left'; c.textBaseline = 'middle';
       c.fillText(Math.floor(dist) + ' 米', 22, 23);
+      // speed bar
       c.fillStyle = 'rgba(255,255,255,.78)'; roundRect(c, W - 118, 8, 108, 30, 15); c.fill();
-      c.fillStyle = '#e07000'; c.textAlign = 'right';
-      c.fillText('×' + speedMul.toFixed(1), W - 22, 23);
+      c.fillStyle = 'rgba(255,160,40,.35)'; roundRect(c, W - 110, 16, 92 * Math.min(1, (speedMul - 1) / CFG.SPEED_CAP), 14, 7); c.fill();
+      c.fillStyle = '#e07000'; c.textAlign = 'right'; c.fillText('×' + speedMul.toFixed(2), W - 22, 23);
       if (streak >= 2) {
         c.fillStyle = 'rgba(255,255,255,.7)'; roundRect(c, W / 2 - 48, 8, 96, 28, 14); c.fill();
         c.fillStyle = '#ff6a00'; c.textAlign = 'center'; c.fillText('连跳 ' + streak, W / 2, 22);
