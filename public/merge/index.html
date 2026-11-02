@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=model3">
+<link rel="stylesheet" href="/style.css?v=juice3">
 <style>
 .jar-bar{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:8px 10px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .jar-bar .t{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px}
@@ -28,15 +28,20 @@
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
   <div class="jar-bar" id="chain" aria-label="合成进化链"></div>
+  <div style="display:flex;gap:8px;justify-content:center;padding:0 10px 6px;flex-wrap:wrap">
+    <button type="button" id="mg-classic" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">经典</button>
+    <button type="button" id="mg-rush" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">90秒冲分</button>
+    <button type="button" id="mg-cap7" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">只到Lv7</button>
+  </div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint">拖动/←→瞄准 · 松手/空格投放 · R重开 · 相同合成 · 每 2000 分复活币</p>
+  <p class="nw-hint">拖动/←→瞄准 · 松手/空格投放 · R重开 · 相同合成 · 每 2000 分复活币 · 可选挑战模式</p>
 </div>
 <div class="revive-mask" id="revive"><div class="revive-box">
   <h3>还能再救一下</h3>
   <p id="rv-txt">清掉警戒线上方的奶蛙，继续这一局。</p>
   <div class="row"><button class="btn green" id="rv-yes">用 1 枚复活币</button><button class="btn white" id="rv-no">结束本局</button></div>
 </div></div>
-<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/frog.js?v=juice3"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -49,8 +54,22 @@
   var spr = R.map(function (r, i) { var sz = Math.max(48, Math.min(160, r * 2.2)); return F.pieceSprite({ shape: 'ball', color: COL[i], mood: MOOD[i] }, sz, sz); });
   var fx = new NW.FX(), view = { s: 1, dpr: 1 };
   var balls = [], cur = 0, nxt = 0, aimX = W / 2, canDrop = true, dropT = 0, dangerT = 0, shakeT = 0, shakeA = 0, uid = 0, chain = 0, chainT = 0, held = false, flash = 0, hitstop = 0;
-  var coins = 0, coinBank = 0, paused = false, maxSeen = 0;
-  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', extraCard: '复活币', rules: '拖动瞄准、松手投放。两个相同奶蛙相撞合成更大一号（共 11 级）。越过红线且停住约 1.5 秒判负；每 2000 分送 1 枚复活币，可清掉线以上的球继续。合出皇冠奶蛙！', onStart: reset });
+  var coins = 0, coinBank = 0, paused = false, maxSeen = 0, mode = 'classic', rushLeft = 90, merges = 0;
+  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', extraCard: '复活币', rules: '拖动瞄准、松手投放。11 级合成。红线停住判负；每 2000 分复活币。模式：经典 / 90 秒冲分 / 只合成到 Lv7。结算按最大等级给星。', onStart: reset });
+  function syncMgMode() {
+    document.getElementById('mg-classic').style.background = mode === 'classic' ? '#F7C32B' : '#fff';
+    document.getElementById('mg-rush').style.background = mode === 'rush' ? '#F7C32B' : '#fff';
+    document.getElementById('mg-cap7').style.background = mode === 'cap7' ? '#F7C32B' : '#fff';
+    G.setExtra(mode === 'rush' ? ('⏱ ' + Math.ceil(rushLeft)) : coins);
+  }
+  function setMode(m) {
+    if (G.running) { NW.toast('局中不可切换'); return; }
+    mode = m; rushLeft = 90; syncMgMode(); NW.sfx.click();
+  }
+  document.getElementById('mg-classic').onclick = function () { setMode('classic'); };
+  document.getElementById('mg-rush').onclick = function () { setMode('rush'); };
+  document.getElementById('mg-cap7').onclick = function () { setMode('cap7'); };
+  syncMgMode();
   function rnd(not) { var w = [.28, .24, .20, .16, .12], v; for (var t = 0; t < 6; t++) { var r = Math.random(), s = 0; v = 4; for (var i = 0; i < 5; i++) { s += w[i]; if (r < s) { v = i; break; } } if (v !== not) break; } return v; }
   function paintChain() {
     var el = document.getElementById('chain'); if (!el) return;
@@ -67,8 +86,8 @@
   }
   function reset() {
     balls = []; fx.p = []; cur = rnd(); nxt = rnd(cur); canDrop = true; dangerT = 0; chain = 0; flash = 0; hitstop = 0;
-    coins = 0; coinBank = 0; paused = false; maxSeen = 0; document.getElementById('revive').classList.remove('show');
-    G.setScore(0, false); G.setExtra(coins); paintChain();
+    coins = 0; coinBank = 0; paused = false; maxSeen = 0; merges = 0; rushLeft = 90; document.getElementById('revive').classList.remove('show');
+    G.setScore(0, false); syncMgMode(); paintChain();
   }
   function resize() { var o = NW.fit(cv, box, W / H, 520); view.dpr = o.dpr; view.s = cv.width / W; }
   window.addEventListener('resize', resize); resize();
@@ -116,7 +135,7 @@
   document.getElementById('rv-yes').onclick = function () { if (coins > 0) doRevive(); };
   document.getElementById('rv-no').onclick = function () {
     document.getElementById('revive').classList.remove('show'); paused = false;
-    G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级 · ' + NAMES[Math.min(10, balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0))]);
+    var mx = balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0); var st = mx >= 10 ? 3 : (mx >= 7 ? 2 : (mx >= 4 ? 1 : 0)); G.over('堆到顶了 · ' + NAMES[Math.min(10, mx)] + ' · ' + '★'.repeat(st || 1) + ' · 合成 ' + merges + ' 次');
   };
   function step(dt) {
     var i, j, a, b;
@@ -146,14 +165,23 @@
           fx.burst(x, y, { count: 60, speed: 520, size: 12, life: 1.1 }); NW.sfx.win(); shakeT = .4; shakeA = 10; flash = 1.4; hitstop = .13; NW.vib(70);
           fx.text(W / 2, H * .32, '双冠对撞！+复活币', { size: 28, color: '#ff4a2a', life: 1.3 });
         } else {
-          var n = { id: ++uid, x: x, y: y, vx: (a.vx + b.vx) / 2, vy: -80, r: R[lv + 1], lv: lv + 1, age: .05, sq: 0, sa: 0, grow: 1, pop: 1, rot: 0 };
-          balls.push(n); addScore((lv + 1) * (lv + 2) / 2, x, y - R[lv + 1] * .5);
+          var nextLv = lv + 1;
+          if (mode === 'cap7' && nextLv > 6) {
+            // explode instead of going higher
+            addScore((lv + 1) * (lv + 2), x, y); merges++;
+            fx.burst(x, y, { count: 28, speed: 360, colors: [COL[lv], '#fff', '#FFD23F'], size: 8 });
+            NW.sfx.win(); flash = Math.max(flash, .8); hitstop = .1; NW.vib(40);
+            fx.text(x, y - 30, 'Lv7 封顶爆！', { size: 22, color: '#ff4a2a', life: 1 });
+          } else {
+          var n = { id: ++uid, x: x, y: y, vx: (a.vx + b.vx) / 2, vy: -80, r: R[nextLv], lv: nextLv, age: .05, sq: 0, sa: 0, grow: 1, pop: 1, rot: 0 };
+          balls.push(n); merges++; addScore((nextLv) * (nextLv + 1) / 2, x, y - R[nextLv] * .5);
           fx.burst(x, y, { count: 12 + 3 * (lv + 1), speed: 160 + 26 * (lv + 1), colors: [COL[lv + 1], '#fff', '#FFD23F', '#FFE27A'], size: 6 + lv * .5 });
           if (fx.ring) fx.ring(x, y, { maxR: 40 + lv * 8, life: 0.35, color: COL[lv + 1] });
           if (fx.ripple) fx.ripple(x, y, { maxR: 28 + lv * 4, life: 0.28 });
           NW.sfx.merge(lv); NW.vib(6 + lv + 1); flash = Math.max(flash, lv + 1 === 10 ? 1 : .32); hitstop = Math.max(hitstop, lv >= 6 ? 0.07 : 0.03);
-          if (lv + 1 === 10) { fx.text(W / 2, H * .35, '皇冠奶蛙！', { size: 38, color: '#ff9f00', life: 1.4 }); shakeT = .3; shakeA = 8; NW.sfx.win(); hitstop = .13; }
-          else if (chain > 1) { fx.text(x, y - R[lv + 1] - 14, '连锁 ×' + chain, { size: 24, color: '#ff4a2a', life: 1 }); NW.sfx.combo(chain); }
+          if (nextLv === 10) { fx.text(W / 2, H * .35, '皇冠奶蛙！', { size: 38, color: '#ff9f00', life: 1.4 }); shakeT = .3; shakeA = 8; NW.sfx.win(); hitstop = .13; }
+          else if (chain > 1) { fx.text(x, y - R[nextLv] - 14, '连锁 ×' + chain, { size: 24, color: '#ff4a2a', life: 1 }); NW.sfx.combo(chain); }
+          }
         }
       });
       balls = balls.filter(function (q) { return !q.dead; });
@@ -165,15 +193,23 @@
     if (G.running && !paused) {
       if (keys.left) aimX = clampX(aimX - 220 * dt);
       if (keys.right) aimX = clampX(aimX + 220 * dt);
-      if (hitstop > 0) hitstop -= dt; else for (var k = 0; k < 3; k++) step(dt / 3); /* 3 substeps × 6 collision iters */
+      if (hitstop > 0) hitstop -= dt; else for (var k = 0; k < 3; k++) step(dt / 3);
       if (dropT > 0) { dropT -= dt; if (dropT <= 0) canDrop = true; }
       if (chainT > 0) { chainT -= dt; if (chainT <= 0) chain = 0; }
+      if (mode === 'rush') {
+        rushLeft -= dt; G.setExtra('⏱ ' + Math.max(0, Math.ceil(rushLeft)));
+        if (rushLeft <= 0) {
+          rushLeft = 0;
+          var stars = maxSeen >= 10 ? 3 : (maxSeen >= 7 ? 2 : (maxSeen >= 4 ? 1 : 0));
+          G.over('冲分结束 · ' + G.score + ' 分 · 最大 ' + NAMES[Math.min(10, maxSeen)] + ' · ' + '★'.repeat(stars || 1));
+        }
+      }
       var over = false; balls.forEach(function (b) { if (b.age > 1 && b.y - b.r < DANGER && Math.hypot(b.vx, b.vy) < 140) over = true; });
       dangerT = over ? dangerT + dt : Math.max(0, dangerT - dt * 2);
       if (dangerT > 1.0 && dangerT <= 1.5 && Math.floor(dangerT * 10) !== Math.floor((dangerT - dt) * 10)) { try { NW.sfx.bad(); } catch (e) {} }
       if (dangerT > 1.5) {
         if (coins > 0) { dangerT = 1.4; offerRevive(); }
-        else { shakeT = .5; shakeA = 12; fx.burst(W / 2, DANGER, { count: 30, colors: ['#ff5a5a', '#fff'] }); G.over('堆到顶了！合出的最大是第 ' + (balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0) + 1) + ' 级'); }
+        else { shakeT = .5; shakeA = 12; fx.burst(W / 2, DANGER, { count: 30, colors: ['#ff5a5a', '#fff'] }); var mx2 = balls.reduce(function (m, b) { return Math.max(m, b.lv); }, 0); var st2 = mx2 >= 10 ? 3 : (mx2 >= 7 ? 2 : (mx2 >= 4 ? 1 : 0)); G.over('堆到顶了 · ' + NAMES[Math.min(10, mx2)] + ' · ' + '★'.repeat(st2 || 1)); }
       }
     }
     if (flash > 0) flash = Math.max(0, flash - 2.2 * dt); fx.update(dt); draw(t);

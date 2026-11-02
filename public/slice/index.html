@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
 <title>切奶蛙 · 奶蛙小游戏</title>
-<meta name="description" content="45 秒划切飞来的 3D 奶蛙，连斩翻倍，别切坏奶炸弹。五关挑战 + 练习模式。">
+<meta name="description" content="45 秒划切飞来的 3D 奶蛙，连斩翻倍，别切坏奶炸弹。八关挑战 + 练习模式。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="切奶蛙 · 奶蛙小游戏"><meta property="og:description" content="划屏切开奶蛙，45 秒冲目标分，五关挑战。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=slice1">
+<meta property="og:title" content="切奶蛙 · 奶蛙小游戏"><meta property="og:description" content="划屏切开奶蛙，45 秒冲目标分，八关挑战。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=slice3">
 <style>
 .sl-lv{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px 4px}
 .sl-lv button{min-width:44px;min-height:44px;border-radius:12px;border:2px solid #f0cf6a;background:#fff8e0;font-weight:800;color:#6a4400;cursor:pointer}
@@ -28,7 +28,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">快速滑动切开奶蛙 · 慢拖无效 · 深色坏奶别切 · 空格暂停</p>
 </div>
-<script src="/assets/frog.js?v=slice1"></script><script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/frog.js?v=slice3"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
 (function () {
   /* CFG — quality-bar §6 */
@@ -39,11 +39,14 @@
     TRAIL_MS: 100, COMBO_GAP: 0.35
   };
   var LEVELS = [
-    { name: '热身', goal: 120, bombScale: 0.8, ice: 0, colorOnly: null, dens: 1 },
-    { name: '加速', goal: 220, bombScale: 1, ice: 0, colorOnly: null, dens: 1.15 },
-    { name: '认准金色', goal: 280, bombScale: 1, ice: 0, colorOnly: '#F7C32B', dens: 1.2 },
-    { name: '冰壳来了', goal: 320, bombScale: 1.1, ice: 0.35, colorOnly: null, dens: 1.25 },
-    { name: '蛙雨', goal: 420, bombScale: 1.2, ice: 0.25, colorOnly: null, dens: 1.45 }
+    { name: '热身', goal: 120, bombScale: 0.7, ice: 0, colorOnly: null, dens: 1 },
+    { name: '加速', goal: 220, bombScale: 0.9, ice: 0, colorOnly: null, dens: 1.12 },
+    { name: '认准金色', goal: 280, bombScale: 1, ice: 0, colorOnly: '#F7C32B', dens: 1.18 },
+    { name: '冰壳来了', goal: 320, bombScale: 1.05, ice: 0.32, colorOnly: null, dens: 1.22 },
+    { name: '双抛', goal: 360, bombScale: 1.1, ice: 0.18, colorOnly: null, dens: 1.28, twin: 0.4 },
+    { name: '蛙雨', goal: 420, bombScale: 1.15, ice: 0.25, colorOnly: null, dens: 1.4 },
+    { name: '金冰双修', goal: 480, bombScale: 1.2, ice: 0.4, colorOnly: '#F7C32B', dens: 1.35 },
+    { name: '终极乱切', goal: 560, bombScale: 1.3, ice: 0.3, colorOnly: null, dens: 1.55, twin: 0.45 }
   ];
   var WAVES = [
     { t: 0, n: 2, gap: 140 },
@@ -67,14 +70,14 @@
   var fx = new NW.FX();
 
   var mode = 'story', lv = 0, paused = false;
-  var ents, halves, trail, particles, tLeft, tRun, combo, comboT, maxCombo, cuts, bombWarned, flash, hitstop, spawnI, waveI, won, dead, practice, goal, bombNear;
+  var ents, halves, trail, particles, tLeft, tRun, combo, comboT, maxCombo, cuts, bombWarned, flash, hitstop, spawnI, waveI, won, dead, practice, goal, bombNear, comboStars, waveBanner, perfects;
 
-  var starsStore = NW.store.get('slice_stars', [0, 0, 0, 0, 0]);
-  if (!Array.isArray(starsStore) || starsStore.length < 5) starsStore = [0, 0, 0, 0, 0];
+  var starsStore = NW.store.get('slice_stars', [0,0,0,0,0,0,0,0]);
+  if (!Array.isArray(starsStore) || starsStore.length < LEVELS.length) { while (starsStore.length < LEVELS.length) starsStore.push(0); }
 
   var G = NW.mount({
     key: 'slice', title: '切奶蛙', scoreLabel: '分数', extraCard: '目标',
-    rules: '快速滑动切开飞来的奶蛙（慢拖不切）。45 秒内达到目标分过关。连斩加分。深色坏奶切开即败。冰壳蛙需切两次。练习模式无尽无目标。',
+    rules: '快速滑动切开奶蛙（慢拖无效）。中心切开 PERFECT。45 秒冲目标，8 关挑战。坏奶有红圈警告——别切。冰壳切两次。连斩攒星。',
     onStart: function () { reset(true); }
   });
 
@@ -100,7 +103,7 @@
   function reset(fromStart) {
     var L = LEVELS[lv];
     practice = mode === 'practice';
-    ents = []; halves = []; trail = []; particles = [];
+    ents = []; halves = []; trail = []; particles = []; comboStars = []; waveBanner = null; perfects = 0;
     tLeft = practice ? 9999 : CFG.DUR; tRun = 0; combo = 0; comboT = 0; maxCombo = 0; cuts = 0;
     bombWarned = false; flash = 0; hitstop = 0; spawnI = 0; waveI = 0; won = false; dead = false; bombNear = 0;
     goal = practice ? 0 : L.goal;
@@ -135,7 +138,22 @@
       ci: ci, bomb: isBomb, ice: ice ? 1 : 0, alive: true, sliced: false, born: 0,
       mustColor: L.colorOnly || null
     });
-    if (isBomb && !bombWarned) {
+        if (!isBomb && L.twin && Math.random() < L.twin) {
+      var x2 = Math.max(36, Math.min(W - 36, x + side * -55));
+      var ci2 = (Math.random() * COLS.length) | 0;
+      if (L.colorOnly && Math.random() < 0.55) { ci2 = COLS.indexOf(L.colorOnly); if (ci2 < 0) ci2 = 0; }
+      var ice2 = Math.random() < (L.ice || 0);
+      ents.push({
+        x: x2, y: H + 24 + Math.random() * 20,
+        vx: -side * (90 + Math.random() * 120),
+        vy: -(520 + Math.random() * 160),
+        r: 28 + Math.random() * 10,
+        rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 5,
+        ci: ci2, bomb: false, ice: ice2 ? 1 : 0, alive: true, sliced: false, born: 0,
+        mustColor: L.colorOnly || null
+      });
+    }
+if (isBomb && !bombWarned) {
       bombWarned = true;
       fx.text(W / 2, 100, '坏奶出现 · 别切！', { size: 24, color: '#ff4a4a', life: 1.4 });
       NW.sfx.bad();
@@ -149,11 +167,10 @@
   }
 
   function starsFor() {
-    // remaining time + combo + no bomb scare proximity
     var s = 1;
-    if (tLeft > 12) s++;
+    if (tLeft > 12 || perfects >= 3) s++;
     if (maxCombo >= 6) s++;
-    if (tLeft > 20 && maxCombo >= 8) s = 3;
+    if ((tLeft > 18 && maxCombo >= 8) || perfects >= 6) s = 3;
     return Math.min(3, s);
   }
 
@@ -204,23 +221,35 @@
     cuts++;
     var mult = Math.min(5, 1 + Math.floor((combo - 1) / 2));
     var base = (e.mustColor && COLS[e.ci] !== e.mustColor) ? 1 : (12 + ((e.r - 28) | 0));
+    // perfect: slash near center of frog
+    var perfect = (e._slashDist != null && e._slashDist < e.r * 0.28);
+    if (perfect) { base = Math.floor(base * 1.5); perfects++; }
     var pts = base * mult;
     G.setScore(G.score + pts);
     hitstop = combo >= 3 ? CFG.HITSTOP_COMBO : CFG.HITSTOP;
+    if (perfect) hitstop = Math.max(hitstop, 0.055);
     NW.sfx.slice && NW.sfx.slice();
     if (combo >= 2) NW.sfx.sliceCombo && NW.sfx.sliceCombo(combo);
-    NW.vib(10);
+    if (perfect) NW.sfx.perfect && NW.sfx.perfect();
+    NW.vib(perfect ? 16 : 10);
 
     var vert = Math.abs(Math.cos(ang || 0)) >= Math.abs(Math.sin(ang || 0));
     var nx = Math.cos(ang || 0), ny = Math.sin(ang || 0);
-    halves.push({ x: e.x - nx * 8, y: e.y - ny * 8, vx: e.vx - nx * 140 - 30, vy: e.vy - 90, rot: e.rot, vr: -7, ci: e.ci, life: 1.15, s: e.r / 40, part: vert ? 'L' : 'T' });
-    halves.push({ x: e.x + nx * 8, y: e.y + ny * 8, vx: e.vx + nx * 140 + 30, vy: e.vy - 50, rot: e.rot, vr: 7, ci: e.ci, life: 1.15, s: e.r / 40, part: vert ? 'R' : 'B' });
-    fx.burst(e.x, e.y, { count: RM ? 5 : (12 + Math.min(10, combo)), speed: 240, colors: [COLS[e.ci], '#fff', '#FFD23F'], size: 6 });
-    fx.text(e.x, e.y - e.r - 8, '+' + pts, { size: 18 + Math.min(10, combo), color: mult > 1 ? '#ff4a2a' : '#e8a000' });
-    if (combo >= 3) fx.text(W / 2, 120, '连斩 ×' + combo, { size: 28, color: '#ff8a00', life: 0.65 });
-    for (var p = 0; p < (RM ? 3 : 10); p++) {
+    halves.push({ x: e.x - nx * 8, y: e.y - ny * 8, vx: e.vx - nx * 160 - 40, vy: e.vy - 110, rot: e.rot, vr: -8, ci: e.ci, life: 1.2, s: e.r / 40, part: vert ? 'L' : 'T' });
+    halves.push({ x: e.x + nx * 8, y: e.y + ny * 8, vx: e.vx + nx * 160 + 40, vy: e.vy - 70, rot: e.rot, vr: 8, ci: e.ci, life: 1.2, s: e.r / 40, part: vert ? 'R' : 'B' });
+    fx.burst(e.x, e.y, { count: RM ? 5 : (14 + Math.min(14, combo) + (perfect ? 8 : 0)), speed: 260, colors: [COLS[e.ci], '#fff', '#FFD23F'], size: 6 });
+    if (fx.ring) fx.ring(e.x, e.y, { maxR: 50 + combo * 3, life: 0.3, color: perfect ? 'rgba(255,210,60,.75)' : COLS[e.ci], line: perfect ? 6 : 4 });
+    fx.text(e.x, e.y - e.r - 8, (perfect ? 'PERFECT ' : '') + '+' + pts, { size: 18 + Math.min(12, combo), color: perfect ? '#ff4a2a' : (mult > 1 ? '#ff4a2a' : '#e8a000') });
+    if (combo >= 3) fx.text(W / 2, 120, '连斩 ×' + combo, { size: 30, color: '#ff8a00', life: 0.7 });
+    if (combo >= 5 && !RM) flash = Math.max(flash, 0.14);
+    if (combo >= 8 && fx.ring) fx.ring(e.x, e.y, { maxR: 96, life: 0.4, color: 'rgba(255,200,40,.75)', line: 6 });
+    // combo star flies to top HUD
+    if (combo >= 2) {
+      comboStars.push({ x: e.x, y: e.y, tx: W / 2, ty: 88, life: 0.55, n: combo });
+    }
+    for (var p = 0; p < (RM ? 3 : 12); p++) {
       var a = Math.random() * 6.28;
-      particles.push({ x: e.x, y: e.y, vx: Math.cos(a) * (80 + Math.random() * 160), vy: Math.sin(a) * (80 + Math.random() * 160) - 60, life: 0.4 + Math.random() * 0.25, c: COLS[e.ci], s: 3 + Math.random() * 4 });
+      particles.push({ x: e.x, y: e.y, vx: Math.cos(a) * (90 + Math.random() * 180), vy: Math.sin(a) * (90 + Math.random() * 180) - 70, life: 0.45 + Math.random() * 0.25, c: COLS[e.ci], s: 3 + Math.random() * 4 });
     }
     if (!practice && G.score >= goal) winLevel();
   }
@@ -248,17 +277,18 @@
     var speed = dist / (dtMs / 1000); // px/s in game space roughly
     // scale by view — already in game coords
     if (dist < 2) return;
-    var thick = 3 + (combo >= 5 ? 3 : 0);
+    var thick = 3 + (combo >= 3 ? 2 : 0) + (combo >= 7 ? 3 : 0);
     var steps = Math.max(1, Math.min(10, (dist / 6) | 0));
     for (var s = 1; s <= steps; s++) {
       var t = s / steps;
       var x = lastP.x + dx * t, y = lastP.y + dy * t;
-      trail.push({ x: x, y: y, life: (RM ? 0.06 : CFG.TRAIL_MS / 1000), thick: thick, gold: combo >= 5 });
+      trail.push({ x: x, y: y, life: (RM ? 0.06 : CFG.TRAIL_MS / 1000), thick: thick, gold: combo >= 4 });
       if (speed >= CFG.SLASH_MIN) {
         for (var i = 0; i < ents.length; i++) {
           var en = ents[i];
           if (!en.alive || en.sliced) continue;
-          if (Math.hypot(en.x - x, en.y - y) < en.r + 10) sliceEntity(en, Math.atan2(dy, dx), speed);
+          var dHit = Math.hypot(en.x - x, en.y - y);
+          if (dHit < en.r + 10) { en._slashDist = dHit; sliceEntity(en, Math.atan2(dy, dx), speed); }
           else if (en.bomb && Math.hypot(en.x - x, en.y - y) < en.r + 36) bombNear = 0.4;
         }
       }
@@ -290,6 +320,12 @@
       }
       var dens = LEVELS[lv].dens || 1;
       var w = currentWave();
+      var wi = WAVES.indexOf(w);
+      if (wi !== waveI) {
+        waveI = wi;
+        waveBanner = { t: 1.1, text: '波次 ' + (wi + 1) + ' · 同屏×' + w.n };
+        NW.sfx.click();
+      }
       spawnI += dt;
       var interval = (w.gap / 1000) / dens;
       if (spawnI >= interval) {
@@ -323,6 +359,12 @@
       var q = particles[p]; q.vy += 600 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt;
       if (q.life <= 0) particles.splice(p, 1);
     }
+    for (var cs = comboStars.length - 1; cs >= 0; cs--) {
+      var s = comboStars[cs]; var k = Math.min(1, 1 - s.life / 0.55);
+      s.x += (s.tx - s.x) * Math.min(1, dt * 8); s.y += (s.ty - s.y) * Math.min(1, dt * 8);
+      s.life -= dt; if (s.life <= 0) comboStars.splice(cs, 1);
+    }
+    if (waveBanner) { waveBanner.t -= dt; if (waveBanner.t <= 0) waveBanner = null; }
 
     draw(); fx.draw(ctx); requestAnimationFrame(frame);
   }
@@ -376,6 +418,16 @@
         c.fillStyle = 'rgba(200,240,255,.25)'; c.beginPath(); c.arc(0, 0, e.r + 2, 0, 6.28); c.fill();
       }
       if (e.bomb) {
+        // telegraph as soon as bomb is on screen
+        var warn = e.y < H + 40;
+        if (warn) {
+          var pulse = 0.45 + 0.35 * Math.sin(tRun * 14);
+          c.strokeStyle = 'rgba(255,40,40,' + pulse + ')'; c.lineWidth = 4;
+          c.beginPath(); c.arc(0, 0, e.r + 10 + Math.sin(tRun * 10) * 3, 0, 6.28); c.stroke();
+          c.fillStyle = 'rgba(255,40,40,' + (pulse * 0.25) + ')'; c.beginPath(); c.arc(0, 0, e.r + 8, 0, 6.28); c.fill();
+          c.fillStyle = '#ff3030'; c.font = 'bold 11px system-ui'; c.textAlign = 'center';
+          c.fillText('别切!', 0, -e.r - 18);
+        }
         c.strokeStyle = '#333'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -e.r + 4); c.quadraticCurveTo(10, -e.r - 14, 16, -e.r - 8); c.stroke();
         c.fillStyle = '#ff8a00'; c.beginPath(); c.arc(16, -e.r - 8, 4 + Math.sin(tRun * 18) * 1.5, 0, 6.28); c.fill();
       }
@@ -408,10 +460,22 @@
       c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#6a4400'; c.font = 'bold 28px system-ui'; c.textAlign = 'center'; c.fillText('暂停', W / 2, H / 2);
     }
+    comboStars.forEach(function (s) {
+      c.save(); c.globalAlpha = Math.max(0, s.life * 2);
+      c.fillStyle = '#FFD23F'; c.font = 'bold 22px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('★', s.x, s.y);
+      c.restore();
+    });
+    if (waveBanner) {
+      c.globalAlpha = Math.min(1, waveBanner.t * 2);
+      c.fillStyle = 'rgba(255,255,255,.85)'; roundRect(c, W / 2 - 100, 96, 200, 36, 14); c.fill();
+      c.fillStyle = '#3a6a90'; c.font = 'bold 16px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(waveBanner.text, W / 2, 114); c.globalAlpha = 1;
+    }
     if (G.running && combo >= 2) {
-      c.fillStyle = 'rgba(255,255,255,.75)'; roundRect(c, W / 2 - 54, H - 40, 108, 28, 14); c.fill();
-      c.fillStyle = '#ff6a00'; c.font = 'bold 14px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('连斩 ×' + combo, W / 2, H - 26);
+      c.fillStyle = 'rgba(255,255,255,.8)'; roundRect(c, W / 2 - 70, H - 44, 140, 34, 16); c.fill();
+      c.fillStyle = '#ff6a00'; c.font = 'bold 15px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('连斩 ×' + combo + '  ★'.repeat(Math.min(5, combo)), W / 2, H - 27);
     }
   }
 

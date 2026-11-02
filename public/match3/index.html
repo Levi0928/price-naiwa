@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=juice1">
+<link rel="stylesheet" href="/style.css?v=juice3">
 <style>
 .tools{display:flex;gap:8px;justify-content:center;padding:6px 10px 2px;flex-wrap:wrap}
 .tools button{appearance:none;border:0;border-radius:16px;padding:10px 12px;min-width:72px;font-weight:900;font-size:.78rem;background:#fff;color:#6a4400;box-shadow:0 3px 0 rgba(26,22,18,.12);cursor:pointer}
@@ -17,11 +17,17 @@
 .tools button:disabled{opacity:.45}
 .tools button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(26,22,18,.12)}
 .tools b{display:block;font-size:.65rem;font-weight:800;color:#948876}
+.lv-sel{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:4px 10px 6px;max-height:88px;overflow-y:auto}
+.lv-sel button{min-width:40px;min-height:40px;border-radius:12px;border:2px solid #f0cf6a;background:#fff8e0;font-weight:800;font-size:.75rem;color:#6a4400;cursor:pointer;padding:4px 6px}
+.lv-sel button.on{background:#F7C32B;border-color:#c88e10}
+.lv-sel button.lock{opacity:.4}
+.lv-sel button .st{display:block;font-size:.55rem;color:#e8a000;line-height:1}
 </style>
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
+  <div class="lv-sel" id="lvsel" aria-label="关卡选择"></div>
   <div class="tools" id="tools" aria-label="道具">
     <button type="button" id="tool-hammer">🔨 锤子<b id="n-hammer">3</b></button>
     <button type="button" id="tool-shuf">🔀 洗牌<b id="n-shuf">3</b></button>
@@ -30,7 +36,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">四连→条纹 · 五连→彩虹 · L/T→炸弹 · 冰要多消一次 · 道具各 3 次</p>
 </div>
-<script src="/assets/frog.js?v=juice1"></script><script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/frog.js?v=juice3"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -69,12 +75,15 @@
     L(14, [[3, 26], [4, 20]], 12, 3),
     L(12, [[0, 18], [1, 18], [2, 18], [5, 14]], 12, 4),
     L(14, [[4, 24], [5, 20], [0, 12]], 10, 0),
-    L(12, [[1, 20], [2, 20], [3, 20]], 14, 1)
+    L(12, [[1, 20], [2, 20], [3, 20]], 14, 1),
+    L(13, [[0, 22], [3, 18], [5, 16]], 12, 2),
+    L(12, [[1, 18], [2, 18], [4, 18], [5, 14]], 13, 3),
+    L(11, [[0, 16], [1, 16], [2, 16], [3, 16], [4, 12]], 15, 4)
   ];
   var POP_MS = { normal: 200, stripe: 380, vortex: 640 };
   var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, freeze = 0;
   var level = 0, goals = [], collected = [], pendingSpecials = [], theme = THEMES[0], scanFlash = null, toolMode = null;
-  var items = { hammer: 3, shuf: 3, moves: 3 }, stars = NW.store.get('m3_stars', []) || [];
+  var items = { hammer: 3, shuf: 3, moves: 3 }, stars = NW.store.get('m3_stars', []) || [], ambient = [], ambT = 0;
   var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连→条纹，五连→彩虹（清同色），L/T→炸弹。冰层要多消一次。锤/洗牌/+5 步各 3 次。共 ' + LEVELS.length + ' 关。', onStart: reset });
   function rnd() { return Math.floor(Math.random() * TYPES); }
   function syncTools() {
@@ -86,6 +95,26 @@
     document.getElementById('tool-moves').disabled = items.moves <= 0;
     document.getElementById('tool-hammer').classList.toggle('on', toolMode === 'hammer');
   }
+  function paintLvSel() {
+    var el = document.getElementById('lvsel');
+    var unlocked = Math.max(0, +(NW.store.get('m3_lv', 0) || 0));
+    // also unlock cleared via stars
+    for (var i = 0; i < stars.length; i++) if (stars[i]) unlocked = Math.max(unlocked, i + 1);
+    el.innerHTML = LEVELS.map(function (L, i) {
+      var st = stars[i] || 0;
+      var lock = i > unlocked && i > 0;
+      return '<button type="button" data-i="' + i + '" class="' + (i === level ? 'on ' : '') + (lock ? 'lock' : '') + '"' + (lock ? ' disabled' : '') + '>' + (i + 1) + (st ? '<span class="st">' + '★'.repeat(st) + '</span>' : '') + '</button>';
+    }).join('');
+    el.querySelectorAll('button').forEach(function (b) {
+      b.onclick = function () {
+        if (G.running) { NW.toast('局中点重开后再选关'); return; }
+        var i = +b.getAttribute('data-i');
+        NW.store.set('m3_lv', i); level = i; paintLvSel(); NW.sfx.click();
+        document.getElementById('hint').textContent = '已选第 ' + (i + 1) + ' 关 · 点开始';
+      };
+    });
+  }
+  paintLvSel();
   function loadLevel(i) {
     level = Math.min(i, LEVELS.length - 1);
     var Lv = LEVELS[level];
@@ -107,9 +136,10 @@
     toolMode = null; syncTools();
     cells = []; for (var r = 0; r < N; r++) { cells.push([]); for (var c = 0; c < N; c++) { var t; do { t = rnd(); } while ((c >= 2 && cells[r][c - 1].t === t && cells[r][c - 2].t === t) || (r >= 2 && cells[r - 1][c].t === t && cells[r - 2][c].t === t)); cells[r].push(mk(t, r, c, -(N - r) * CS - 40 - c * 6)); } }
     placeIce(LEVELS[level].ice || 0);
-    G.setScore(0, false); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = []; scanFlash = null;
+    G.setScore(0, false); state = 'fall'; sel = null; combo = 0; hintT = 0; hint = null; pendingSpecials = []; scanFlash = null; ambient = []; ambT = 0;
     if (!findMove()) reshuffle();
     document.getElementById('hint').textContent = '第 ' + (level + 1) + '/' + LEVELS.length + ' 关 · 完成收集目标过关';
+    paintLvSel();
   }
   function mk(t, r, c, y0, spec) { var cl = { t: t, x: c * CS, y: y0 == null ? r * CS : y0, sc: 1, a: 1, dead: false, ph: Math.random() * 6, dur: 0, tt: 0, fx: 0, fy: 0, kind: 0, spec: spec || 0, ice: 0, popMs: POP_MS.normal }; if (y0 != null && y0 !== r * CS) startMove(cl, 1, Math.max(1, Math.round((r * CS - y0) / CS)), 0); return cl; }
   function startMove(cl, kind, rows, delay) { cl.fx = cl.x; cl.fy = cl.y; cl.tt = -(delay || 0); cl.kind = kind; cl.dur = kind === 0 ? 220 : Math.min(380, 130 + 44 * rows); }
@@ -296,7 +326,7 @@
     if (goalsDone()) {
       state = 'over';
       var st = starForLevel();
-      stars[level] = Math.max(stars[level] || 0, st); NW.store.set('m3_stars', stars);
+      stars[level] = Math.max(stars[level] || 0, st); NW.store.set('m3_stars', stars); paintLvSel();
       var next = level + 1;
       if (next < LEVELS.length) {
         NW.store.set('m3_lv', next);
@@ -342,6 +372,17 @@
         else cl.sc += (1 - cl.sc) * Math.min(1, dt * 14); }
       if (state === 'fall' && !moving) settle();
       if (state === 'idle' && G.running) { hintT += dt; if (hintT > 5 && !hint) hint = findMove(); if (hint && hintT > 8) { hint = null; hintT = 0; } }
+      ambT -= dt;
+      if (ambT <= 0 && G.running) {
+        ambT = 0.28;
+        var kind = theme.particle || 'bubble';
+        ambient.push({ x: 20 + Math.random() * (W - 40), y: H - 10, vy: -(20 + Math.random() * 40), life: 1.2 + Math.random(), kind: kind, s: 3 + Math.random() * 4, ph: Math.random() * 6 });
+        if (ambient.length > 40) ambient.shift();
+      }
+      for (var ai = ambient.length - 1; ai >= 0; ai--) {
+        var am = ambient[ai]; am.life -= dt; am.y += am.vy * dt; am.x += Math.sin(am.ph + am.life * 3) * 12 * dt;
+        if (am.life <= 0) ambient.splice(ai, 1);
+      }
     }
     fx.update(dt); draw(t); requestAnimationFrame(frame);
   }
@@ -372,6 +413,13 @@
     var c = ctx; c.setTransform(view.s, 0, 0, view.s, 0, 0); c.clearRect(0, 0, W, H); c.save();
     if (shakeT > 0) { shakeT -= .016; if (!(NW.reduceMotion && NW.reduceMotion())) c.translate((Math.random() - .5) * 8 * shakeT * 6, (Math.random() - .5) * 8 * shakeT * 6); }
     var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, theme.bg0); g.addColorStop(1, theme.bg1); c.fillStyle = g; rr(c, 0, 0, W, H, 26); c.fill(); c.strokeStyle = 'rgba(26,22,18,.14)'; c.lineWidth = 2; rr(c, 1.5, 1.5, W - 3, H - 3, 25); c.stroke();
+    ambient.forEach(function (am) {
+      c.globalAlpha = Math.max(0, Math.min(0.55, am.life));
+      if (am.kind === 'spark') { c.fillStyle = '#FFD23F'; c.beginPath(); c.arc(am.x, am.y, am.s, 0, 6.28); c.fill(); }
+      else if (am.kind === 'milk') { c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.ellipse(am.x, am.y, am.s * 0.7, am.s, 0, 0, 6.28); c.fill(); }
+      else { c.strokeStyle = 'rgba(140,200,255,.8)'; c.lineWidth = 1.5; c.beginPath(); c.arc(am.x, am.y, am.s, 0, 6.28); c.stroke(); }
+      c.globalAlpha = 1;
+    });
     c.fillStyle = 'rgba(255,255,255,.75)'; rr(c, 10, 8, W - 20, HUDH - 12, 14); c.fill();
     c.fillStyle = '#6a4400'; c.font = '800 12px system-ui,-apple-system,"PingFang SC",sans-serif'; c.textAlign = 'left'; c.fillText('第 ' + (level + 1) + '/' + LEVELS.length, 20, 30);
     var gx = 100; goals.forEach(function (goal, i) {

@@ -9,24 +9,29 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙神跑 · 奶蛙小游戏"><meta property="og:description" content="无尽跑酷：二段跳、滑铲、近失反馈、铜银金段位。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=run3">
+<link rel="stylesheet" href="/style.css?v=run4">
+<style>
+.run-modes{display:flex;gap:8px;justify-content:center;padding:4px 12px 6px;flex-wrap:wrap}
+.run-modes button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid #cde6ff;background:#fff;font-weight:800;color:#3a6a90;cursor:pointer}
+.run-modes button.on{background:#5CC8F2;color:#fff;border-color:#3A9FCC}
+</style>
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
+  <div class="run-modes"><button type="button" id="m-endless" class="on">无尽跑</button><button type="button" id="m-challenge">挑战 400 米</button></div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
-  <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 手机左右滑/上滑跳/下滑铲</p>
+  <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 近失加分 · 手机滑控</p>
 </div>
 <script src="/assets/frog.js?v=lobby2"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
 (function () {
-  /* CFG — quality-bar §5 */
   var CFG = {
     RUN_BASE: 220, GRAV: 2400, JUMP_V: -620, DJUMP_V: -540,
-    SLIDE_T: 0.45, BAR_IFRAMES: 0.05, NEAR_PX: 6,
-    SPEED_DIST: 4500, SPEED_CAP: 0.75, /* mul = 1 + min(0.75, dist/4500) → ~1.75 */
-    RANK: [300, 800, 1500], /* 铜银金 米 */
-    MAX_SAME_SYNTAX: 2
+    SLIDE_T: 0.45, BAR_IFRAMES: 0.05, NEAR_PX: 8,
+    SPEED_DIST: 4200, SPEED_CAP: 0.78,
+    RANK: [300, 800, 1500, 2500],
+    MAX_SAME_SYNTAX: 2, CHALLENGE_M: 400
   };
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   var W = 360, H = 600, view = { s: 1 }, RM = NW.reduceMotion && NW.reduceMotion();
@@ -39,81 +44,107 @@
     coin: F.pieceSprite({ shape: 'ball', color: '#F7C32B', mood: 'laugh' }, 36, 36)
   };
   var fx = new NW.FX();
+  var mode = 'endless';
   var G = NW.mount({
     key: 'run', title: '奶蛙神跑', scoreLabel: '分数', extraCard: '奶币',
-    rules: '无尽侧视跑酷。←→/AD 移动，空格或 W 二段跳，S 滑铲躲矮杆。速度随距离平滑升高。擦障有近失提示。结算铜/银/金段位（300/800/1500 米）。',
+    rules: '无尽侧视跑酷。←→ 移动，空格二段跳，S 滑铲躲矮杆。速度随距离平滑升高。擦障「好险」加分。挑战模式固定跑满 400 米比奶币。段位：铜/银/金/钻。',
     onStart: reset
   });
+  document.getElementById('m-endless').onclick = function () {
+    if (G.running) { NW.toast('结束后再切'); return; }
+    mode = 'endless'; this.classList.add('on'); document.getElementById('m-challenge').classList.remove('on'); NW.sfx.click();
+  };
+  document.getElementById('m-challenge').onclick = function () {
+    if (G.running) { NW.toast('结束后再切'); return; }
+    mode = 'challenge'; this.classList.add('on'); document.getElementById('m-endless').classList.remove('on'); NW.sfx.click();
+  };
 
   var keys = { L: 0, R: 0, U: 0, D: 0 };
-  var frog, plats, coins, hazards, dust, ghosts, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, barIframe, airJumps, shakeT, clouds, hills, tRun, landCool, streak, lastSyntax, syntaxStreak, nearFlash, milestone, hitstop;
+  var frog, plats, coins, hazards, dust, ghosts, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, barIframe, airJumps, shakeT, clouds, hills, tRun, landCool, streak, lastSyntax, syntaxStreak, nearFlash, milestone, hitstop, nearScore, perfectRun, challengeDone, seedRand, seed;
 
-  var SYNTAX = ['flat', 'gap', 'float', 'spring', 'bar', 'spike'];
+  var SYNTAX = ['flat', 'gap', 'float', 'spring', 'bar', 'spike', 'combo', 'fly'];
 
-  function plat(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h || 24, kind: kind || 'ground', bob: Math.random() * 6.28, move: 0 }; }
-  function hz(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h, kind: kind || 'block', near: 0 }; }
-  function coinAt(x, y, special, lane) { return { x: x, y: y, r: special ? 14 : 11, got: 0, ph: Math.random() * 6.28, special: !!special, lane: lane || 'safe' }; }
+  function mulberry32(a) { return function () { var t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function rnd() { return seedRand ? seedRand() : Math.random(); }
+
+  function plat(x, y, w, h, kind) { return { x: x, y: y, w: w, h: h || 24, kind: kind || 'ground', bob: rnd() * 6.28, move: 0 }; }
+  function hz(x, y, w, h, kind, extra) {
+    var o = { x: x, y: y, w: w, h: h, kind: kind || 'block', near: 0, ph: rnd() * 6.28 };
+    if (extra) for (var k in extra) o[k] = extra[k];
+    return o;
+  }
+  function coinAt(x, y, special, lane) { return { x: x, y: y, r: special ? 14 : 11, got: 0, ph: rnd() * 6.28, special: !!special, lane: lane || 'safe' }; }
 
   function rankName(m) {
+    if (m >= CFG.RANK[3]) return '钻蛙跑者';
     if (m >= CFG.RANK[2]) return '金蛙跑者';
     if (m >= CFG.RANK[1]) return '银蛙跑者';
     if (m >= CFG.RANK[0]) return '铜蛙跑者';
     return '练腿中';
   }
+  function nextRankAt(m) {
+    for (var i = 0; i < CFG.RANK.length; i++) if (m < CFG.RANK[i]) return CFG.RANK[i];
+    return CFG.RANK[CFG.RANK.length - 1];
+  }
 
   function pickSyntax() {
     var pool = SYNTAX.slice();
     if (syntaxStreak >= CFG.MAX_SAME_SYNTAX) pool = pool.filter(function (s) { return s !== lastSyntax; });
-    var s = pool[(Math.random() * pool.length) | 0];
+    // unlock harder syntax with distance
+    if (dist < 80) pool = pool.filter(function (s) { return s !== 'fly' && s !== 'combo'; });
+    var s = pool[(rnd() * pool.length) | 0];
     if (s === lastSyntax) syntaxStreak++; else { lastSyntax = s; syntaxStreak = 1; }
     return s;
   }
 
   function reset() {
+    seed = mode === 'challenge' ? 20261102 : ((Math.random() * 1e9) | 0);
+    seedRand = mode === 'challenge' ? mulberry32(seed) : null;
     frog = { x: 90, y: 430, vx: 0, vy: 0, on: null, w: 36, h: 50, slide: false, facing: 1, sq: 1, runPhase: 0 };
     plats = [plat(-60, 480, 320, 28, 'ground'), plat(280, 480, 220, 28, 'ground'), plat(540, 480, 260, 28, 'ground')];
     coins = []; hazards = []; dust = []; ghosts = [];
     camX = 0; dist = 0; coinsGot = 0; speedMul = 1; spawnX = 740; dead = false;
     slideT = 0; barIframe = 0; airJumps = 2; shakeT = 0; tRun = 0; landCool = 0; streak = 0;
     lastSyntax = 'flat'; syntaxStreak = 0; nearFlash = 0; milestone = 500; hitstop = 0;
+    nearScore = 0; perfectRun = true; challengeDone = false;
     clouds = []; hills = [];
-    for (var i = 0; i < 10; i++) clouds.push({ x: i * 160 + Math.random() * 80, y: 36 + Math.random() * 140, s: 0.55 + Math.random() * 0.85, a: 0.5 + Math.random() * 0.4 });
-    for (var h = 0; h < 8; h++) hills.push({ x: h * 200, w: 180 + Math.random() * 100, c: h % 2 ? '#c5e69a' : '#b4dc84' });
+    for (var i = 0; i < 10; i++) clouds.push({ x: i * 160 + rnd() * 80, y: 36 + rnd() * 140, s: 0.55 + rnd() * 0.85, a: 0.5 + rnd() * 0.4 });
+    for (var h = 0; h < 8; h++) hills.push({ x: h * 200, w: 180 + rnd() * 100, c: h % 2 ? '#c5e69a' : '#b4dc84' });
     while (spawnX < 1600) spawnChunk();
     G.setScore(0, false); G.setExtra(0);
+    if (mode === 'challenge') NW.toast('挑战：无伤跑满 ' + CFG.CHALLENGE_M + ' 米');
   }
 
   function spawnChunk() {
     var syn = pickSyntax();
-    var n = Math.min(1, dist / 3200);
-    var gap = 58 + Math.random() * (42 + n * 70);
-    var w = 145 + Math.random() * (100 - n * 40); if (w < 88) w = 88;
+    var n = Math.min(1, dist / 2800);
+    var gap = 52 + rnd() * (40 + n * 75);
+    var w = 140 + rnd() * (105 - n * 45); if (w < 84) w = 84;
     var baseY = 480, px = spawnX + gap;
 
     if (syn === 'flat') {
       plats.push(plat(px, baseY, w, 28, 'ground'));
-      if (Math.random() < 0.4) hazards.push(hz(px + w * 0.45, baseY - 48, 28, 48, 'block'));
-      // safe low coins vs adventure high
+      if (rnd() < 0.45) hazards.push(hz(px + w * 0.45, baseY - 48, 28, 48, 'block'));
       for (var i = 0; i < 3; i++) coins.push(coinAt(px + 30 + i * 28, baseY - 55, false, 'safe'));
-      if (Math.random() < 0.55) for (var j = 0; j < 3; j++) coins.push(coinAt(px + 40 + j * 26, baseY - 130 - j * 8, j === 2, 'risk'));
+      if (rnd() < 0.6) for (var j = 0; j < 3; j++) coins.push(coinAt(px + 40 + j * 26, baseY - 130 - j * 8, j === 2, 'risk'));
       spawnX = px + w;
     } else if (syn === 'gap') {
-      var mid = px + 40 + Math.random() * 30;
-      plats.push(plat(mid, baseY - 100 - Math.random() * 40, 64, 20, 'float'));
+      var mid = px + 40 + rnd() * 30;
+      plats.push(plat(mid, baseY - 100 - rnd() * 40, 64, 20, 'float'));
       coins.push(coinAt(mid + 32, baseY - 150, true, 'risk'));
-      var land = mid + 120 + Math.random() * 45;
+      var land = mid + 120 + rnd() * 45;
       plats.push(plat(land, baseY, 180, 28, 'ground'));
       spawnX = land + 190;
     } else if (syn === 'float') {
-      var fy = baseY - (80 + Math.random() * 90);
-      var fw = 70 + Math.random() * 50;
+      var fy = baseY - (80 + rnd() * 90);
+      var fw = 70 + rnd() * 50;
       var p1 = plat(px, fy, fw, 20, 'float');
-      if (Math.random() < 0.35) { p1.move = 1; p1.ox = px; p1.amp = 28 + Math.random() * 24; }
+      if (rnd() < 0.4) { p1.move = 1; p1.ox = px; p1.amp = 28 + rnd() * 24; }
       plats.push(p1);
       coins.push(coinAt(px + fw / 2, fy - 36, false, 'risk'));
-      var px2 = px + fw + 55 + Math.random() * 40;
-      var fy2 = Math.min(baseY - 42, Math.max(270, fy + (Math.random() < 0.5 ? -44 : 32)));
-      plats.push(plat(px2, fy2, 66 + Math.random() * 40, 20, 'float'));
+      var px2 = px + fw + 55 + rnd() * 40;
+      var fy2 = Math.min(baseY - 42, Math.max(270, fy + (rnd() < 0.5 ? -44 : 32)));
+      plats.push(plat(px2, fy2, 66 + rnd() * 40, 20, 'float'));
       plats.push(plat(px2 + 120, baseY, 160, 28, 'ground'));
       spawnX = px2 + 290;
     } else if (syn === 'spring') {
@@ -124,14 +155,31 @@
       spawnX = px + w + 200;
     } else if (syn === 'bar') {
       plats.push(plat(px, baseY, w, 28, 'ground'));
-      hazards.push(hz(px + w * 0.4, baseY - 80, 56, 18, 'bar'));
+      hazards.push(hz(px + w * 0.35, baseY - 80, 56, 18, 'bar'));
+      if (rnd() < 0.35) hazards.push(hz(px + w * 0.7, baseY - 80, 48, 18, 'bar'));
       coins.push(coinAt(px + w * 0.4 + 28, baseY - 40, false, 'safe'));
+      spawnX = px + w;
+    } else if (syn === 'combo') {
+      // gap + bar + spring sequence
+      plats.push(plat(px, baseY, 120, 28, 'ground'));
+      hazards.push(hz(px + 70, baseY - 80, 52, 18, 'bar'));
+      var mid2 = px + 160;
+      plats.push(plat(mid2, baseY - 70, 60, 18, 'float'));
+      plats.push(plat(mid2 + 90, baseY - 18, 64, 18, 'spring'));
+      coins.push(coinAt(mid2 + 120, baseY - 130, true, 'risk'));
+      plats.push(plat(mid2 + 180, baseY, 170, 28, 'ground'));
+      spawnX = mid2 + 360;
+    } else if (syn === 'fly') {
+      plats.push(plat(px, baseY, w, 28, 'ground'));
+      hazards.push(hz(px + w * 0.5, baseY - 110, 36, 28, 'fly', { oy: baseY - 110, amp: 36 }));
+      coins.push(coinAt(px + w * 0.5, baseY - 160, true, 'risk'));
+      for (var k = 0; k < 2; k++) coins.push(coinAt(px + 28 + k * 32, baseY - 55, false, 'safe'));
       spawnX = px + w;
     } else { // spike
       plats.push(plat(px, baseY, w, 28, 'ground'));
       hazards.push(hz(px + w * 0.35, baseY - 38, 42, 38, 'spike'));
-      if (Math.random() < 0.5) hazards.push(hz(px + w * 0.65, baseY - 50, 28, 50, 'block'));
-      for (var k = 0; k < 2; k++) coins.push(coinAt(px + 24 + k * 30, baseY - 100, false, 'risk'));
+      if (rnd() < 0.55) hazards.push(hz(px + w * 0.68, baseY - 50, 28, 50, 'block'));
+      for (var kk = 0; kk < 2; kk++) coins.push(coinAt(px + 24 + kk * 30, baseY - 100, false, 'risk'));
       spawnX = px + w;
     }
   }
@@ -156,7 +204,7 @@
 
   var touch0 = null, swiped = false;
   box.addEventListener('pointerdown', function (e) {
-    if (e.target && e.target.closest && e.target.closest('.nw-modal,.nw-top,button,a')) return;
+    if (e.target && e.target.closest && e.target.closest('.nw-modal,.nw-top,button,a,.run-modes')) return;
     touch0 = { x: e.clientX, y: e.clientY }; swiped = false;
     try { box.setPointerCapture(e.pointerId); } catch (err) {}
   });
@@ -203,15 +251,24 @@
 
   function kill(why) {
     if (dead) return;
-    dead = true; frog.vy = -300; frog.vx *= 0.25; hitstop = RM ? 0 : 0.1;
+    dead = true; perfectRun = false; frog.vy = -300; frog.vx *= 0.25; hitstop = RM ? 0 : 0.1;
     NW.sfx.hit ? NW.sfx.hit() : NW.sfx.lose(); NW.vib(45); if (!RM) shakeT = 0.4;
-    // death ghosts last ~2s trail already sampled
     fx.burst(frog.x - camX, frog.y - 24, { count: RM ? 8 : 28, speed: 300, colors: ['#F7C32B', '#fff', '#FF7BAC', '#FFD23F'], size: 8 });
     fx.text(W / 2, 150, why || '撞到了！', { size: 30, color: '#ff4a2a', life: 1.15 });
     var m = Math.floor(dist), rk = rankName(m);
     setTimeout(function () {
-      G.over('跑了 ' + m + ' 米 · 奶币 ' + coinsGot + ' · ' + rk);
+      G.over('跑了 ' + m + ' 米 · 奶币 ' + coinsGot + ' · 近失 ' + nearScore + ' · ' + rk);
     }, 780);
+  }
+
+  function winChallenge() {
+    if (challengeDone || dead) return;
+    challengeDone = true; dead = true;
+    NW.sfx.win();
+    fx.text(W / 2, 140, '挑战达成！', { size: 32, color: '#e8a000', life: 1.2 });
+    setTimeout(function () {
+      G.over('400 米挑战完成 · 奶币 ' + coinsGot + (perfectRun ? ' · 无伤通关' : '') + ' · ' + rankName(Math.floor(dist)));
+    }, 700);
   }
 
   function addDust(x, y) {
@@ -233,7 +290,6 @@
     if (landCool > 0) landCool -= dt;
 
     if (G.running && !dead) {
-      // sample ghost every 0.08s
       if (!RM && (ghosts.length === 0 || tRun - ghosts[ghosts.length - 1].t > 0.08)) {
         ghosts.push({ x: frog.x, y: frog.y, slide: frog.slide, facing: frog.facing, t: tRun });
         while (ghosts.length && tRun - ghosts[0].t > 2) ghosts.shift();
@@ -243,7 +299,6 @@
       speedMul = 1 + Math.min(CFG.SPEED_CAP, dist / CFG.SPEED_DIST);
       var targetSpeed = CFG.RUN_BASE * speedMul;
       frog.vx += (targetSpeed + steer * 100 - frog.vx) * Math.min(1, dt * 7);
-      // friction when no steer relative to run — keep auto run
       if (steer) frog.facing = steer > 0 ? 1 : -1;
       else if (frog.vx > 50) frog.facing = 1;
 
@@ -255,11 +310,16 @@
       var fh = frog.slide ? 30 : 50, fw = frog.slide ? 50 : 36;
       frog.h = fh; frog.w = fw;
 
-      // moving plats
       plats.forEach(function (p) {
         if (p.move) {
           p.phase = (p.phase || 0) + dt;
           p.x = p.ox + Math.sin(p.phase * 1.3) * p.amp;
+        }
+      });
+      hazards.forEach(function (z) {
+        if (z.kind === 'fly') {
+          z.ph += dt * 2.4;
+          z.y = z.oy + Math.sin(z.ph) * z.amp;
         }
       });
 
@@ -298,18 +358,19 @@
       var left = frog.x - fw / 2, top = frog.y - fh;
       for (var h = 0; h < hazards.length; h++) {
         var z = hazards[h];
-        // near miss
         if (nearAabb(left + 5, top + 5, fw - 10, fh - 8, z.x, z.y, z.w, z.h, CFG.NEAR_PX)) {
           if (!z.near) {
-            z.near = 1; nearFlash = 0.22;
+            z.near = 1; nearFlash = 0.28; nearScore++;
+            G.setScore(G.score + 15);
             NW.sfx.nearMiss && NW.sfx.nearMiss();
-            fx.text(frog.x - camX, frog.y - 80, '好险！', { size: 18, color: '#fff', life: 0.5 });
+            fx.text(frog.x - camX, frog.y - 80, '好险 +15', { size: 18, color: '#fff', life: 0.55 });
+            if (fx.ring) fx.ring(frog.x - camX, frog.y - 24, { maxR: 48, life: 0.3, color: 'rgba(255,255,255,.7)' });
           }
         }
         var ignoreBar = frog.slide && z.kind === 'bar';
         var iframeBar = barIframe > 0 && z.kind === 'bar';
         var hit = !ignoreBar && !iframeBar && aabb(left + 5, top + 5, fw - 10, fh - 8, z.x, z.y, z.w, z.h);
-        if (hit) { streak = 0; kill(z.kind === 'bar' ? '矮障！下滑铲' : (z.kind === 'spike' ? '刺到了！' : '撞到了')); break; }
+        if (hit) { streak = 0; kill(z.kind === 'bar' ? '矮障！下滑铲' : (z.kind === 'spike' ? '刺到了！' : (z.kind === 'fly' ? '飞障撞到！' : '撞到了'))); break; }
       }
 
       for (var c = coins.length - 1; c >= 0; c--) {
@@ -326,19 +387,20 @@
       }
 
       dist = Math.max(dist, frog.x / 10);
-      G.setScore(Math.floor(dist) + coinsGot * 10 + Math.max(0, streak - 1) * 2, false);
+      G.setScore(Math.floor(dist) + coinsGot * 10 + Math.max(0, streak - 1) * 2 + nearScore * 15, false);
       if (dist >= milestone) {
         NW.sfx.fanfare && NW.sfx.fanfare();
-        fx.text(W / 2, 130, milestone + ' 米！', { size: 28, color: '#ff8a00', life: 1.1 });
+        fx.text(W / 2, 130, milestone + ' 米！' + rankName(milestone), { size: 26, color: '#ff8a00', life: 1.1 });
         milestone += 500;
       }
+      if (mode === 'challenge' && dist >= CFG.CHALLENGE_M) winChallenge();
 
       while (spawnX < frog.x + 950) spawnChunk();
       var cull = frog.x - 420;
       plats = plats.filter(function (p) { return p.x + p.w > cull; });
       hazards = hazards.filter(function (z) { return z.x + z.w > cull; });
       coins = coins.filter(function (o) { return !o.got && o.x > cull; });
-    } else if (dead) {
+    } else if (dead && !challengeDone) {
       frog.vy += CFG.GRAV * dt; frog.y += frog.vy * dt; frog.x += frog.vx * dt;
     }
 
@@ -389,7 +451,6 @@
 
     c.save(); c.translate(shx - camX, shy);
 
-    // death ghosts
     if (dead && ghosts.length) {
       ghosts.forEach(function (g, i) {
         c.globalAlpha = 0.12 + (i / ghosts.length) * 0.25;
@@ -428,6 +489,12 @@
         var n = Math.max(2, Math.floor(z.w / 13));
         for (var i = 0; i < n; i++) { var sx = z.x + (i + 0.5) * (z.w / n); c.moveTo(sx - 7, z.y + z.h); c.lineTo(sx, z.y); c.lineTo(sx + 7, z.y + z.h); }
         c.closePath(); c.fill();
+      } else if (z.kind === 'fly') {
+        c.fillStyle = '#7a5cff'; roundRect(c, z.x, z.y, z.w, z.h, 8); c.fill();
+        c.fillStyle = '#fff'; c.font = 'bold 11px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('飞', z.x + z.w / 2, z.y + z.h / 2 + 1);
+        c.strokeStyle = 'rgba(122,92,255,.35)'; c.setLineDash([4, 4]); c.beginPath();
+        c.moveTo(z.x + z.w / 2, z.oy - z.amp); c.lineTo(z.x + z.w / 2, z.oy + z.amp); c.stroke(); c.setLineDash([]);
       } else {
         var b = c.createLinearGradient(z.x, z.y, z.x, z.y + z.h);
         b.addColorStop(0, '#ffb090'); b.addColorStop(1, '#d63a2a');
@@ -463,21 +530,37 @@
     c.restore();
 
     if (nearFlash > 0 && !RM) {
-      c.strokeStyle = 'rgba(255,255,255,' + (nearFlash * 2) + ')'; c.lineWidth = 4;
+      c.strokeStyle = 'rgba(255,255,255,' + (nearFlash * 2.2) + ')'; c.lineWidth = 5;
       c.strokeRect(3, 3, W - 6, H - 6);
     }
 
     if (G.running) {
-      c.fillStyle = 'rgba(255,255,255,.78)'; roundRect(c, 10, 8, 118, 30, 15); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.82)'; roundRect(c, 10, 8, 124, 34, 15); c.fill();
       c.fillStyle = '#6a4400'; c.font = 'bold 13px system-ui'; c.textAlign = 'left'; c.textBaseline = 'middle';
-      c.fillText(Math.floor(dist) + ' 米', 22, 23);
-      // speed bar
-      c.fillStyle = 'rgba(255,255,255,.78)'; roundRect(c, W - 118, 8, 108, 30, 15); c.fill();
-      c.fillStyle = 'rgba(255,160,40,.35)'; roundRect(c, W - 110, 16, 92 * Math.min(1, (speedMul - 1) / CFG.SPEED_CAP), 14, 7); c.fill();
-      c.fillStyle = '#e07000'; c.textAlign = 'right'; c.fillText('×' + speedMul.toFixed(2), W - 22, 23);
-      if (streak >= 2) {
+      c.fillText(Math.floor(dist) + ' 米', 22, 25);
+      // rank progress
+      var nr = nextRankAt(dist), prev = 0;
+      for (var ri = 0; ri < CFG.RANK.length; ri++) { if (CFG.RANK[ri] <= dist) prev = CFG.RANK[ri]; else { nr = CFG.RANK[ri]; break; } }
+      var rp = Math.min(1, (dist - prev) / Math.max(1, nr - prev));
+      c.fillStyle = 'rgba(255,255,255,.82)'; roundRect(c, 10, 46, 124, 18, 9); c.fill();
+      c.fillStyle = 'rgba(255,180,40,.55)'; roundRect(c, 14, 50, 116 * rp, 10, 5); c.fill();
+      c.fillStyle = '#a06000'; c.font = 'bold 10px system-ui'; c.fillText(rankName(dist), 18, 55);
+
+      c.fillStyle = 'rgba(255,255,255,.82)'; roundRect(c, W - 118, 8, 108, 34, 15); c.fill();
+      c.fillStyle = 'rgba(255,160,40,.35)'; roundRect(c, W - 110, 18, 92 * Math.min(1, (speedMul - 1) / CFG.SPEED_CAP), 14, 7); c.fill();
+      c.fillStyle = '#e07000'; c.textAlign = 'right'; c.font = 'bold 13px system-ui'; c.fillText('×' + speedMul.toFixed(2), W - 22, 25);
+
+      if (mode === 'challenge') {
+        c.fillStyle = 'rgba(255,255,255,.82)'; roundRect(c, W / 2 - 70, 8, 140, 28, 14); c.fill();
+        c.fillStyle = '#3a6a90'; c.textAlign = 'center'; c.font = 'bold 12px system-ui';
+        c.fillText('挑战 ' + Math.min(CFG.CHALLENGE_M, Math.floor(dist)) + '/' + CFG.CHALLENGE_M, W / 2, 22);
+      } else if (streak >= 2) {
         c.fillStyle = 'rgba(255,255,255,.7)'; roundRect(c, W / 2 - 48, 8, 96, 28, 14); c.fill();
         c.fillStyle = '#ff6a00'; c.textAlign = 'center'; c.fillText('连跳 ' + streak, W / 2, 22);
+      }
+      if (nearScore > 0) {
+        c.fillStyle = 'rgba(255,255,255,.7)'; roundRect(c, W - 118, 46, 108, 22, 11); c.fill();
+        c.fillStyle = '#5a7a90'; c.textAlign = 'right'; c.font = 'bold 11px system-ui'; c.fillText('近失 ' + nearScore, W - 22, 57);
       }
     }
   }

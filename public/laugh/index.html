@@ -14,27 +14,40 @@
 .scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fff7ec 0%, #ffe9c2 45%, #fff1c8 100%); box-shadow: 0 14px 36px rgba(126,84,44,.18), 0 0 0 1.5px rgba(26,22,18,.12); touch-action: manipulation; }
 .scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
 .scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
+.scene.hot .meter i { animation: meterFlash .28s ease-in-out infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes meterFlash { 50% { filter: brightness(1.35); } }
 .grass { position: absolute; left: -5%; right: -5%; bottom: -2px; height: 22%; background: linear-gradient(180deg, #a9e566, #6bb82e); border-radius: 50% 50% 0 0 / 40% 40% 0 0; box-shadow: 0 -6px 0 rgba(255,255,255,.35); }
-.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 567 / 946; transform: translateX(-50%); }
+.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 567 / 946; transform: translateX(-50%); transition: transform .18s ease-out; }
+.scene.frenzy .fwrap { transform: translateX(-50%) scale(1.06); }
 .fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
 .fwrap img, .fwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .06s; }
 .scene[data-m="idle"] .m-idle, .scene[data-m="laugh"] .m-laugh, .scene[data-m="cackle"] .m-cackle, .scene[data-m="peace"] .m-peace { opacity: 1; }
-.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 16px; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 0 0 2px #fff; overflow: hidden; z-index: 4; }
+.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 18px; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 0 0 2px #fff; overflow: hidden; z-index: 4; }
 .meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #ffe27a, #ff9f43); transition: width .08s linear; box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
 .scene.frenzy .meter i { background: linear-gradient(180deg, #ff9a6a, #ff5a5a); }
-.meter-l { position: absolute; left: 0; right: 0; top: 34px; text-align: center; font-weight: 900; font-size: .8rem; color: #b86a00; z-index: 4; letter-spacing: .1em; text-shadow: 0 1px 0 #fff; }
-.combo { position: absolute; right: 16px; top: 54px; z-index: 4; font-weight: 900; font-size: 1.7rem; color: #ff7a00; text-shadow: 0 2px 0 #fff, 0 0 8px #fff; transform-origin: 100% 50%; opacity: 0; }
+.meter-l { position: absolute; left: 0; right: 0; top: 36px; text-align: center; font-weight: 900; font-size: .8rem; color: #b86a00; z-index: 4; letter-spacing: .1em; text-shadow: 0 1px 0 #fff; }
+.combo { position: absolute; right: 16px; top: 56px; z-index: 4; font-weight: 900; font-size: 1.85rem; color: #ff7a00; text-shadow: 0 2px 0 #fff, 0 0 10px #fff; transform-origin: 100% 50%; opacity: 0; }
 .combo.on { opacity: 1; animation: nwpop .2s; }
+.mult-pill { position: absolute; left: 14px; top: 56px; z-index: 4; font-weight: 900; font-size: 1.05rem; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.88); color: #c45a00; box-shadow: 0 3px 0 rgba(26,22,18,.1); opacity: 0; }
+.mult-pill.on { opacity: 1; }
 .haha-float { position: absolute; font-weight: 900; pointer-events: none; z-index: 3; animation: hahaFloat 1.4s ease-out forwards; text-shadow: 0 2px 0 #fff; }
-@keyframes hahaFloat { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
-.loop-btn { position: absolute; left: 14px; bottom: 14px; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: #fff; color: #6a4400; box-shadow: 0 4px 0 rgba(26,22,18,.12), 0 8px 18px rgba(0,0,0,.12); cursor: pointer; }
-.loop-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
-.loop-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(26,22,18,.12); }
+@keyframes hahaFloat { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1.25); } }
+.loop-btn, .mode-btn { position: absolute; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: #fff; color: #6a4400; box-shadow: 0 4px 0 rgba(26,22,18,.12), 0 8px 18px rgba(0,0,0,.12); cursor: pointer; min-height: 44px; }
+.loop-btn { left: 14px; bottom: 14px; }
+.mode-btn { right: 14px; bottom: 14px; }
+.loop-btn.on, .mode-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
+.loop-btn:active, .mode-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(26,22,18,.12); }
 .corner-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .meter-ring { position: absolute; left: 50%; top: 42%; width: 0; height: 0; border-radius: 50%; border: 0 solid rgba(255,154,106,.0); transform: translate(-50%,-50%); pointer-events: none; z-index: 2; transition: width .2s, height .2s, border-width .2s; }
-.scene.frenzy .meter-ring { width: 220px; height: 220px; border: 10px solid rgba(255,90,90,.35); animation: ringPulse 1s ease-in-out infinite; }
-@keyframes ringPulse { 50% { transform: translate(-50%,-50%) scale(1.08); border-color: rgba(255,210,63,.55); } }
+.scene.frenzy .meter-ring { width: 240px; height: 240px; border: 12px solid rgba(255,90,90,.4); animation: ringPulse .85s ease-in-out infinite; }
+.scene.hot:not(.frenzy) .meter-ring { width: 160px; height: 160px; border: 6px solid rgba(255,160,40,.45); animation: ringPulse .45s ease-in-out infinite; }
+@keyframes ringPulse { 50% { transform: translate(-50%,-50%) scale(1.1); border-color: rgba(255,210,63,.6); } }
+.fever-banner { position: absolute; left: 50%; top: 18%; transform: translateX(-50%) scale(.6); z-index: 5; font-weight: 900; font-size: 1.6rem; color: #ff3a20; text-shadow: 0 3px 0 #fff, 0 0 18px rgba(255,90,40,.7); opacity: 0; pointer-events: none; }
+.fever-banner.show { opacity: 1; animation: feverPop .9s ease-out forwards; }
+@keyframes feverPop { 0% { opacity: 0; transform: translateX(-50%) scale(.4); } 25% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1); } }
+.score-pop { position: absolute; font-weight: 900; pointer-events: none; z-index: 5; animation: scorePop .7s ease-out forwards; text-shadow: 0 2px 0 #fff; }
+@keyframes scorePop { 0% { opacity: 0; transform: translate(-50%,0) scale(.5); } 20% { opacity: 1; transform: translate(-50%,-10px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-48px) scale(1); } }
 </style>
 </head>
 <body class="game">
@@ -42,15 +55,18 @@
   <div id="nw-top"></div><div id="nw-hud"></div>
   <main class="nw-stage">
     <div class="scene" id="scene" data-m="idle">
-      <div class="meter"><i id="mt"></i></div><div class="meter-l" id="ml">笑意槽</div><div class="combo" id="cb"></div>
+      <div class="meter"><i id="mt"></i></div><div class="meter-l" id="ml">笑意槽</div>
+      <div class="mult-pill" id="mp">×1</div><div class="combo" id="cb"></div>
       <div class="meter-ring" id="mring"></div>
+      <div class="fever-banner" id="fb">狂笑 FEVER！</div>
       <div class="corner-layer" id="corners"></div>
       <div class="grass"></div>
       <div class="fwrap"><div class="inner" id="fi"></div></div>
       <button type="button" class="loop-btn" id="loopLaugh" aria-pressed="false">循环笑 🚫</button>
+      <button type="button" class="mode-btn" id="modeBtn">60 秒局</button>
     </div>
   </main>
-  <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 左下可开循环笑</p>
+  <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速</p>
 </div>
 <script src="/assets/frog.js?v=lobby2"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
@@ -62,57 +78,95 @@
     F.html({ mood: 'laugh', className: 'm-laugh', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
     F.html({ mood: 'laugh', className: 'm-cackle', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scale(1.04)' }) +
     F.html({ pose: 'peace', className: 'm-peace', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
-  var fx = new NW.FX(), ov = NW.overlay(scene), DUR = 60, FEVER_DUR = 6.2, BASE_TAP = 15, TAP_WARMUP = 3;
-  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '60 秒内点奶蛙！每连挠 5 下倍率 +1（最高 ×5）。笑意槽攒满进入 FEVER ' + FEVER_DUR + ' 秒（分数 ×2、笑声更密）。结局有评级。', onStart: reset });
-  var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1, floatN = 0, warmupLeft = TAP_WARMUP;
-  var WORDS = ['哈哈哈', 'HAHA', '嘎嘎嘎', '啊哈哈'];
-  var POS = [{ l: '12%', t: '30%' }, { l: 'auto', r: '12%', t: '26%' }, { l: '18%', t: '55%' }, { l: 'auto', r: '16%', t: '50%' }];
-  var loopOn = false, loopTimer = 0, cornerT = 0, SQUASH_FEVER = 1.3;
+  var fx = new NW.FX(), ov = NW.overlay(scene);
+  var CFG = { DUR: 60, DUR_FAST: 30, FEVER_DUR: 6.2, BASE_TAP: 15, TAP_WARMUP: 3, COMBO_WINDOW_MS: 650, SQUASH_FEVER: 1.35, METER_NEAR: 90 };
+  var modeFast = false, DUR = CFG.DUR;
+  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '点奶蛙攒笑意！每连挠 5 下倍率 +1（最高 ×5）。槽满进入 FEVER ' + CFG.FEVER_DUR + ' 秒（分数 ×2、笑声更密、四角飘字）。可切 30 秒极速局。结局五档评级。', onStart: reset });
+  var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1, floatN = 0, warmupLeft = CFG.TAP_WARMUP;
+  var feverHits = 0, feverEntered = 0;
+  var WORDS = ['哈哈哈', '嘻嘻', '嘎嘎嘎', '呵哈哈', '噗哈', '嘿哈'];
+  var POS = [{ l: '10%', t: '28%' }, { l: 'auto', r: '10%', t: '24%' }, { l: '14%', t: '52%' }, { l: 'auto', r: '14%', t: '48%' }, { l: '22%', t: '18%' }, { l: 'auto', r: '20%', t: '62%' }];
+  var loopOn = false, loopTimer = 0, cornerT = 0, sparkT = 0;
   var loopBtn = document.getElementById('loopLaugh');
+  var modeBtn = document.getElementById('modeBtn');
+  var fb = document.getElementById('fb');
   function syncLoopBtn() {
     loopBtn.classList.toggle('on', loopOn);
     loopBtn.setAttribute('aria-pressed', loopOn ? 'true' : 'false');
     loopBtn.textContent = loopOn ? '循环笑 ON' : '循环笑 🚫';
   }
+  function syncModeBtn() {
+    modeBtn.classList.toggle('on', modeFast);
+    modeBtn.textContent = modeFast ? '30 秒极速' : '60 秒局';
+    DUR = modeFast ? CFG.DUR_FAST : CFG.DUR;
+    document.getElementById('hint').textContent = modeFast ? '极速 30 秒 · 槽涨更快 · 连击更值钱' : '连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速';
+  }
   loopBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
   loopBtn.addEventListener('click', function (e) {
     e.stopPropagation(); loopOn = !loopOn; syncLoopBtn();
-    if (loopOn) { NW.sfx.ha(0, false); setM('laugh'); }
+    if (loopOn) { NW.sfx.ha(0, { fever: false, intensity: 1 }); setM('laugh'); }
     else { if (NW.stopFeverGiggle) NW.stopFeverGiggle(); if (frenzy <= 0) setM('idle'); }
   });
-  syncLoopBtn();
+  modeBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  modeBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (G.running) { NW.toast('本局结束后再切模式'); return; }
+    modeFast = !modeFast; syncModeBtn(); NW.sfx.click();
+  });
+  syncLoopBtn(); syncModeBtn();
   function reset() {
-    left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; warmupLeft = TAP_WARMUP; cornerT = 0;
+    left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; warmupLeft = CFG.TAP_WARMUP; cornerT = 0; feverHits = 0; feverEntered = 0; sparkT = 0;
     if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-    G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); upd();
+    G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); $('#mp').classList.remove('on'); scene.classList.remove('hot'); upd();
   }
   function setM(m) { scene.dataset.m = m; }
-  function upd() { $('#mt').style.width = Math.min(100, meter) + '%'; $('#ml').textContent = frenzy > 0 ? ('FEVER ' + Math.ceil(frenzy) + 's ×2') : '笑意槽'; scene.classList.toggle('frenzy', frenzy > 0); }
-  function floatHaha() {
+  function upd() {
+    $('#mt').style.width = Math.min(100, meter) + '%';
+    $('#ml').textContent = frenzy > 0 ? ('FEVER ' + Math.ceil(frenzy) + 's ×2') : (meter >= CFG.METER_NEAR ? '马上狂笑！' : '笑意槽');
+    scene.classList.toggle('frenzy', frenzy > 0);
+    scene.classList.toggle('hot', frenzy <= 0 && meter >= CFG.METER_NEAR);
+  }
+  function floatHaha(big) {
     var el = document.createElement('div'); el.className = 'haha-float';
     var w = WORDS[floatN % WORDS.length]; el.textContent = w;
     var p = POS[floatN % POS.length]; floatN++;
     el.style.left = p.l || 'auto'; el.style.right = p.r || 'auto'; el.style.top = p.t;
     el.style.color = floatN % 2 ? '#1A1612' : '#FF4D4D';
-    el.style.fontSize = (w.length > 3 ? 24 : 32) + 'px';
+    el.style.fontSize = ((big ? 36 : 26) + (w.length > 3 ? -4 : 4)) + 'px';
     scene.appendChild(el); setTimeout(function () { el.remove(); }, 1400);
   }
+  function scorePop(x, y, pts, mult) {
+    var el = document.createElement('div'); el.className = 'score-pop';
+    el.textContent = '+' + pts + (mult > 1 ? ' ×' + mult : '');
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.color = mult >= 4 ? '#ff3a20' : (mult >= 2 ? '#ff7a00' : '#e8a000');
+    el.style.fontSize = (18 + Math.min(16, mult * 3)) + 'px';
+    scene.appendChild(el); setTimeout(function () { el.remove(); }, 700);
+  }
   function enterFever() {
-    frenzy = FEVER_DUR; meter = 100;
+    frenzy = CFG.FEVER_DUR; meter = 100; feverEntered++;
     if (NW.sfx.feverIn) NW.sfx.feverIn(); NW.sfx.win();
-    NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 14, 480);
-    fx.burst(ov.w / 2, ov.h * .4, { count: 48, speed: 460, size: 11 });
-    if (fx.ring) fx.ring(ov.w / 2, ov.h * .42, { maxR: 180, life: 0.6, color: 'rgba(255,90,90,.65)', line: 14 });
-    fx.text(ov.w / 2, ov.h * .3, '狂笑模式！', { size: 42, color: '#ff4a2a', life: 1.3 });
+    NW.sfx.ha(hahaN++ % 6, { fever: true, intensity: 8 });
+    NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 16, 520);
+    fx.burst(ov.w / 2, ov.h * .4, { count: NW.reduceMotion && NW.reduceMotion() ? 12 : 56, speed: 480, size: 12 });
+    if (fx.ring) fx.ring(ov.w / 2, ov.h * .42, { maxR: 200, life: 0.65, color: 'rgba(255,90,90,.7)', line: 16 });
+    fx.text(ov.w / 2, ov.h * .28, '狂笑模式！', { size: 44, color: '#ff4a2a', life: 1.35 });
+    fb.classList.remove('show'); void fb.offsetWidth; fb.classList.add('show');
     if (NW.startFeverGiggle) NW.startFeverGiggle();
+    for (var i = 0; i < 4; i++) setTimeout(function () { floatHaha(true); }, i * 90);
     upd();
   }
   function exitFever() {
     frenzy = 0; meter = 0; setM('idle');
     if (NW.stopFeverGiggle) NW.stopFeverGiggle();
+    if (loopOn) setM('laugh');
     upd();
   }
   function grade(score) {
+    if (NW.grade) return NW.grade(score, [1000, 2500, 4500, 7000]) || gradeLocal(score);
+    return gradeLocal(score);
+  }
+  function gradeLocal(score) {
     if (score >= 7000) return '笑到打滚';
     if (score >= 4500) return '一秒破绷';
     if (score >= 2500) return '噗嗤一声';
@@ -121,32 +175,68 @@
   }
   scene.addEventListener('pointerdown', function (e) {
     var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    if (!G.running) { NW.sfx.tap(); setM('laugh'); squash(); floatHaha(); clearTimeout(laughT); laughT = setTimeout(function () { setM('idle'); }, 700); return; }
-    var now = performance.now(); combo = (now - lastTap < 650) ? combo + 1 : 1; lastTap = now; maxCombo = Math.max(maxCombo, combo); taps++;
+    if (!G.running) {
+      NW.sfx.ha(hahaN++ % 6, { fever: false, intensity: 1 });
+      setM('laugh'); squash(); floatHaha(false); scorePop(x, y - 8, 0, 1);
+      clearTimeout(laughT); laughT = setTimeout(function () { setM('idle'); }, 700);
+      return;
+    }
+    var now = performance.now();
+    combo = (now - lastTap < CFG.COMBO_WINDOW_MS) ? combo + 1 : 1;
+    lastTap = now; maxCombo = Math.max(maxCombo, combo); taps++;
     var mult = Math.min(5, 1 + Math.floor(combo / 5));
     var warm = warmupLeft > 0; if (warm) warmupLeft--;
-    var pts = warm ? Math.max(1, Math.floor(BASE_TAP / 3)) : (BASE_TAP * mult * (frenzy > 0 ? 2 : 1));
+    var feverMul = frenzy > 0 ? 2 : 1;
+    var pts = warm ? Math.max(1, Math.floor(CFG.BASE_TAP / 3)) : (CFG.BASE_TAP * mult * feverMul);
+    if (modeFast && !warm) pts = Math.round(pts * 1.15);
     G.setScore(G.score + pts);
-    // meter: ~18 taps to fill when not in fever (5.5 * 18 ≈ 99); slower decay when combo active
+    if (frenzy > 0) feverHits++;
     if (frenzy <= 0) {
-      meter += 5.5 + Math.min(2, combo * 0.08);
+      var fill = (modeFast ? 7.2 : 5.8) + Math.min(2.4, combo * 0.12);
+      meter += fill;
       if (meter >= 100) enterFever();
+    } else {
+      meter = Math.max(8, meter); // keep bar readable in fever (time-driven below)
     }
-    setM(frenzy > 0 ? (combo > 8 ? 'cackle' : 'laugh') : (combo > 12 ? 'cackle' : 'laugh'));
-    clearTimeout(laughT); laughT = setTimeout(function () { setM(frenzy > 0 ? 'laugh' : 'idle'); }, frenzy > 0 ? 280 : 420);
-    squash(); if (!warm) floatHaha(); NW.sfx.ha(hahaN++ % 6, warm ? false : (frenzy > 0)); NW.vib(warm ? 6 : (8 + Math.min(20, combo)));
-    fx.burst(x, y, { count: 7 + Math.min(10, combo), speed: 260 });
-    fx.text(x + (Math.random() * 50 - 25), y - 20, ['哈', '哈哈', '嘿', '嘻嘻', '哈哈哈'][Math.floor(Math.random() * 5)], { size: 24 + Math.min(18, combo), color: ['#ff8a00', '#ff5a5a', '#e8a800', '#7cc93e'][hahaN % 4] });
-    var c = $('#cb'); if (combo >= 3) { c.textContent = '×' + mult + ' 连击' + combo; c.classList.remove('on'); void c.offsetWidth; c.classList.add('on'); }
-    if (combo > 0 && combo % 10 === 0) { NW.sfx.combo(combo / 10); fx.text(ov.w / 2, ov.h * .22, combo + ' 连击！', { size: 34, color: '#ff4a2a', life: 1.1 }); }
+    var face = frenzy > 0 ? (combo > 6 ? 'cackle' : 'laugh') : (combo > 20 ? 'cackle' : (combo > 8 ? 'laugh' : 'laugh'));
+    setM(face);
+    clearTimeout(laughT);
+    laughT = setTimeout(function () {
+      if (combo > 20 || frenzy > 0) setM(frenzy > 0 ? 'cackle' : 'laugh');
+      else setM(frenzy > 0 ? 'laugh' : 'idle');
+    }, frenzy > 0 ? 240 : 400);
+    squash();
+    if (!warm) { floatHaha(combo >= 10); scorePop(x, y - 12, pts, mult * feverMul); }
+    NW.sfx.ha(hahaN++ % 6, { fever: frenzy > 0, intensity: Math.min(12, combo), combo: combo });
+    NW.vib(warm ? 6 : (8 + Math.min(22, combo)));
+    var burstN = (NW.reduceMotion && NW.reduceMotion()) ? 4 : (8 + Math.min(14, combo) + (frenzy > 0 ? 8 : 0));
+    fx.burst(x, y, { count: burstN, speed: 280 + combo * 8, size: 5 + Math.min(4, combo / 4) });
+    if (combo >= 5 && fx.ring) fx.ring(x, y, { maxR: 40 + combo * 2, life: 0.28, color: 'rgba(255,140,40,.55)' });
+    fx.text(x + (Math.random() * 40 - 20), y - 28, ['哈', '哈哈', '嘿', '嘻嘻', '哈哈哈', '嘎'][Math.floor(Math.random() * 6)], { size: 22 + Math.min(20, combo), color: ['#ff8a00', '#ff5a5a', '#e8a800', '#7cc93e', '#ff4a2a'][hahaN % 5] });
+    var c = $('#cb'); var mp = $('#mp');
+    if (combo >= 2) {
+      c.textContent = '连击 ' + combo; c.classList.remove('on'); void c.offsetWidth; c.classList.add('on');
+      mp.textContent = '×' + mult; mp.classList.add('on');
+    }
+    if (combo > 0 && combo % 10 === 0) {
+      NW.sfx.combo(combo / 10);
+      fx.text(ov.w / 2, ov.h * .2, combo + ' 连击狂潮！', { size: 36, color: '#ff4a2a', life: 1.15 });
+      if (!(NW.reduceMotion && NW.reduceMotion())) NW.shake(scene, 8, 220);
+      for (var k = 0; k < 3; k++) floatHaha(true);
+    }
     upd();
   });
   function squash() {
     tilt = -tilt;
-    var f = frenzy > 0 ? SQUASH_FEVER : 1;
-    var s1x = 1.1 * f, s1y = Math.max(0.72, .88 / f);
-    var s2x = Math.max(0.82, .94 / f), s2y = 1.1 * f;
-    fi.animate([{ transform: 'scale(1,1) rotate(0)' }, { transform: 'scale(' + s1x + ',' + s1y + ') rotate(' + tilt * -2 + 'deg)', offset: .2 }, { transform: 'scale(' + s2x + ',' + s2y + ') rotate(' + tilt * 3 + 'deg) translateY(-3%)', offset: .55 }, { transform: 'scale(1,1) rotate(0)' }], { duration: frenzy > 0 ? 220 : 260, easing: 'ease-out' });
+    var f = frenzy > 0 ? CFG.SQUASH_FEVER : 1;
+    var s1x = 1.12 * f, s1y = Math.max(0.7, .86 / f);
+    var s2x = Math.max(0.8, .92 / f), s2y = 1.12 * f;
+    fi.animate([
+      { transform: 'scale(1,1) rotate(0)' },
+      { transform: 'scale(' + s1x + ',' + s1y + ') rotate(' + tilt * -3 + 'deg)', offset: .18 },
+      { transform: 'scale(' + s2x + ',' + s2y + ') rotate(' + tilt * 4 + 'deg) translateY(-4%)', offset: .52 },
+      { transform: 'scale(1,1) rotate(0)' }
+    ], { duration: frenzy > 0 ? 200 : 240, easing: 'ease-out' });
   }
   var lt = performance.now();
   function loop(t) {
@@ -154,28 +244,35 @@
     if (G.running) {
       left -= dt; G.setExtra(Math.max(0, Math.ceil(left)));
       if (frenzy > 0) {
-        frenzy -= dt; meter = Math.max(0, frenzy / FEVER_DUR * 100);
+        frenzy -= dt; meter = Math.max(0, frenzy / CFG.FEVER_DUR * 100);
         if (frenzy <= 0) exitFever(); else upd();
-        cornerT -= dt; if (cornerT <= 0) { cornerT = 0.35; floatHaha(); }
+        cornerT -= dt; if (cornerT <= 0) { cornerT = 0.28; floatHaha(true); }
+        sparkT -= dt;
+        if (sparkT <= 0 && !(NW.reduceMotion && NW.reduceMotion())) {
+          sparkT = 0.22;
+          fx.burst(ov.w * (0.2 + Math.random() * 0.6), ov.h * (0.25 + Math.random() * 0.35), { count: 6, speed: 160, size: 4, colors: ['#ff9a6a', '#ffe27a', '#fff'] });
+        }
       } else if (meter > 0) {
-        var decay = (performance.now() - lastTap < 400) ? 3.2 : 6.5;
+        var decay = (performance.now() - lastTap < 420) ? 2.8 : 5.2;
+        if (modeFast) decay *= 1.15;
         meter = Math.max(0, meter - dt * decay); upd();
       }
-      if (combo > 0 && performance.now() - lastTap > 650) { combo = 0; $('#cb').classList.remove('on'); }
+      if (combo > 0 && performance.now() - lastTap > CFG.COMBO_WINDOW_MS) { combo = 0; $('#cb').classList.remove('on'); if (frenzy <= 0) $('#mp').classList.remove('on'); }
       if (left <= 0) {
         left = 0; setM('laugh'); if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-        var gtxt = (NW.grade ? NW.grade(G.score) : grade(G.score));
-        G.over('评级「' + gtxt + '」· 点了 ' + taps + ' 下 · 最高连击 ×' + maxCombo);
+        var gtxt = grade(G.score);
+        if (typeof gtxt === 'object') gtxt = gtxt.label || gtxt.name || String(gtxt);
+        var egg = G.score >= 2500 ? ' · 彩蛋表情已解锁感' : '';
+        G.over('评级「' + gtxt + '」· 点了 ' + taps + ' 下 · 最高连击 ' + maxCombo + ' · FEVER ' + feverEntered + ' 次' + egg);
       }
     }
-    // loop laugh UX: keep giggling even outside fever when toggled
     if (loopOn) {
       loopTimer -= dt;
       if (loopTimer <= 0) {
-        loopTimer = frenzy > 0 ? 0.28 : 0.48;
-        NW.sfx.ha(hahaN++ % 6, frenzy > 0);
-        if (frenzy <= 0) { setM('laugh'); clearTimeout(laughT); laughT = setTimeout(function () { if (loopOn) setM('cackle'); }, 200); }
-        floatHaha();
+        loopTimer = frenzy > 0 ? 0.26 : 0.42;
+        NW.sfx.ha(hahaN++ % 6, { fever: frenzy > 0, intensity: 4 });
+        if (frenzy <= 0) { setM('laugh'); clearTimeout(laughT); laughT = setTimeout(function () { if (loopOn) setM('cackle'); }, 180); }
+        floatHaha(false);
       }
     }
     fx.update(dt); ov.ctx.setTransform(ov.dpr, 0, 0, ov.dpr, 0, 0); ov.ctx.clearRect(0, 0, ov.w, ov.h); fx.draw(ov.ctx);
