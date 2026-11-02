@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=juice3">
+<link rel="stylesheet" href="/style.css?v=m3b">
 <style>
 .tools{display:flex;gap:8px;justify-content:center;padding:6px 10px 2px;flex-wrap:wrap}
 .tools button{appearance:none;border:0;border-radius:16px;padding:10px 12px;min-width:72px;font-weight:900;font-size:.78rem;background:#fff;color:#6a4400;box-shadow:0 3px 0 rgba(26,22,18,.12);cursor:pointer}
@@ -36,7 +36,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">四连→条纹 · 五连→彩虹 · L/T→炸弹 · 冰要多消一次 · 道具各 3 次</p>
 </div>
-<script src="/assets/frog.js?v=juice3"></script><script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/frog.js?v=m3b"></script><script src="/assets/nw.js?v=sfx2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -84,7 +84,7 @@
   var fx = new NW.FX(), view = { s: 1 }, cells, moves, sel = null, state = 'idle', combo = 0, hintT = 0, hint = null, shakeT = 0, drag = null, freeze = 0;
   var level = 0, goals = [], collected = [], pendingSpecials = [], theme = THEMES[0], scanFlash = null, toolMode = null;
   var items = { hammer: 3, shuf: 3, moves: 3 }, stars = NW.store.get('m3_stars', []) || [], ambient = [], ambT = 0;
-  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连→条纹，五连→彩虹（清同色），L/T→炸弹。冰层要多消一次。锤/洗牌/+5 步各 3 次。共 ' + LEVELS.length + ' 关。', onStart: reset });
+  var G = NW.mount({ key: 'match3', title: '奶蛙消消乐', scoreLabel: '分数', extraCard: '步数', rules: '交换相邻奶蛙，横竖 ≥3 消除。四连→条纹，五连→彩虹（清同色），L/T→炸弹。冰层要多消一次。锤/洗牌/+5 步各 3 次。共 ' + LEVELS.length + ' 关，可选关。', onStart: reset });
   function rnd() { return Math.floor(Math.random() * TYPES); }
   function syncTools() {
     document.getElementById('n-hammer').textContent = items.hammer;
