@@ -13,10 +13,12 @@
   /* ---------- WebAudio 音效 / BGM（原创合成 + 自研笑声采样） ---------- */
   var AC = null, master = null, sfxGain = null, bgmGain = null;
   var muted = !!store.get('mute', false);
-  var volSfx = +store.get('vol_sfx', 0.7) || 0.7;
+  var volSfx = +store.get('vol_sfx', 0.95) || 0.95;
   var volBgm = +store.get('vol_bgm', 0.22) || 0.22;
   var buffers = {};
+  var rawAudio = {};
   var bgmTimer = null, bgmKey = null, bgmNext = 0, feverLoop = null;
+  var unlockPromise = null;
 
   function ctx() {
     if (!AC) {
@@ -27,8 +29,19 @@
       bgmGain = AC.createGain(); bgmGain.gain.value = muted ? 0 : volBgm;
       sfxGain.connect(master); bgmGain.connect(master); master.connect(AC.destination);
     }
-    if (AC.state === 'suspended') AC.resume();
     return AC;
+  }
+  function unlockAudio() {
+    var a = ctx();
+    if (!a) return Promise.resolve(false);
+    if (a.state !== 'suspended') return Promise.resolve(true);
+    if (unlockPromise) return unlockPromise;
+    unlockPromise = a.resume().then(function () {
+      unlockPromise = null; return true;
+    }).catch(function () {
+      unlockPromise = null; return false;
+    });
+    return unlockPromise;
   }
   function applyMuteGains() {
     if (!sfxGain || !bgmGain) return;
@@ -62,38 +75,42 @@
     var s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
     f.type = 'highpass'; f.frequency.value = hp || 800; g.gain.value = vol || 0.2; s.buffer = b; s.connect(f); f.connect(g); g.connect(sfxGain); s.start(t);
   }
-  /* 程序化「哈」后备（采样未就绪时） */
+  /* 程序化「哈」后备：大声多音节，采样未就绪 / iOS 首点也必须听得到 */
   function voiceHa(delay, f0, dur, vol, kind) {
     if (muted) return; var a = ctx(); if (!a) return;
     var t = a.currentTime + (delay || 0);
-    dur = dur || 0.12; vol = vol || 0.22; f0 = f0 || 340;
-    var nLen = Math.max(1, Math.floor(a.sampleRate * Math.min(dur * 0.4, 0.07)));
+    dur = dur || 0.18; vol = vol || 0.55; f0 = f0 || 340;
+    var nLen = Math.max(1, Math.floor(a.sampleRate * Math.min(dur * 0.55, 0.1)));
     var b = a.createBuffer(1, nLen, a.sampleRate), ch = b.getChannelData(0);
-    for (var i = 0; i < nLen; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nLen, 0.45);
+    for (var i = 0; i < nLen; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nLen, 0.35);
     var ns = a.createBufferSource(); ns.buffer = b;
-    var bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = kind === 'ga' ? 900 : 2000; bp.Q.value = 0.9;
+    var bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = kind === 'ga' ? 900 : 2100; bp.Q.value = 0.85;
     var ng = a.createGain();
     ng.gain.setValueAtTime(0.0001, t);
-    ng.gain.exponentialRampToValueAtTime(vol * 0.5, t + 0.006);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.45);
-    ns.connect(bp); bp.connect(ng); ng.connect(sfxGain); ns.start(t); ns.stop(t + dur * 0.5);
-    var o1 = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), f1 = a.createBiquadFilter();
-    o1.type = 'triangle'; o2.type = 'sine';
-    o1.frequency.setValueAtTime(f0, t); o1.frequency.exponentialRampToValueAtTime(f0 * 1.14, t + dur);
-    o2.frequency.setValueAtTime(f0 * (kind === 'hee' ? 2.4 : 2.02), t);
-    f1.type = 'bandpass'; f1.frequency.value = kind === 'ga' ? 480 : (kind === 'hee' ? 900 : 700); f1.Q.value = 2.8;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.018); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    ng.gain.exponentialRampToValueAtTime(vol * 0.7, t + 0.008);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.5);
+    ns.connect(bp); bp.connect(ng); ng.connect(sfxGain); ns.start(t); ns.stop(t + dur * 0.55);
+    var o1 = a.createOscillator(), o2 = a.createOscillator(), o3 = a.createOscillator(), g = a.createGain(), f1 = a.createBiquadFilter(), g3 = a.createGain();
+    o1.type = 'triangle'; o2.type = 'sine'; o3.type = 'square';
+    o1.frequency.setValueAtTime(f0, t); o1.frequency.exponentialRampToValueAtTime(f0 * 1.18, t + dur);
+    o2.frequency.setValueAtTime(f0 * (kind === 'hee' ? 2.45 : 2.05), t);
+    o3.frequency.setValueAtTime(f0 * 0.5, t);
+    f1.type = 'bandpass'; f1.frequency.value = kind === 'ga' ? 500 : (kind === 'hee' ? 980 : 740); f1.Q.value = 2.4;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.014); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g3.gain.setValueAtTime(0.0001, t); g3.gain.exponentialRampToValueAtTime(vol * 0.14, t + 0.01); g3.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.4);
     o1.connect(f1); o2.connect(f1); f1.connect(g); g.connect(sfxGain);
-    o1.start(t); o2.start(t); o1.stop(t + dur + 0.02); o2.stop(t + dur + 0.02);
+    o3.connect(g3); g3.connect(sfxGain);
+    o1.start(t); o2.start(t); o3.start(t); o1.stop(t + dur + 0.03); o2.stop(t + dur + 0.03); o3.stop(t + dur * 0.4);
   }
   function proceduralLaugh(p, fever) {
     p = p || 0;
-    var base = 300 + (p % 7) * 22;
-    var nSyl = fever ? 5 + (p % 3) : 2 + (p % 3);
-    var gap = fever ? 0.062 : 0.1;
-    var kinds = fever ? ['ha', 'hee', 'ha', 'ga', 'hee'] : ['ha', 'ha', 'hee', 'ga'];
+    var base = 310 + (p % 7) * 24;
+    var nSyl = fever ? 6 + (p % 3) : 3 + (p % 3);
+    var gap = fever ? 0.07 : 0.095;
+    var kinds = fever ? ['ha', 'hee', 'ha', 'ga', 'hee', 'ha'] : ['ha', 'ha', 'hee', 'ga', 'ha'];
+    var vol = fever ? 0.62 : 0.58;
     for (var i = 0; i < nSyl; i++) {
-      voiceHa(i * gap, base * (1 + i * 0.07) * (fever ? 1.12 : 1), fever ? 0.09 : 0.12, (fever ? 0.26 : 0.2) * (1 - i * 0.05), kinds[i % kinds.length]);
+      voiceHa(i * gap, base * (1 + i * 0.065) * (fever ? 1.14 : 1), fever ? 0.13 : 0.17, vol * (1 - i * 0.04), kinds[i % kinds.length]);
     }
   }
 
@@ -118,47 +135,76 @@
 
   var HA_NAMES = ['ha1', 'ha2', 'ha3', 'ha4', 'ha5', 'ha6'];
   var FEVER_NAMES = ['fever1', 'fever2', 'fever3'];
-  var audioReady = false, audioLoading = null;
+  var audioReady = false, audioLoading = null, audioPrefetch = null;
+  function prefetchAudio() {
+    if (audioPrefetch) return audioPrefetch;
+    var names = HA_NAMES.concat(FEVER_NAMES).concat(['tap_ha']);
+    audioPrefetch = Promise.all(names.map(function (n) {
+      if (rawAudio[n] || buffers[n]) return Promise.resolve();
+      return fetch('/assets/audio/' + n + '.wav?v=sfx2').then(function (r) {
+        if (!r.ok) throw new Error('audio ' + n);
+        return r.arrayBuffer();
+      }).then(function (ab) { rawAudio[n] = ab; }).catch(function () {});
+    }));
+    return audioPrefetch;
+  }
+  function decodeFetched() {
+    var a = ctx(); if (!a) return Promise.resolve();
+    var names = Object.keys(rawAudio);
+    if (!names.length) return Promise.resolve();
+    return Promise.all(names.map(function (n) {
+      if (buffers[n]) return Promise.resolve();
+      var ab = rawAudio[n];
+      return new Promise(function (res) {
+        try {
+          a.decodeAudioData(ab.slice(0), function (buf) { buffers[n] = buf; delete rawAudio[n]; res(); }, function () { res(); });
+        } catch (e) { res(); }
+      });
+    })).then(function () {
+      audioReady = HA_NAMES.some(function (n) { return !!buffers[n]; });
+    });
+  }
   function loadAudio() {
     if (audioReady) return Promise.resolve();
     if (audioLoading) return audioLoading;
-    var a = ctx(); if (!a) return Promise.resolve();
-    var names = HA_NAMES.concat(FEVER_NAMES).concat(['tap_ha']);
-    audioLoading = Promise.all(names.map(function (n) {
-      return fetch('/assets/audio/' + n + '.wav').then(function (r) {
-        if (!r.ok) throw new Error('audio ' + n);
-        return r.arrayBuffer();
-      }).then(function (ab) {
-        return new Promise(function (res, rej) {
-          a.decodeAudioData(ab.slice(0), function (buf) { buffers[n] = buf; res(); }, rej);
-        });
-      }).catch(function () { /* keep procedural fallback */ });
-    })).then(function () { audioReady = true; audioLoading = null; });
+    audioLoading = prefetchAudio().then(function () {
+      /* 未解锁前不创建 AudioContext，避免 iOS 一直 suspended */
+      if (!AC) return;
+      return unlockAudio().then(function () { return decodeFetched(); });
+    }).then(function () { audioLoading = null; }).catch(function () { audioLoading = null; });
     return audioLoading;
   }
 
   var SCALE = [261.6, 293.7, 329.6, 392, 440, 523.3, 587.3, 659.3, 784, 880, 1046.5];
   var sfx = {
     click: function () { tone(660, .07, 'triangle', .18, 880); },
-    tap: function () { if (!playBuf('tap_ha', { vol: 0.85, detune: (Math.random() - .5) * 1.2 })) tone(520, .09, 'sine', .26, 820); },
+    tap: function () { if (muted) { toast('音效已关闭 · 点右上角喇叭开启'); return; } if (!playBuf('tap_ha', { vol: 1.0, detune: (Math.random() - .5) * 1.2 })) tone(520, .1, 'sine', .4, 820); },
     ha: function (p, feverOrOpts) {
+      if (muted) { toast('音效已关闭 · 点右上角喇叭开启'); return; }
       var fever = false, intensity = 0;
       if (typeof feverOrOpts === 'object' && feverOrOpts) { fever = !!feverOrOpts.fever; intensity = feverOrOpts.intensity || 0; }
       else fever = !!feverOrOpts;
       p = (p || 0) | 0;
-      loadAudio();
       var det = ((p * 17) % 7) - 3;
       var rate = 1 + det * 0.03 + Math.min(0.12, intensity * 0.01);
-      if (fever) {
-        var fn = FEVER_NAMES[p % FEVER_NAMES.length];
-        var ok = playBuf(fn, { vol: 0.95, rate: rate * 1.04, detune: det * 0.4 });
-        /* 叠一层短哈，狂笑更密 */
-        playBuf(HA_NAMES[(p + 2) % HA_NAMES.length], { vol: 0.55, rate: rate * 1.12, delay: 0.04 });
-        if (!ok) proceduralLaugh(p, true);
-        return;
+      function doPlay() {
+        decodeFetched();
+        if (fever) {
+          var fn = FEVER_NAMES[p % FEVER_NAMES.length];
+          var ok = playBuf(fn, { vol: 1.05, rate: rate * 1.04, detune: det * 0.4 });
+          playBuf(HA_NAMES[(p + 2) % HA_NAMES.length], { vol: 0.7, rate: rate * 1.12, delay: 0.04 });
+          if (!ok) proceduralLaugh(p, true);
+          return;
+        }
+        var name = HA_NAMES[p % HA_NAMES.length];
+        if (!playBuf(name, { vol: 1.05 + Math.min(0.1, intensity * 0.01), rate: rate })) proceduralLaugh(p, false);
       }
-      var name = HA_NAMES[p % HA_NAMES.length];
-      if (!playBuf(name, { vol: 0.9 + Math.min(0.1, intensity * 0.01), rate: rate })) proceduralLaugh(p, false);
+      /* 同一手势内：创建并 resume，再立刻发声（iOS 要求） */
+      var a = ctx();
+      if (a && a.state === 'suspended') a.resume();
+      applyMuteGains();
+      doPlay();
+      prefetchAudio().then(function () { decodeFetched(); });
     },
     giggle: function (p) { sfx.ha(p || 0, false); },
     cackle: function (p) { sfx.ha(p || 0, true); },
@@ -259,8 +305,12 @@
   }
 
   ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
-    root.addEventListener(ev, function () { if (!muted) { ctx(); loadAudio(); } }, { passive: true });
+    root.addEventListener(ev, function () {
+      prefetchAudio();
+      if (AC) { unlockAudio().then(decodeFetched); }
+    }, { passive: true });
   });
+  try { prefetchAudio(); } catch (e) {}
   var canVib = null;
   sfx.charge = function (pw) {
     try {
@@ -434,7 +484,7 @@
   }
   function reduceMotion() { try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
   function reducedMotion() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
-  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
+  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
 })(window);
 /* 叠加层 canvas（粒子特效）：自动跟随容器尺寸 */
 (function (root) {

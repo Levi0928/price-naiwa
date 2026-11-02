@@ -165,8 +165,12 @@ section.block { position: relative; padding: 38px 16px 10px; max-width: 980px; m
 .go svg { width: 16px; height: 16px; fill: #fff; margin-left: 2px; }
 .ribbon { position: absolute; left: 10px; top: 10px; z-index: 3; padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 900; color: #fff; background: linear-gradient(180deg, #ff9a6a, #ff5a5a); box-shadow: 0 3px 0 #c43a3a; }
 .bestchip { position: absolute; right: 10px; top: 10px; z-index: 3; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 900; color: #5a3a00; background: rgba(255, 255, 255, .92); box-shadow: 0 2px 6px rgba(0, 0, 0, .14); }
-.reveal { opacity: 0; transform: translateY(26px) scale(.96); transition: opacity .6s, transform .6s cubic-bezier(.3, 1.4, .5, 1); }
-.reveal.in { opacity: 1; transform: none; }
+.reveal { opacity: 0; transform: translateY(26px) scale(.96); transition: opacity .6s, transform .6s cubic-bezier(.3, 1.4, .5, 1); animation: nwRevealFallback .01s linear .9s forwards; }
+.reveal.in { opacity: 1; transform: none; animation: none; }
+@keyframes nwRevealFallback { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; animation: none; }
+}
 
 .about { margin: 34px auto 0; max-width: 980px; padding: 0 16px; }
 .about-in { display: flex; align-items: center; gap: 18px; padding: 20px; border-radius: 28px; background: linear-gradient(135deg, #fff8dc, #ffeea0); box-shadow: 0 12px 26px rgba(150, 100, 0, .16), 0 0 0 3px #fff; }
