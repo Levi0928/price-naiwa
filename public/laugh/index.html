@@ -4,285 +4,188 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#bfeaff">
-<title>狂笑点按 · 奶蛙小游戏</title>
-<meta name="description" content="60 秒内点奶蛙，连击倍率最高 ×5！笑意槽满进 FEVER。">
+<title>奶蛙狂笑 · 奶蛙小游戏</title>
+<meta name="description" content="点一下奶蛙，它会笑完这一段。可以循环，也可以立刻停回开头。">
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-<meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="60 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <link rel="stylesheet" href="/style.css?v=q2">
 <style>
-.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fffaf0 0%, #ffe4b0 45%, #fff1c8 100%); box-shadow: 0 18px 40px rgba(126,84,44,.2), 0 0 0 1.5px rgba(26,22,18,.1), inset 0 1px 0 rgba(255,255,255,.55); touch-action: manipulation; }
-.scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
-.scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
-.scene.hot .meter i { animation: meterFlash .28s ease-in-out infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes meterFlash { 50% { filter: brightness(1.35); } }
+.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 58%, #fff6b0, rgba(255,246,176,0) 58%), linear-gradient(180deg, #fffaf0 0%, #ffe4b0 45%, #fff1c8 100%); box-shadow: 0 18px 40px rgba(126,84,44,.2), 0 0 0 1.5px rgba(26,22,18,.1), inset 0 1px 0 rgba(255,255,255,.55); touch-action: manipulation; }
 .grass { position: absolute; left: -5%; right: -5%; bottom: -2px; height: 22%; background: linear-gradient(180deg, #a9e566, #6bb82e); border-radius: 50% 50% 0 0 / 40% 40% 0 0; box-shadow: 0 -6px 0 rgba(255,255,255,.35); }
-.fwrap { position: absolute; left: 50%; bottom: 6%; height: 74%; aspect-ratio: 567 / 946; transform: translateX(-50%); transition: transform .18s ease-out; }
-.scene.frenzy .fwrap { transform: translateX(-50%) scale(1.06); }
-.fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
-.fwrap img, .fwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .06s; }
-.scene[data-m="idle"] .m-idle, .scene[data-m="laugh"] .m-laugh, .scene[data-m="cackle"] .m-cackle, .scene[data-m="peace"] .m-peace { opacity: 1; }
-.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.78); box-shadow: inset 0 2px 5px rgba(0,0,0,.14), 0 0 0 2.5px #fff, 0 6px 14px rgba(120,80,0,.12); overflow: hidden; z-index: 4; }
-.meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #ffe27a, #ff9f43); transition: width .08s linear; box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
-.scene.frenzy .meter i { background: linear-gradient(180deg, #ff9a6a, #ff5a5a); }
-.meter-l { position: absolute; left: 0; right: 0; top: 36px; text-align: center; font-weight: 900; font-size: .8rem; color: #b86a00; z-index: 4; letter-spacing: .1em; text-shadow: 0 1px 0 #fff; }
-.combo { position: absolute; right: 16px; top: 56px; z-index: 4; font-weight: 900; font-size: 1.85rem; color: #ff7a00; text-shadow: 0 2px 0 #fff, 0 0 10px #fff; transform-origin: 100% 50%; opacity: 0; }
-.combo.on { opacity: 1; animation: nwpop .2s; }
-.mult-pill { position: absolute; left: 14px; top: 56px; z-index: 4; font-weight: 900; font-size: 1.05rem; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.88); color: #c45a00; box-shadow: 0 3px 0 rgba(26,22,18,.1); opacity: 0; }
-.mult-pill.on { opacity: 1; }
-.haha-float { position: absolute; font-weight: 900; pointer-events: none; z-index: 3; animation: hahaFloat 1.4s ease-out forwards; text-shadow: 0 2px 0 #fff; }
-@keyframes hahaFloat { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1.25); } }
-.loop-btn, .mode-btn { position: absolute; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: linear-gradient(180deg,#fff,#f6efdc); color: #6a4400; box-shadow: 0 5px 0 rgba(26,22,18,.12), 0 10px 18px rgba(0,0,0,.12), inset 0 1px 0 #fff; cursor: pointer; min-height: 44px; }
-.loop-btn { left: 14px; bottom: 14px; }
-.mode-btn { right: 14px; bottom: 14px; }
-.loop-btn.on, .mode-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
-.loop-btn:active, .mode-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(26,22,18,.12); }
-.corner-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-.meter-ring { position: absolute; left: 50%; top: 42%; width: 0; height: 0; border-radius: 50%; border: 0 solid rgba(255,154,106,.0); transform: translate(-50%,-50%); pointer-events: none; z-index: 2; transition: width .2s, height .2s, border-width .2s; }
-.scene.frenzy .meter-ring { width: 240px; height: 240px; border: 12px solid rgba(255,90,90,.4); animation: ringPulse .85s ease-in-out infinite; }
-.scene.hot:not(.frenzy) .meter-ring { width: 160px; height: 160px; border: 6px solid rgba(255,160,40,.45); animation: ringPulse .45s ease-in-out infinite; }
-@keyframes ringPulse { 50% { transform: translate(-50%,-50%) scale(1.1); border-color: rgba(255,210,63,.6); } }
-.fever-banner { position: absolute; left: 50%; top: 18%; transform: translateX(-50%) scale(.6); z-index: 5; font-weight: 900; font-size: 1.6rem; color: #ff3a20; text-shadow: 0 3px 0 #fff, 0 0 18px rgba(255,90,40,.7); opacity: 0; pointer-events: none; }
-.fever-banner.show { opacity: 1; animation: feverPop .9s ease-out forwards; }
-@keyframes feverPop { 0% { opacity: 0; transform: translateX(-50%) scale(.4); } 25% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1); } }
-.score-pop { position: absolute; font-weight: 900; pointer-events: none; z-index: 5; animation: scorePop .7s ease-out forwards; text-shadow: 0 2px 0 #fff; }
-@keyframes scorePop { 0% { opacity: 0; transform: translate(-50%,0) scale(.5); } 20% { opacity: 1; transform: translate(-50%,-10px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-48px) scale(1); } }
+.fwrap { position: absolute; left: 50%; bottom: 8%; height: 72%; aspect-ratio: 567 / 946; transform: translateX(-50%); }
+.fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 58%; will-change: transform; }
+.fwrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+.scene[data-face="stand"] .m-idle, .scene[data-face="laugh"] .m-laugh { opacity: 1; }
+.haha { position: absolute; font-weight: 900; pointer-events: none; z-index: 3; opacity: 0; white-space: nowrap; text-shadow: 0 2px 0 #fff; }
+.scene.hahaing .haha { animation: hahaFloat 1.4s ease-out infinite; }
+.haha.h1 { left: 8%; top: 24%; font-size: 32px; color: #1A1612; animation-delay: 0s; }
+.haha.h2 { right: 10%; top: 20%; font-size: 28px; color: #FF4D4D; animation-delay: .35s; }
+.haha.h3 { left: 14%; top: 52%; font-size: 24px; color: #1A1612; animation-delay: .7s; }
+.haha.h4 { right: 12%; top: 48%; font-size: 26px; color: #FF4D4D; animation-delay: .15s; }
+@keyframes hahaFloat { 0% { opacity: 0; transform: translateY(16px) scale(.55); } 18% { opacity: 1; } 100% { opacity: 0; transform: translateY(-54px) scale(1.12); } }
+.loop-btn, .stop-btn { position: absolute; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: linear-gradient(180deg,#fff,#f6efdc); color: #6a4400; box-shadow: 0 5px 0 rgba(26,22,18,.12), 0 10px 18px rgba(0,0,0,.12), inset 0 1px 0 #fff; cursor: pointer; min-height: 44px; }
+.loop-btn { right: 14px; bottom: 14px; }
+.stop-btn { left: 14px; bottom: 14px; width: 48px; padding: 0; }
+.loop-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
+.loop-btn:active, .stop-btn:active { transform: translateY(2px); }
+.frog-loading { position: absolute; left: 50%; top: 42%; z-index: 4; display: none; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.92); box-shadow: 0 2px 12px rgba(26,22,18,.18); pointer-events: none; }
+.frog-loading::after { content: ""; position: absolute; inset: 13px; border: 3px solid rgba(26,22,18,.18); border-top-color: #1A1612; border-radius: 50%; animation: frogSpin .8s linear infinite; }
+.scene.is-loading .frog-loading { display: block; }
+@keyframes frogSpin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body class="game">
 <div class="nw-game">
-  <div id="nw-top"></div><div id="nw-hud"></div>
+  <div id="nw-top" class="nw-top">
+    <a class="round-btn" href="/" aria-label="返回合集"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <h1><img src="/assets/favicon-frog.png" alt="">奶蛙狂笑</h1>
+    <button class="round-btn" id="nw-vol" type="button" aria-label="音量设置"></button>
+    <button class="round-btn" id="nw-snd" type="button" aria-label="音效开关"></button>
+  </div>
   <main class="nw-stage">
-    <div class="scene" id="scene" data-m="idle">
-      <div class="meter"><i id="mt"></i></div><div class="meter-l" id="ml">笑意槽</div>
-      <div class="mult-pill" id="mp">×1</div><div class="combo" id="cb"></div>
-      <div class="meter-ring" id="mring"></div>
-      <div class="fever-banner" id="fb">狂笑 FEVER！</div>
-      <div class="corner-layer" id="corners"></div>
+    <div class="scene" id="scene" data-face="stand" tabindex="0" role="button" aria-label="点击让奶蛙笑">
+      <span class="haha h1">哈哈哈</span>
+      <span class="haha h2">HAHA</span>
+      <span class="haha h3">嘎嘎嘎</span>
+      <span class="haha h4">啊哈哈</span>
+      <div class="frog-loading" aria-hidden="true"></div>
       <div class="grass"></div>
       <div class="fwrap"><div class="inner" id="fi"></div></div>
-      <button type="button" class="loop-btn" id="loopLaugh" aria-pressed="false">循环笑 🚫</button>
-      <button type="button" class="mode-btn" id="modeBtn">60 秒局</button>
+      <button type="button" class="stop-btn" id="stopBtn" hidden aria-label="停止，回到开头">🚫</button>
+      <button type="button" class="loop-btn" id="loopBtn" aria-pressed="false">循环大笑</button>
     </div>
   </main>
-  <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速</p>
+  <p class="nw-hint" id="hint">点一下开笑。正在笑时再点不会重来。循环会整段重播，🚫 回到开头。</p>
 </div>
-<script src="/assets/frog.js?v=q2"></script><script src="/assets/nw.js?v=q2"></script>
+<audio id="laughAudio" preload="auto" playsinline src="/assets/audio/laugh_take.wav?v=sfx3"></audio>
+<script src="/assets/frog.js?v=q2"></script>
+<script src="/assets/nw.js?v=laughref1"></script>
+<script src="/laugh/seq.js?v=laughref1"></script>
 <script>
 (function () {
-  var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
-  var scene = $('#scene'), fi = $('#fi');
+  var F = NaiwaFrog;
+  var S = LaughSeq;
+  var scene = document.getElementById('scene');
+  var fi = document.getElementById('fi');
+  var audio = document.getElementById('laughAudio');
+  var stopBtn = document.getElementById('stopBtn');
+  var loopBtn = document.getElementById('loopBtn');
+  var ctl = S.create();
+  var loadTimer = 0;
   fi.innerHTML =
-    F.html({ pose: 'stand', className: 'm-idle nf-anim', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
-    F.html({ mood: 'laugh', className: 'm-laugh', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
-    F.html({ mood: 'laugh', className: 'm-cackle', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scale(1.04)' }) +
-    F.html({ pose: 'peace', className: 'm-peace', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
-  var fx = new NW.FX(), ov = NW.overlay(scene);
-  var CFG = { DUR: 60, DUR_FAST: 30, FEVER_DUR: 6.2, BASE_TAP: 15, TAP_WARMUP: 3, COMBO_WINDOW_MS: 650, SQUASH_FEVER: 1.35, METER_NEAR: 90 };
-  var modeFast = false, DUR = CFG.DUR;
-  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '点奶蛙攒笑意！每连挠 5 下倍率 +1（最高 ×5）。槽满进入 FEVER ' + CFG.FEVER_DUR + ' 秒（分数 ×2、笑声更密、四角飘字）。可切 30 秒极速局。结局五档评级。', tips: ['连挠提倍率', '槽满进 FEVER', '可切 30 秒极速'], onStart: reset });
-  var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1, floatN = 0, warmupLeft = CFG.TAP_WARMUP;
-  var feverHits = 0, feverEntered = 0;
-  var WORDS = ['哈哈哈', '嘻嘻', '嘎嘎嘎', '呵哈哈', '噗哈', '嘿哈'];
-  var POS = [{ l: '10%', t: '28%' }, { l: 'auto', r: '10%', t: '24%' }, { l: '14%', t: '52%' }, { l: 'auto', r: '14%', t: '48%' }, { l: '22%', t: '18%' }, { l: 'auto', r: '20%', t: '62%' }];
-  var loopOn = false, loopTimer = 0, cornerT = 0, sparkT = 0;
-  var loopBtn = document.getElementById('loopLaugh');
-  var modeBtn = document.getElementById('modeBtn');
-  var fb = document.getElementById('fb');
-  function syncLoopBtn() {
-    loopBtn.classList.toggle('on', loopOn);
-    loopBtn.setAttribute('aria-pressed', loopOn ? 'true' : 'false');
-    loopBtn.textContent = loopOn ? '循环笑 ON' : '循环笑 🚫';
+    F.html({ pose: 'stand', className: 'm-idle', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' }) +
+    F.html({ mood: 'laugh', className: 'm-laugh', style: 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain' });
+  NW.bindVolButton(document.getElementById('nw-vol'));
+  NW.bindMuteButton(document.getElementById('nw-snd'));
+  NW.bindLaughMedia(audio);
+  if (NW.isMuted && NW.isMuted()) document.getElementById('nw-snd').classList.add('muted');
+
+  function setLoading(on) {
+    clearTimeout(loadTimer);
+    if (on) loadTimer = setTimeout(function () { scene.classList.add('is-loading'); }, 200);
+    else scene.classList.remove('is-loading');
   }
-  function syncModeBtn() {
-    modeBtn.classList.toggle('on', modeFast);
-    modeBtn.textContent = modeFast ? '30 秒极速' : '60 秒局';
-    DUR = modeFast ? CFG.DUR_FAST : CFG.DUR;
-    document.getElementById('hint').textContent = modeFast ? '极速 30 秒 · 槽涨更快 · 连击更值钱' : '连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速';
+  function applyCommand(cmd) {
+    if (!cmd) return;
+    if (cmd.op === 'play') {
+      audio.loop = !!cmd.loop;
+      audio.playbackRate = 1;
+      if (audio.currentTime > 0.05) {
+        try { audio.currentTime = 0; } catch (e) {}
+      }
+      NW.bindLaughMedia(audio);
+      setLoading(true);
+      var p = audio.play();
+      if (p && p.then) p.then(function () { setLoading(false); }, function () {
+        var stopped = ctl.stop();
+        applyCommand(stopped.command);
+        render();
+        NW.toast('浏览器拦下了声音，再点一次奶蛙');
+      });
+    } else if (cmd.op === 'stop') {
+      audio.loop = false;
+      audio.pause();
+      try { audio.currentTime = 0; } catch (e) {}
+      setLoading(false);
+    }
   }
-  loopBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-  loopBtn.addEventListener('click', function (e) {
-    e.stopPropagation(); loopOn = !loopOn; syncLoopBtn();
-    if (loopOn) { NW.sfx.ha(0, { fever: false, intensity: 1 }); setM('laugh'); }
-    else { if (NW.stopFeverGiggle) NW.stopFeverGiggle(); if (frenzy <= 0) setM('idle'); }
-  });
-  modeBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-  modeBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (G.running) { NW.toast('本局结束后再切模式'); return; }
-    modeFast = !modeFast; syncModeBtn(); NW.sfx.click();
-  });
-  syncLoopBtn(); syncModeBtn();
-  function reset() {
-    left = DUR; combo = 0; maxCombo = 0; meter = 0; frenzy = 0; taps = 0; lastTap = 0; warmupLeft = CFG.TAP_WARMUP; cornerT = 0; feverHits = 0; feverEntered = 0; sparkT = 0;
-    if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-    G.setScore(0, false); G.setExtra(DUR); setM('idle'); $('#cb').classList.remove('on'); $('#mp').classList.remove('on'); scene.classList.remove('hot'); upd();
+  function render() {
+    var snap = ctl.snapshot();
+    var t = snap.state === 'playing' ? (audio.currentTime || 0) : 0;
+    var vis = S.visualAt(t, snap.state);
+    scene.dataset.face = vis.face;
+    scene.classList.toggle('hahaing', vis.haha);
+    stopBtn.hidden = !vis.showStop;
+    loopBtn.classList.toggle('on', snap.loop);
+    loopBtn.setAttribute('aria-pressed', snap.loop ? 'true' : 'false');
+    loopBtn.textContent = snap.loop ? '循环大笑 ON' : '循环大笑';
+    if (snap.state === 'playing') audio.loop = !!snap.loop;
+    var reduce = NW.reduceMotion && NW.reduceMotion();
+    var pulse = reduce ? 0 : vis.pulse;
+    var fit = 1 - vis.lie * 0.34;
+    var sx = (1 + pulse * 0.12) * fit;
+    var sy = (1 - pulse * 0.14) * fit;
+    var rot = -58 * vis.lie;
+    var ty = 10 * vis.lie;
+    fi.style.transform = 'translateY(' + ty + '%) rotate(' + rot + 'deg) scale(' + sx + ',' + sy + ')';
   }
-  function setM(m) { scene.dataset.m = m; }
-  function upd() {
-    $('#mt').style.width = Math.min(100, meter) + '%';
-    $('#ml').textContent = frenzy > 0 ? ('FEVER ' + Math.ceil(frenzy) + 's ×2') : (meter >= CFG.METER_NEAR ? '马上狂笑！' : '笑意槽');
-    scene.classList.toggle('frenzy', frenzy > 0);
-    scene.classList.toggle('hot', frenzy <= 0 && meter >= CFG.METER_NEAR);
-  }
-  function floatHaha(big) {
-    var el = document.createElement('div'); el.className = 'haha-float';
-    var w = WORDS[floatN % WORDS.length]; el.textContent = w;
-    var p = POS[floatN % POS.length]; floatN++;
-    el.style.left = p.l || 'auto'; el.style.right = p.r || 'auto'; el.style.top = p.t;
-    el.style.color = floatN % 2 ? '#1A1612' : '#FF4D4D';
-    el.style.fontSize = ((big ? 36 : 26) + (w.length > 3 ? -4 : 4)) + 'px';
-    scene.appendChild(el); setTimeout(function () { el.remove(); }, 1400);
-  }
-  function scorePop(x, y, pts, mult) {
-    var el = document.createElement('div'); el.className = 'score-pop';
-    el.textContent = '+' + pts + (mult > 1 ? ' ×' + mult : '');
-    el.style.left = x + 'px'; el.style.top = y + 'px';
-    el.style.color = mult >= 4 ? '#ff3a20' : (mult >= 2 ? '#ff7a00' : '#e8a000');
-    el.style.fontSize = (18 + Math.min(16, mult * 3)) + 'px';
-    scene.appendChild(el); setTimeout(function () { el.remove(); }, 700);
-  }
-  function enterFever() {
-    frenzy = CFG.FEVER_DUR; meter = 100; feverEntered++;
-    if (NW.sfx.feverIn) NW.sfx.feverIn(); NW.sfx.win();
-    NW.sfx.ha(hahaN++ % 6, { fever: true, intensity: 8 });
-    if (NW.juice) NW.juice({ hitstop: 70, kick: { amp: 10, dur: 220 }, vib: 22, shake: { el: scene, amp: 14, dur: 480 } });
-    else NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 16, 520);
-    fx.burst(ov.w / 2, ov.h * .4, { count: NW.reduceMotion && NW.reduceMotion() ? 12 : 56, speed: 480, size: 12 });
-    if (fx.ring) fx.ring(ov.w / 2, ov.h * .42, { maxR: 200, life: 0.65, color: 'rgba(255,90,90,.7)', line: 16 });
-    fx.text(ov.w / 2, ov.h * .28, '狂笑模式！', { size: 44, color: '#ff4a2a', life: 1.35 });
-    fb.classList.remove('show'); void fb.offsetWidth; fb.classList.add('show');
-    if (NW.startFeverGiggle) NW.startFeverGiggle();
-    for (var i = 0; i < 4; i++) setTimeout(function () { floatHaha(true); }, i * 90);
-    upd();
-  }
-  function exitFever() {
-    frenzy = 0; meter = 0; setM('idle');
-    if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-    if (loopOn) setM('laugh');
-    upd();
-  }
-  function grade(score) {
-    if (NW.grade) return NW.grade(score) || gradeLocal(score);
-    return gradeLocal(score);
-  }
-  function gradeLocal(score) {
-    if (score >= 7000) return '笑到打滚';
-    if (score >= 4500) return '一秒破绷';
-    if (score >= 2500) return '噗嗤一声';
-    if (score >= 1000) return '嘴角上扬';
-    return '就这？';
+  function take(res) {
+    if (!res) return;
+    if (res.command) applyCommand(res.command);
+    if (res.start && res.start.command) applyCommand(res.start.command);
+    render();
   }
   scene.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('button')) return;
     if (NW.unlockAudio) NW.unlockAudio();
-    var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    if (!G.running) {
-      NW.sfx.ha(hahaN++ % 6, { fever: false, intensity: 1 });
-      setM('laugh'); squash(); floatHaha(false); scorePop(x, y - 8, 0, 1);
-      clearTimeout(laughT); laughT = setTimeout(function () { setM('idle'); }, 700);
+    take(ctl.pointerDown());
+  });
+  scene.addEventListener('keydown', function (e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault();
+    if (NW.unlockAudio) NW.unlockAudio();
+    take(ctl.key(e.key));
+  });
+  stopBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  stopBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    take(ctl.stop());
+  });
+  loopBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  loopBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (NW.unlockAudio) NW.unlockAudio();
+    take(ctl.toggleLoop());
+  });
+  audio.addEventListener('playing', function () { setLoading(false); });
+  audio.addEventListener('waiting', function () { if (ctl.snapshot().state === 'playing') setLoading(true); });
+  audio.addEventListener('ended', function () {
+    var snap = ctl.snapshot();
+    if (snap.loop && snap.state === 'playing') {
+      try { audio.currentTime = 0; } catch (e) {}
+      audio.playbackRate = 1;
+      var p = audio.play();
+      if (p && p.catch) p.catch(function () {});
       return;
     }
-    var now = performance.now();
-    combo = (now - lastTap < CFG.COMBO_WINDOW_MS) ? combo + 1 : 1;
-    lastTap = now; maxCombo = Math.max(maxCombo, combo); taps++;
-    var mult = Math.min(5, 1 + Math.floor(combo / 5));
-    var warm = warmupLeft > 0; if (warm) warmupLeft--;
-    var feverMul = frenzy > 0 ? 2 : 1;
-    var pts = warm ? Math.max(1, Math.floor(CFG.BASE_TAP / 3)) : (CFG.BASE_TAP * mult * feverMul);
-    if (modeFast && !warm) pts = Math.round(pts * 1.15);
-    G.setScore(G.score + pts);
-    if (frenzy > 0) feverHits++;
-    if (frenzy <= 0) {
-      var fill = (modeFast ? 7.2 : 5.8) + Math.min(2.4, combo * 0.12);
-      meter += fill;
-      if (meter >= 100) enterFever();
-    } else {
-      meter = Math.max(8, meter); // keep bar readable in fever (time-driven below)
-    }
-    var face = frenzy > 0 ? (combo > 6 ? 'cackle' : 'laugh') : (combo > 20 ? 'cackle' : (combo > 8 ? 'laugh' : 'laugh'));
-    setM(face);
-    clearTimeout(laughT);
-    laughT = setTimeout(function () {
-      if (combo > 20 || frenzy > 0) setM(frenzy > 0 ? 'cackle' : 'laugh');
-      else setM(frenzy > 0 ? 'laugh' : 'idle');
-    }, frenzy > 0 ? 240 : 400);
-    squash();
-    if (!warm) { floatHaha(combo >= 10); scorePop(x, y - 12, pts, mult * feverMul); }
-    NW.sfx.ha(hahaN++ % 6, { fever: frenzy > 0, intensity: Math.min(12, combo), combo: combo });
-    if (NW.juice) NW.juice({ vib: warm ? 6 : (8 + Math.min(22, combo)), hitstop: warm ? 0 : (combo >= 10 ? 55 : (combo >= 5 ? 40 : 28)), kick: combo >= 15 ? { amp: 6, dur: 140 } : null });
-    else NW.vib(warm ? 6 : (8 + Math.min(22, combo)));
-    var burstN = (NW.reduceMotion && NW.reduceMotion()) ? 4 : (8 + Math.min(14, combo) + (frenzy > 0 ? 8 : 0));
-    fx.burst(x, y, { count: burstN, speed: 280 + combo * 8, size: 5 + Math.min(4, combo / 4) });
-    if (combo >= 5 && fx.ring) fx.ring(x, y, { maxR: 40 + combo * 2, life: 0.28, color: 'rgba(255,140,40,.55)' });
-    fx.text(x + (Math.random() * 40 - 20), y - 28, ['哈', '哈哈', '嘿', '嘻嘻', '哈哈哈', '嘎'][Math.floor(Math.random() * 6)], { size: 22 + Math.min(20, combo), color: ['#ff8a00', '#ff5a5a', '#e8a800', '#7cc93e', '#ff4a2a'][hahaN % 5] });
-    var c = $('#cb'); var mp = $('#mp');
-    if (combo >= 2) {
-      c.textContent = '连击 ' + combo; c.classList.remove('on'); void c.offsetWidth; c.classList.add('on');
-      mp.textContent = '×' + mult; mp.classList.add('on');
-    }
-    if (combo > 0 && combo % 10 === 0) {
-      NW.sfx.combo(combo / 10);
-      fx.text(ov.w / 2, ov.h * .2, combo + ' 连击狂潮！', { size: 36, color: '#ff4a2a', life: 1.15 });
-      if (!(NW.reduceMotion && NW.reduceMotion())) NW.shake(scene, 8, 220);
-      for (var k = 0; k < 3; k++) floatHaha(true);
-    }
-    upd();
+    ctl.finish();
+    setLoading(false);
+    render();
   });
-  function squash() {
-    tilt = -tilt;
-    var f = frenzy > 0 ? CFG.SQUASH_FEVER : 1;
-    if (NW.squashEl) { NW.squashEl(fi, { sx: 1.14 * f, sy: Math.max(0.72, 0.84 / f), dur: frenzy > 0 ? 180 : 210, rot: tilt * 4 }); return; }
-    var s1x = 1.12 * f, s1y = Math.max(0.7, .86 / f);
-    var s2x = Math.max(0.8, .92 / f), s2y = 1.12 * f;
-    fi.animate([
-      { transform: 'scale(1,1) rotate(0)' },
-      { transform: 'scale(' + s1x + ',' + s1y + ') rotate(' + tilt * -3 + 'deg)', offset: .18 },
-      { transform: 'scale(' + s2x + ',' + s2y + ') rotate(' + tilt * 4 + 'deg) translateY(-4%)', offset: .52 },
-      { transform: 'scale(1,1) rotate(0)' }
-    ], { duration: frenzy > 0 ? 200 : 240, easing: 'ease-out' });
-  }
-  var lt = performance.now();
-  function loop(t) {
-    var dt = Math.min(.05, (t - lt) / 1000); lt = t;
-    if (G.running) {
-      left -= dt; G.setExtra(Math.max(0, Math.ceil(left)));
-      if (frenzy > 0) {
-        frenzy -= dt; meter = Math.max(0, frenzy / CFG.FEVER_DUR * 100);
-        if (frenzy <= 0) exitFever(); else upd();
-        cornerT -= dt; if (cornerT <= 0) { cornerT = 0.28; floatHaha(true); }
-        sparkT -= dt;
-        if (sparkT <= 0 && !(NW.reduceMotion && NW.reduceMotion())) {
-          sparkT = 0.22;
-          fx.burst(ov.w * (0.2 + Math.random() * 0.6), ov.h * (0.25 + Math.random() * 0.35), { count: 6, speed: 160, size: 4, colors: ['#ff9a6a', '#ffe27a', '#fff'] });
-        }
-      } else if (meter > 0) {
-        var decay = (performance.now() - lastTap < 420) ? 2.8 : 5.2;
-        if (modeFast) decay *= 1.15;
-        meter = Math.max(0, meter - dt * decay); upd();
-      }
-      if (combo > 0 && performance.now() - lastTap > CFG.COMBO_WINDOW_MS) { combo = 0; $('#cb').classList.remove('on'); if (frenzy <= 0) $('#mp').classList.remove('on'); }
-      if (left <= 0) {
-        left = 0; setM('laugh'); if (NW.stopFeverGiggle) NW.stopFeverGiggle();
-        var gtxt = grade(G.score);
-        if (typeof gtxt === 'object') gtxt = gtxt.label || gtxt.name || String(gtxt);
-        var egg = G.score >= 2500 ? ' · 彩蛋表情已解锁感' : '';
-        G.over('评级「' + gtxt + '」· 点了 ' + taps + ' 下 · 最高连击 ' + maxCombo + ' · FEVER ' + feverEntered + ' 次' + egg);
-      }
+  audio.addEventListener('error', function () {
+    if (ctl.snapshot().state === 'playing') {
+      take(ctl.stop());
+      NW.toast('笑声文件没载入');
     }
-    if (loopOn) {
-      loopTimer -= dt;
-      if (loopTimer <= 0) {
-        loopTimer = frenzy > 0 ? 0.26 : 0.42;
-        NW.sfx.ha(hahaN++ % 6, { fever: frenzy > 0, intensity: 4 });
-        if (frenzy <= 0) { setM('laugh'); clearTimeout(laughT); laughT = setTimeout(function () { if (loopOn) setM('cackle'); }, 180); }
-        floatHaha(false);
-      }
-    }
-    fx.update(dt); ov.ctx.setTransform(ov.dpr, 0, 0, ov.dpr, 0, 0); ov.ctx.clearRect(0, 0, ov.w, ov.h); fx.draw(ov.ctx);
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  });
+  var lastTouch = 0;
+  scene.addEventListener('touchend', function (e) {
+    var n = Date.now();
+    if (n - lastTouch < 320) e.preventDefault();
+    lastTouch = n;
+  }, { passive: false });
+  function tick() { render(); requestAnimationFrame(tick); }
+  requestAnimationFrame(tick);
 })();
 </script>
 </body>

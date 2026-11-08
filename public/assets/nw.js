@@ -16,6 +16,7 @@
   var muted = !!store.get('mute', false);
   var volSfx = +store.get('vol_sfx', 0.95) || 0.95;
   var volBgm = +store.get('vol_bgm', 0.22) || 0.22;
+  var laughMedia = [];
   var buffers = {};
   var rawAudio = {};
   var bgmTimer = null, bgmKey = null, bgmNext = 0, feverLoop = null;
@@ -45,12 +46,28 @@
     return unlockPromise;
   }
   function applyMuteGains() {
+    syncLaughMedia();
     if (!sfxGain || !bgmGain) return;
     var t = AC.currentTime;
     sfxGain.gain.cancelScheduledValues(t);
     bgmGain.gain.cancelScheduledValues(t);
     sfxGain.gain.setTargetAtTime(muted ? 0 : volSfx, t, 0.02);
     bgmGain.gain.setTargetAtTime(muted ? 0 : volBgm, t, 0.04);
+  }
+  function syncLaughMedia() {
+    for (var i = 0; i < laughMedia.length; i++) {
+      var el = laughMedia[i];
+      if (!el) continue;
+      var vol = muted ? 0 : volSfx;
+      try { el.volume = Math.max(0, Math.min(1, vol)); } catch (e) {}
+      el.muted = !!(muted || volSfx <= 0.001);
+    }
+  }
+  function bindLaughMedia(el) {
+    if (!el) return el;
+    if (laughMedia.indexOf(el) < 0) laughMedia.push(el);
+    syncLaughMedia();
+    return el;
   }
   function setMuted(v) {
     muted = !!v; store.set('mute', muted);
@@ -163,7 +180,7 @@
     var names = HA_NAMES.concat(FEVER_NAMES).concat(['tap_ha']);
     audioPrefetch = Promise.all(names.map(function (n) {
       if (rawAudio[n] || buffers[n]) return Promise.resolve();
-      return fetch('/assets/audio/' + n + '.wav?v=sfx2').then(function (r) {
+      return fetch('/assets/audio/' + n + '.wav?v=sfx3').then(function (r) {
         if (!r.ok) throw new Error('audio ' + n);
         return r.arrayBuffer();
       }).then(function (ab) { rawAudio[n] = ab; }).catch(function () {});
@@ -203,23 +220,21 @@
     tap: function () { if (muted) { toast('音效已关闭 · 点右上角喇叭开启'); return; } if (!playBuf('tap_ha', { vol: 1.0, detune: (Math.random() - .5) * 1.2 })) tone(520, .1, 'sine', .4, 820); },
     ha: function (p, feverOrOpts) {
       if (muted) { toast('音效已关闭 · 点右上角喇叭开启'); return; }
-      var fever = false, intensity = 0;
-      if (typeof feverOrOpts === 'object' && feverOrOpts) { fever = !!feverOrOpts.fever; intensity = feverOrOpts.intensity || 0; }
+      var fever = false;
+      if (typeof feverOrOpts === 'object' && feverOrOpts) fever = !!feverOrOpts.fever;
       else fever = !!feverOrOpts;
       p = (p || 0) | 0;
-      var det = ((p * 17) % 7) - 3;
-      var rate = 1 + det * 0.03 + Math.min(0.12, intensity * 0.01);
+      /* 只换音色，不再把播放速率抬高，也不再叠第二条采样 */
+      var det = ((p % 5) - 2) * 0.35;
       function doPlay() {
         decodeFetched();
         if (fever) {
           var fn = FEVER_NAMES[p % FEVER_NAMES.length];
-          var ok = playBuf(fn, { vol: 1.05, rate: rate * 1.04, detune: det * 0.4 });
-          playBuf(HA_NAMES[(p + 2) % HA_NAMES.length], { vol: 0.7, rate: rate * 1.12, delay: 0.04 });
-          if (!ok) proceduralLaugh(p, true);
+          if (!playBuf(fn, { vol: 1, rate: 1, detune: det })) proceduralLaugh(p, true);
           return;
         }
         var name = HA_NAMES[p % HA_NAMES.length];
-        if (!playBuf(name, { vol: 1.05 + Math.min(0.1, intensity * 0.01), rate: rate })) proceduralLaugh(p, false);
+        if (!playBuf(name, { vol: 1, rate: 1, detune: det })) proceduralLaugh(p, false);
       }
       /* 同一手势内：创建并 resume，再立刻发声（iOS 要求） */
       var a = ctx();
@@ -300,7 +315,7 @@
     function tick() {
       if (muted) return;
       sfx.ha((Math.random() * 6) | 0, true);
-      feverLoop = setTimeout(tick, 280 + Math.random() * 220);
+      feverLoop = setTimeout(tick, 520);
     }
     feverLoop = setTimeout(tick, 180);
   }
@@ -704,7 +719,7 @@
     return Math.min(max, (t - last) / 1000);
   }
 
-  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, bindVolButton: bindVolButton, openVolPanel: openVolPanel, closeVolPanel: closeVolPanel, setVolSfx: setVolSfx, setVolBgm: setVolBgm, getVolSfx: function () { return volSfx; }, getVolBgm: function () { return volBgm; }, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle, hitstop: hitstop, tickHitstop: tickHitstop, inHitstop: inHitstop, getHitstop: getHitstop, camKick: camKick, squashEl: squashEl, juice: juice, onFrame: onFrame, offFrame: offFrame, dtClamp: dtClamp };
+  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, bindVolButton: bindVolButton, bindLaughMedia: bindLaughMedia, openVolPanel: openVolPanel, closeVolPanel: closeVolPanel, setVolSfx: setVolSfx, setVolBgm: setVolBgm, getVolSfx: function () { return volSfx; }, getVolBgm: function () { return volBgm; }, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle, hitstop: hitstop, tickHitstop: tickHitstop, inHitstop: inHitstop, getHitstop: getHitstop, camKick: camKick, squashEl: squashEl, juice: juice, onFrame: onFrame, offFrame: offFrame, dtClamp: dtClamp };
 })(window);
 /* 叠加层 canvas（粒子特效）：自动跟随容器尺寸 */
 (function (root) {

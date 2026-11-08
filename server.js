@@ -17,6 +17,7 @@ const TYPES = {
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.wav': 'audio/wav',
 };
 
 function send(res, code, body, type) {

@@ -5,7 +5,8 @@
   "description": "奶蛙小游戏合集 — 独立静态站",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "engines": {
     "node": ">=18"
