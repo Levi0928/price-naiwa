@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#bfeaff">
+<title>奶蛙颜色大挑战</title>
+<meta name="description" content="在一堆相近色块里找出不一样的那只奶蛙。关卡越往后色差越小，手眼越要稳。">
+<link rel="icon" type="image/png" href="/assets/favicon-frog.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="奶蛙颜色大挑战 · 奶蛙小游戏">
+<meta property="og:description" content="找不同色——考验眼力的奶蛙迷你挑战。">
+<meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
+<link rel="stylesheet" href="/style.css?v=gh1">
+<style>
+.cl{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
+.cl-modes{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cl-modes button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid #cde6ff;background:#fff;font-weight:800;color:#3a6a90;cursor:pointer}
+.cl-modes button.on{background:#5CC8F2;color:#fff;border-color:#3A9FCC}
+.cl-stage{flex:1;min-height:0;border-radius:22px;background:linear-gradient(165deg,#eaf7ff,#d4ecff 40%,#c8e4ff);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),0 12px 28px rgba(60,110,160,.18);padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.cl-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cl-frog{width:64px;height:72px;display:grid;place-items:center}
+.cl-frog img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(40,80,120,.25));transition:transform .2s}
+.cl-frog.hop img{animation:clhop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes clhop{0%{transform:translateY(0)}40%{transform:translateY(-10px) scale(1.05)}100%{transform:translateY(0)}}
+.cl-msg{flex:1;text-align:center;font-weight:900;color:#2a5070;font-size:.95rem;line-height:1.3}
+.cl-msg small{display:block;font-size:.72rem;font-weight:700;color:#6a90b0;margin-top:2px}
+.cl-grid{flex:1;min-height:180px;display:grid;gap:8px;align-content:center;justify-content:center;padding:4px}
+.cl-cell{border:0;border-radius:18px;cursor:pointer;position:relative;box-shadow:0 5px 0 rgba(0,0,0,.12),0 8px 14px rgba(40,80,120,.12);transition:transform .1s,box-shadow .1s;overflow:hidden;aspect-ratio:1;min-width:0;padding:0}
+.cl-cell:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.cl-cell img{width:72%;height:72%;object-fit:contain;position:absolute;left:14%;top:12%;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15))}
+.cl-cell.ok{outline:3px solid #7CC93E;outline-offset:2px}
+.cl-cell.bad{outline:3px solid #ff5a5a;outline-offset:2px;animation:clshake .35s}
+@keyframes clshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.cl-progress{height:8px;border-radius:999px;background:rgba(255,255,255,.55);overflow:hidden}
+.cl-progress>i{display:block;height:100%;width:100%;transform-origin:left center;background:linear-gradient(90deg,#5CC8F2,#F7C32B);transition:transform .05s linear}
+.cl-banner{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.9);background:rgba(20,40,60,.88);color:#fff;padding:12px 18px;border-radius:16px;font-weight:900;opacity:0;pointer-events:none;transition:.2s;z-index:4;text-align:center}
+.cl-banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.cl-lives{letter-spacing:.15em;font-size:1.1rem;color:#ff6a6a}
+</style>
+</head>
+<body class="game">
+<div class="nw-game">
+  <div id="nw-top"></div><div id="nw-hud"></div>
+  <div class="cl-modes"><button type="button" id="m-story" class="on">闯关</button><button type="button" id="m-rush">限时眼力</button></div>
+  <div class="cl" id="root">
+    <div class="cl-stage" id="stage">
+      <div class="cl-top">
+        <div class="cl-frog" id="frog"></div>
+        <div class="cl-msg" id="msg">找出颜色不一样的奶蛙<small>点开始后作答</small></div>
+        <div class="cl-lives" id="lives"></div>
+      </div>
+      <div class="cl-progress"><i id="bar"></i></div>
+      <div class="cl-grid" id="grid"></div>
+      <div class="cl-banner" id="banner"></div>
+    </div>
+  </div>
+  <p class="nw-hint">色差会越来越小 · 看准再点 · 空格也可开始/重开</p>
+</div>
+<script src="/assets/frog.js?v=gh1"></script>
+<script src="/assets/nw.js?v=vol1"></script>
+<script>
+(function () {
+  'use strict';
+  var F = NaiwaFrog;
+  var G = NW.mount({
+    key: 'color', title: '颜色大挑战', scoreLabel: '分数', extraCard: '关卡',
+    rules: '一堆相近色块里藏着一只颜色不同的奶蛙。点中它得分；点错掉心。闯关 20 关，色差逐步变小；限时眼力 60 秒刷高分。',
+    onStart: function () { if (window.__start) window.__start(); }
+  });
+
+  var mode = 'story';
+  var LEVELS = 20;
+  var gridEl = document.getElementById('grid');
+  var msgEl = document.getElementById('msg');
+  var livesEl = document.getElementById('lives');
+  var frogEl = document.getElementById('frog');
+  var barEl = document.getElementById('bar');
+  var bannerEl = document.getElementById('banner');
+
+  var level, lives, score, oddIndex, locked, roundT, rushLeft, rushTimer, answered, streak, maxStreak, mood;
+
+  function hsl(h,s,l){ return 'hsl('+Math.round(h)+' '+Math.round(s)+'% '+Math.round(l)+'%)'; }
+  function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+
+  function levelDiff(lv){
+    // return {n, deltaL, deltaH, time}
+    var n = lv < 4 ? 4 : lv < 8 ? 9 : lv < 14 ? 16 : 25;
+    var deltaL = clamp(14 - lv * 0.55, 2.2, 14);
+    var deltaH = clamp(18 - lv * 0.7, 3, 18);
+    var time = clamp(6.5 - lv * 0.12, 3.2, 6.5);
+    return { n:n, deltaL:deltaL, deltaH:deltaH, time:time };
+  }
+
+  function setFrog(m){
+    mood = m || 'neutral';
+    frogEl.innerHTML = F.html({ pose: mood==='laugh'?'peace':'stand', mood: mood==='cackle'?'laugh':mood, sm:true, style:'max-height:100%;max-width:100%;object-fit:contain' });
+  }
+
+  function banner(t, ms){
+    bannerEl.textContent = t; bannerEl.classList.add('on');
+    clearTimeout(banner._t); banner._t = setTimeout(function(){ bannerEl.classList.remove('on'); }, ms||700);
+  }
+
+  function setMsg(main, sub){
+    msgEl.innerHTML = main + (sub ? '<small>'+sub+'</small>' : '');
+  }
+
+  function paintLives(){
+    if(mode==='rush'){ livesEl.textContent = Math.ceil(rushLeft)+'s'; return; }
+    var s=''; for(var i=0;i<3;i++) s += i<lives ? '♥' : '♡';
+    livesEl.textContent = s;
+  }
+
+  function makeRound(){
+    locked = false; answered = false;
+    var diff = mode==='story' ? levelDiff(level) : levelDiff(Math.min(LEVELS-1, 3 + Math.floor(score/40)));
+    var side = Math.round(Math.sqrt(diff.n));
+    if(side*side !== diff.n){ side = Math.ceil(Math.sqrt(diff.n)); diff.n = side*side; }
+    var baseH = Math.random()*360;
+    var baseS = 55 + Math.random()*25;
+    var baseL = 48 + Math.random()*16;
+    var oddH = baseH + (Math.random()<0.5?-1:1) * diff.deltaH;
+    var oddL = clamp(baseL + (Math.random()<0.5?-1:1) * diff.deltaL, 18, 82);
+    var base = hsl(baseH, baseS, baseL);
+    var odd = hsl(oddH, baseS, oddL);
+    oddIndex = Math.floor(Math.random()*diff.n);
+    gridEl.style.gridTemplateColumns = 'repeat('+side+', minmax(0, 1fr))';
+    gridEl.style.maxWidth = (side<=2?220:side<=3?300:side<=4?360:420)+'px';
+    gridEl.style.margin = '0 auto';
+    gridEl.style.width = '100%';
+    var html = '';
+    var piece = F.pieceUrl({ shape:'ball', color:'#F7C32B', mood:'laugh' });
+    for(var i=0;i<diff.n;i++){
+      var col = i===oddIndex ? odd : base;
+      html += '<button type="button" class="cl-cell" data-i="'+i+'" style="background:'+col+'"><img alt="" src="'+piece+'"></button>';
+    }
+    gridEl.innerHTML = html;
+    Array.prototype.forEach.call(gridEl.querySelectorAll('.cl-cell'), function(btn){
+      btn.addEventListener('click', function(){ choose(+btn.getAttribute('data-i')); });
+    });
+    roundT = diff.time;
+    if(mode==='story'){
+      G.setExtra(level+1);
+      setMsg('第 '+(level+1)+' 关', '找出颜色不同的奶蛙');
+      barEl.style.transition = 'none'; barEl.style.transform = 'scaleX(1)';
+      requestAnimationFrame(function(){ barEl.style.transition = 'transform '+roundT+'s linear'; barEl.style.transform = 'scaleX(0)'; });
+      clearTimeout(makeRound._tm);
+      makeRound._tm = setTimeout(function(){ if(!answered && G.running) timeUp(); }, roundT*1000);
+    } else {
+      G.setExtra(streak);
+      setMsg('连对 '+streak, '越快色差越小');
+      barEl.style.transition = 'none';
+      barEl.style.transform = 'scaleX('+(rushLeft/60)+')';
+    }
+    setFrog('neutral');
+  }
+
+  function choose(i){
+    if(!G.running || locked || answered) return;
+    answered = true; locked = true;
+    clearTimeout(makeRound._tm);
+    var cells = gridEl.querySelectorAll('.cl-cell');
+    cells[oddIndex].classList.add('ok');
+    if(i===oddIndex){
+      var gain = 10 + level * 2 + Math.min(20, streak*2);
+      if(mode==='rush') gain = 12 + Math.min(30, streak*3);
+      streak++; maxStreak = Math.max(maxStreak, streak);
+      G.setScore(G.score + gain);
+      setFrog('laugh'); frogEl.classList.remove('hop'); void frogEl.offsetWidth; frogEl.classList.add('hop');
+      NW.sfx.perfect?NW.sfx.perfect():NW.sfx.pop(Math.min(8,streak));
+      banner(streak>=5 ? '火眼金睛 ×'+streak : '找对了！+', 550);
+      setTimeout(function(){
+        if(mode==='story'){
+          level++;
+          if(level>=LEVELS){ winStory(); return; }
+          makeRound();
+        } else {
+          if(rushLeft<=0){ endRush(); return; }
+          makeRound();
+        }
+      }, 420);
+    } else {
+      cells[i].classList.add('bad');
+      streak = 0; setFrog('wow');
+      NW.sfx.bad(); NW.vib&&NW.vib([20,40,20]);
+      banner('不对哦', 500);
+      if(mode==='story'){
+        lives--; paintLives();
+        if(lives<=0){ setTimeout(function(){ G.over('止步第 '+(level+1)+' 关 · 连对最高 '+maxStreak, '挑战失败'); }, 450); return; }
+        setTimeout(makeRound, 500);
+      } else {
+        rushLeft = Math.max(0, rushLeft-3);
+        paintLives();
+        if(rushLeft<=0){ setTimeout(endRush, 400); return; }
+        setTimeout(makeRound, 450);
+      }
+    }
+  }
+
+  function timeUp(){
+    if(answered || !G.running) return;
+    answered = true; locked = true;
+    gridEl.querySelectorAll('.cl-cell')[oddIndex].classList.add('ok');
+    streak = 0; setFrog('wow'); NW.sfx.bad(); banner('时间到', 600);
+    lives--; paintLives();
+    if(lives<=0){ setTimeout(function(){ G.over('止步第 '+(level+1)+' 关', '时间耗尽'); }, 500); return; }
+    setTimeout(makeRound, 550);
+  }
+
+  function winStory(){
+    G.over('通关 20 关 · 最高连对 '+maxStreak, '色感大师！');
+    NW.sfx.win?NW.sfx.win():NW.sfx.perfect();
+  }
+
+  function endRush(){
+    clearInterval(rushTimer);
+    G.over('连对最高 '+maxStreak, '眼力结算');
+  }
+
+  function reset(){
+    clearTimeout(makeRound._tm); clearInterval(rushTimer);
+    level = 0; lives = 3; streak = 0; maxStreak = 0; locked = false; answered = false;
+    G.setScore(0, false); G.setExtra(mode==='story'?1:0);
+    rushLeft = 60; paintLives();
+    setFrog('laugh');
+    if(mode==='rush'){
+      rushTimer = setInterval(function(){
+        if(!G.running) return;
+        rushLeft -= 0.1;
+        if(rushLeft<=0){ rushLeft=0; paintLives(); endRush(); return; }
+        paintLives();
+        barEl.style.transition='none'; barEl.style.transform='scaleX('+(rushLeft/60)+')';
+      }, 100);
+    }
+    makeRound();
+  }
+
+  window.__start = reset;
+
+  document.getElementById('m-story').onclick = function(){
+    mode='story'; this.classList.add('on'); document.getElementById('m-rush').classList.remove('on'); NW.sfx.click();
+  };
+  document.getElementById('m-rush').onclick = function(){
+    mode='rush'; this.classList.add('on'); document.getElementById('m-story').classList.remove('on'); NW.sfx.click();
+  };
+
+  setFrog('laugh');
+  setMsg('准备好了吗？', '开始后找出不一样的颜色');
+  paintLives();
+})();
+</script>
+</body>
+</html>
