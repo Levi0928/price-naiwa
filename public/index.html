@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <meta property="og:url" content="https://price-naiwa.onrender.com/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/style.css?v=feel1">
+<link rel="stylesheet" href="/style.css?v=q2">
 </head>
 <body class="lobby">
 <header class="nav"><div class="nav-in">
@@ -31,7 +31,7 @@
   <div class="float" style="left:16%;top:62%;width:30px;animation-delay:-4s" id="fl3"></div>
   <div class="txt">
     <h1>奶蛙<span>小游戏</span></h1>
-    <p class="sub">一只软糯糯的黄色小胖蛙，带你笑着玩 15 款小游戏。点它一下试试？</p>
+    <p class="sub">一只软糯糯的黄色小胖蛙，带你笑着玩一整柜精品小游戏。点它一下试试？</p>
     <div class="hero-cta"><a class="btn green big" href="#games">开始玩</a><a class="btn white big" href="/run/" id="runCta">奶蛙神跑 ▶</a><button class="btn white big" id="laughBtn" type="button">逗它笑</button></div>
     <div class="laugh-count" id="lc"></div>
   </div>
@@ -43,8 +43,11 @@
 </section>
 
 <section class="block" id="games">
-  <h2 class="sec-title">热门小游戏</h2>
-  <p class="sec-sub">全部免下载 · 点开就玩 · 成绩自动保存</p>
+  <div class="sec-head">
+    <span class="sec-kicker">精选合集</span>
+    <h2 class="sec-title">热门小游戏</h2>
+    <p class="sec-sub">全部免下载 · 点开就玩 · 成绩自动保存</p>
+  </div>
   <div class="grid" id="grid"></div>
 </section>
 
@@ -55,8 +58,8 @@
   纯前端自研 · 无广告 · 不收集隐私 · 仅供娱乐
 </footer>
 
-<script src="/assets/frog.js?v=feel1"></script>
-<script src="/assets/nw.js?v=feel1"></script>
+<script src="/assets/frog.js?v=q2"></script>
+<script src="/assets/nw.js?v=q2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -168,10 +171,16 @@
     ['gravity2048', '重力 2048', '滑动改变重力，让奶蛙滚在一起合并。', ['物理', '数字'], '新']
   ];
   var tagc = ['y', 'b', 'p', ''];
+  function ribbonCls(lab) {
+    if (lab === '热门') return 'ribbon hot';
+    if (lab === '新') return 'ribbon new';
+    if (lab === '推荐') return 'ribbon rec';
+    return 'ribbon';
+  }
   $('#grid').innerHTML = G.map(function (g, i) {
     var best = NW.store.get('best_' + g[0], 0);
-    return '<a class="card reveal" style="transition-delay:' + (i % 3) * 70 + 'ms" href="/' + g[0] + '/"><div class="thumb">' + TH[g[0]] + (g[4] ? '<span class="ribbon">' + g[4] + '</span>' : '') + (best ? '<span class="bestchip">最高 ' + best + '</span>' : '') + '</div><div class="info"><h3>' + g[1] + '</h3><p>' + g[2] + '</p><div class="foot"><span>' + g[3].map(function (t, k) { return '<span class="tag ' + tagc[(i + k) % 4] + '">' + t + '</span> '; }).join('') + '</span><span class="go"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span></div></div></a>';
-  }).join('') + '<div class="card reveal soon" style="transition-delay:70ms;border:3px dashed #f0cf6a;background:rgba(255,255,255,.55);box-shadow:none;display:grid;place-items:center;text-align:center;padding:18px"><div><div style="width:84px;margin:0 auto 8px">' + F.html({ pose: 'stand', sm: true, width: 84, style: 'width:84px;height:auto;display:block;margin:0 auto' }) + '</div><h3 style="margin:0;font-weight:900;color:#6a4400">更多游戏</h3><p style="margin:4px 0 0;font-size:.85rem;color:#a8935a;font-weight:600">奶蛙还在偷偷做新游戏<br>敬请期待</p></div></div>';
+    return '<a class="card reveal" style="transition-delay:' + (i % 3) * 70 + 'ms" href="/' + g[0] + '/"><div class="thumb">' + TH[g[0]] + (g[4] ? '<span class="' + ribbonCls(g[4]) + '">' + g[4] + '</span>' : '') + (best ? '<span class="bestchip">最高 ' + best + '</span>' : '') + '</div><div class="info"><h3>' + g[1] + '</h3><p>' + g[2] + '</p><div class="foot"><span>' + g[3].map(function (t, k) { return '<span class="tag ' + tagc[(i + k) % 4] + '">' + t + '</span> '; }).join('') + '</span><span class="go" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span></div></div></a>';
+  }).join('') + '<div class="card reveal soon" style="transition-delay:70ms"><div><div style="width:84px;margin:0 auto 10px">' + F.html({ pose: 'stand', sm: true, width: 84, style: 'width:84px;height:auto;display:block;margin:0 auto' }) + '</div><h3 style="margin:0;font-weight:900;color:#5a3800">更多游戏</h3><p style="margin:6px 0 0;font-size:.85rem;color:#a8935a;font-weight:600">奶蛙还在偷偷做新游戏<br>敬请期待</p></div></div>';
 
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .08, rootMargin: '80px 0px' }) : null;
   document.querySelectorAll('.reveal').forEach(function (el) {

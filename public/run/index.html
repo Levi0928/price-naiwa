@@ -9,12 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙神跑 · 奶蛙小游戏"><meta property="og:description" content="无尽跑酷：二段跳、滑铲、近失反馈、铜银金段位。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=feel1">
-<style>
-.run-modes{display:flex;gap:8px;justify-content:center;padding:4px 12px 6px;flex-wrap:wrap}
-.run-modes button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid #cde6ff;background:#fff;font-weight:800;color:#3a6a90;cursor:pointer}
-.run-modes button.on{background:#5CC8F2;color:#fff;border-color:#3A9FCC}
-</style>
+<link rel="stylesheet" href="/style.css?v=q2">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -23,7 +18,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 近失加分 · 手机滑控</p>
 </div>
-<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
+<script src="/assets/frog.js?v=q2"></script><script src="/assets/nw.js?v=q2"></script>
 <script>
 (function () {
   var CFG = {
@@ -48,6 +43,7 @@
   var G = NW.mount({
     key: 'run', title: '奶蛙神跑', scoreLabel: '分数', extraCard: '奶币',
     rules: '无尽侧视跑酷。←→ 移动，空格二段跳，S 滑铲躲矮杆。速度随距离平滑升高。擦障「好险」加分。挑战模式固定跑满 400 米比奶币。段位：铜/银/金/钻。',
+    tips: ['二段跳', '滑铲躲杆', '擦障加分', '400 米挑战'],
     onStart: reset
   });
   document.getElementById('m-endless').onclick = function () {

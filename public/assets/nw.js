@@ -503,9 +503,26 @@
   }
 
   /* ---------- 游戏壳 ---------- */
+  function tipChips(tips) {
+    if (!tips || !tips.length) return '';
+    return '<div class="nw-tips">' + tips.map(function (t) { return '<span class="nw-tip">' + t + '</span>'; }).join('') + '</div>';
+  }
+  function gradeDots(score, tiers) {
+    tiers = tiers || [[7000, '笑到打滚'], [4500, '一秒破绷'], [2500, '噗嗤一声'], [1000, '嘴角上扬'], [0, '就这？']];
+    var label = grade(score, tiers);
+    var idx = 0;
+    for (var i = 0; i < tiers.length; i++) if (score >= tiers[i][0]) { idx = tiers.length - i; break; }
+    var dots = '';
+    for (var k = 0; k < Math.min(5, tiers.length); k++) dots += '<i class="' + (k < idx ? 'on' : '') + '"></i>';
+    return { html: '<div class="nw-grade" aria-hidden="true">' + dots + '</div><div class="nw-grade-label">' + label + '</div>', label: label };
+  }
   function mount(o) {
     var best = store.get('best_' + o.key, 0), score = 0, running = false;
     var top = $('#nw-top'), hud = $('#nw-hud');
+    var tips = o.tips;
+    if (!tips && o.rules) {
+      tips = String(o.rules).split(/[·。；;|]/).map(function (s) { return s.trim(); }).filter(function (s) { return s && s.length < 22; }).slice(0, 4);
+    }
     top.className = 'nw-top';
     top.innerHTML = '<a class="round-btn" href="/" aria-label="返回合集" id="nw-back">' + ICON.back + '</a>' +
       '<h1><img src="/assets/favicon-frog.png" alt="">' + o.title + '</h1>' +
@@ -519,8 +536,11 @@
     var m = document.createElement('div');
     m.innerHTML =
       '<div class="nw-modal show" id="nw-start"><div class="nw-dialog"><div class="mascot">' + NaiwaFrog.html({ pose: 'peace', style: 'height:150px;width:auto;margin:0 auto;display:block;object-fit:contain' }) + '</div>' +
-      '<h2>' + o.title + '</h2><p>' + (o.rules || '') + '</p><div class="row"><button class="btn green big" id="nw-go">开始游戏</button><a class="btn white small" href="/">返回合集</a></div></div></div>' +
-      '<div class="nw-modal" id="nw-over"><div class="nw-dialog"><div class="mascot" id="nw-over-m"></div><div id="nw-over-badge"></div><h2 id="nw-over-title">游戏结束</h2><p id="nw-over-sub"></p><div class="big-score" id="nw-over-score">0</div><p>最高分 <b id="nw-over-best">0</b></p>' +
+      '<h2>' + o.title + '</h2><p>' + (o.rules || '') + '</p>' + tipChips(tips) +
+      '<div class="row"><button class="btn green big" id="nw-go">开始游戏</button><a class="btn white small" href="/">返回合集</a></div></div></div>' +
+      '<div class="nw-modal" id="nw-over"><div class="nw-dialog"><div class="mascot" id="nw-over-m"></div><div id="nw-over-badge"></div><h2 id="nw-over-title">游戏结束</h2><p id="nw-over-sub"></p>' +
+      '<div class="nw-score-plate"><div class="lab">本局得分</div><div class="big-score" id="nw-over-score">0</div><div id="nw-over-grade"></div></div>' +
+      '<p>最高分 <b id="nw-over-best">0</b></p>' +
       '<div class="row"><button class="btn green big" id="nw-again">再来一局</button><div class="row2"><button class="btn small" id="nw-share">分享战绩</button><a class="btn white small" href="/">返回合集</a></div></div></div></div>';
     while (m.firstChild) document.body.appendChild(m.firstChild);
     var sEl = $('#nw-score'), bEl = $('#nw-best');
@@ -535,6 +555,8 @@
         $('#nw-over-score').textContent = score; $('#nw-over-best').textContent = Math.max(best, prev);
         $('#nw-over-title').textContent = title || (isNew ? '新纪录！' : '游戏结束'); $('#nw-over-sub').textContent = sub || '';
         $('#nw-over-badge').innerHTML = isNew ? '<span class="badge">新纪录</span>' : '';
+        var g = gradeDots(score, o.tiers);
+        var ge = $('#nw-over-grade'); if (ge) ge.innerHTML = g.html;
         $('#nw-over-m').innerHTML = NaiwaFrog.html({ pose: isNew ? 'peace' : 'stand', mood: isNew ? 'laugh' : 'neutral', style: 'height:150px;width:auto;margin:0 auto;display:block;object-fit:contain' });
         stopFeverGiggle(); playBgm('lobby');
         isNew ? sfx.win() : sfx.lose();

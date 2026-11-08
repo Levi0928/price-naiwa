@@ -9,9 +9,9 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="60 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=feel1">
+<link rel="stylesheet" href="/style.css?v=q2">
 <style>
-.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fff7ec 0%, #ffe9c2 45%, #fff1c8 100%); box-shadow: 0 14px 36px rgba(126,84,44,.18), 0 0 0 1.5px rgba(26,22,18,.12); touch-action: manipulation; }
+.scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fffaf0 0%, #ffe4b0 45%, #fff1c8 100%); box-shadow: 0 18px 40px rgba(126,84,44,.2), 0 0 0 1.5px rgba(26,22,18,.1), inset 0 1px 0 rgba(255,255,255,.55); touch-action: manipulation; }
 .scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
 .scene.frenzy::before { opacity: 1; animation: spin 6s linear infinite; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,226,122,.7) 0 7deg, rgba(255,255,255,.2) 7deg 20deg); }
 .scene.hot .meter i { animation: meterFlash .28s ease-in-out infinite; }
@@ -23,7 +23,7 @@
 .fwrap .inner { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
 .fwrap img, .fwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .06s; }
 .scene[data-m="idle"] .m-idle, .scene[data-m="laugh"] .m-laugh, .scene[data-m="cackle"] .m-cackle, .scene[data-m="peace"] .m-peace { opacity: 1; }
-.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 18px; border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: inset 0 2px 4px rgba(0,0,0,.15), 0 0 0 2px #fff; overflow: hidden; z-index: 4; }
+.meter { position: absolute; left: 14px; right: 14px; top: 14px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.78); box-shadow: inset 0 2px 5px rgba(0,0,0,.14), 0 0 0 2.5px #fff, 0 6px 14px rgba(120,80,0,.12); overflow: hidden; z-index: 4; }
 .meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(180deg, #ffe27a, #ff9f43); transition: width .08s linear; box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
 .scene.frenzy .meter i { background: linear-gradient(180deg, #ff9a6a, #ff5a5a); }
 .meter-l { position: absolute; left: 0; right: 0; top: 36px; text-align: center; font-weight: 900; font-size: .8rem; color: #b86a00; z-index: 4; letter-spacing: .1em; text-shadow: 0 1px 0 #fff; }
@@ -33,7 +33,7 @@
 .mult-pill.on { opacity: 1; }
 .haha-float { position: absolute; font-weight: 900; pointer-events: none; z-index: 3; animation: hahaFloat 1.4s ease-out forwards; text-shadow: 0 2px 0 #fff; }
 @keyframes hahaFloat { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1.25); } }
-.loop-btn, .mode-btn { position: absolute; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: #fff; color: #6a4400; box-shadow: 0 4px 0 rgba(26,22,18,.12), 0 8px 18px rgba(0,0,0,.12); cursor: pointer; min-height: 44px; }
+.loop-btn, .mode-btn { position: absolute; z-index: 6; border: 0; border-radius: 999px; padding: 10px 14px; font-weight: 900; font-size: .85rem; background: linear-gradient(180deg,#fff,#f6efdc); color: #6a4400; box-shadow: 0 5px 0 rgba(26,22,18,.12), 0 10px 18px rgba(0,0,0,.12), inset 0 1px 0 #fff; cursor: pointer; min-height: 44px; }
 .loop-btn { left: 14px; bottom: 14px; }
 .mode-btn { right: 14px; bottom: 14px; }
 .loop-btn.on, .mode-btn.on { background: linear-gradient(180deg,#ffe27a,#ff9f43); color: #4a2200; box-shadow: 0 4px 0 #d97820, 0 8px 18px rgba(255,140,0,.35); }
@@ -68,7 +68,7 @@
   </main>
   <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速</p>
 </div>
-<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
+<script src="/assets/frog.js?v=q2"></script><script src="/assets/nw.js?v=q2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -81,7 +81,7 @@
   var fx = new NW.FX(), ov = NW.overlay(scene);
   var CFG = { DUR: 60, DUR_FAST: 30, FEVER_DUR: 6.2, BASE_TAP: 15, TAP_WARMUP: 3, COMBO_WINDOW_MS: 650, SQUASH_FEVER: 1.35, METER_NEAR: 90 };
   var modeFast = false, DUR = CFG.DUR;
-  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '点奶蛙攒笑意！每连挠 5 下倍率 +1（最高 ×5）。槽满进入 FEVER ' + CFG.FEVER_DUR + ' 秒（分数 ×2、笑声更密、四角飘字）。可切 30 秒极速局。结局五档评级。', onStart: reset });
+  var G = NW.mount({ key: 'laugh', title: '狂笑点按', extraCard: '倒计时', rules: '点奶蛙攒笑意！每连挠 5 下倍率 +1（最高 ×5）。槽满进入 FEVER ' + CFG.FEVER_DUR + ' 秒（分数 ×2、笑声更密、四角飘字）。可切 30 秒极速局。结局五档评级。', tips: ['连挠提倍率', '槽满进 FEVER', '可切 30 秒极速'], onStart: reset });
   var left = DUR, combo = 0, maxCombo = 0, lastTap = 0, meter = 0, frenzy = 0, taps = 0, laughT = 0, hahaN = 0, tilt = 1, floatN = 0, warmupLeft = CFG.TAP_WARMUP;
   var feverHits = 0, feverEntered = 0;
   var WORDS = ['哈哈哈', '嘻嘻', '嘎嘎嘎', '呵哈哈', '噗哈', '嘿哈'];

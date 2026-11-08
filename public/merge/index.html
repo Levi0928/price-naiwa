@@ -9,29 +9,16 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=feel1">
-<style>
-.jar-bar{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:8px 10px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.jar-bar .t{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px}
-.jar-bar .t img{width:26px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
-.jar-bar .t span{font-size:9px;font-weight:800;color:#948876}
-.jar-bar .t.on span{color:#6a4400}
-.revive-mask{position:fixed;inset:0;z-index:40;background:rgba(26,22,18,.45);display:none;align-items:center;justify-content:center;padding:20px}
-.revive-mask.show{display:flex}
-.revive-box{background:linear-gradient(180deg,#fffdf2,#fff3c4);border-radius:24px;padding:22px 20px;max-width:320px;width:100%;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.25),0 0 0 3px #fff}
-.revive-box h3{margin:0 0 8px;font-size:1.25rem;color:#6a4400}
-.revive-box p{margin:0 0 16px;color:#4D453B;font-weight:600;line-height:1.5}
-.revive-box .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-</style>
+<link rel="stylesheet" href="/style.css?v=q2">
 </head>
 <body class="game">
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
   <div class="jar-bar" id="chain" aria-label="合成进化链"></div>
-  <div style="display:flex;gap:8px;justify-content:center;padding:0 10px 6px;flex-wrap:wrap">
-    <button type="button" id="mg-classic" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">经典</button>
-    <button type="button" id="mg-rush" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">90秒冲分</button>
-    <button type="button" id="mg-cap7" class="btn white" style="min-height:40px;border-radius:999px;padding:0 12px;font-weight:800">只到Lv7</button>
+  <div class="nw-modes" id="mg-modes">
+    <button type="button" id="mg-classic" class="on">经典</button>
+    <button type="button" id="mg-rush">90秒冲分</button>
+    <button type="button" id="mg-cap7">只到Lv7</button>
   </div>
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">拖动/←→瞄准 · 松手/空格投放 · R重开 · 相同合成 · 每 2000 分复活币 · 可选挑战模式</p>
@@ -41,7 +28,7 @@
   <p id="rv-txt">清掉警戒线上方的奶蛙，继续这一局。</p>
   <div class="row"><button class="btn green" id="rv-yes">用 1 枚复活币</button><button class="btn white" id="rv-no">结束本局</button></div>
 </div></div>
-<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
+<script src="/assets/frog.js?v=q2"></script><script src="/assets/nw.js?v=q2"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -55,11 +42,11 @@
   var fx = new NW.FX(), view = { s: 1, dpr: 1 };
   var balls = [], cur = 0, nxt = 0, aimX = W / 2, canDrop = true, dropT = 0, dangerT = 0, shakeT = 0, shakeA = 0, uid = 0, chain = 0, chainT = 0, held = false, flash = 0, hitstop = 0;
   var coins = 0, coinBank = 0, paused = false, maxSeen = 0, mode = 'classic', rushLeft = 90, merges = 0;
-  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', extraCard: '复活币', rules: '拖动瞄准、松手投放。11 级合成。红线停住判负；每 2000 分复活币。模式：经典 / 90 秒冲分 / 只合成到 Lv7。结算按最大等级给星。', onStart: reset });
+  var G = NW.mount({ key: 'merge', title: '合成大奶蛙', extraCard: '复活币', rules: '拖动瞄准、松手投放。11 级合成。红线停住判负；每 2000 分复活币。模式：经典 / 90 秒冲分 / 只合成到 Lv7。结算按最大等级给星。', tips: ['拖动瞄准', '同色合成', '红线别停', '复活币续命'], onStart: reset });
   function syncMgMode() {
-    document.getElementById('mg-classic').style.background = mode === 'classic' ? '#F7C32B' : '#fff';
-    document.getElementById('mg-rush').style.background = mode === 'rush' ? '#F7C32B' : '#fff';
-    document.getElementById('mg-cap7').style.background = mode === 'cap7' ? '#F7C32B' : '#fff';
+    document.getElementById('mg-classic').classList.toggle('on', mode === 'classic');
+    document.getElementById('mg-rush').classList.toggle('on', mode === 'rush');
+    document.getElementById('mg-cap7').classList.toggle('on', mode === 'cap7');
     G.setExtra(mode === 'rush' ? ('⏱ ' + Math.ceil(rushLeft)) : coins);
   }
   function setMode(m) {
