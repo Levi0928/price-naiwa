@@ -14,12 +14,13 @@
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
 <meta property="og:url" content="https://price-naiwa.onrender.com/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/style.css?v=lobby2">
+<link rel="stylesheet" href="/style.css?v=vol1">
 </head>
 <body class="lobby">
 <header class="nav"><div class="nav-in">
   <a class="brand" href="/"><img src="/assets/favicon-frog.png" alt="">奶蛙小游戏</a>
   <a class="lnk on" href="/">首页</a><a class="lnk" href="#games">游戏</a><a class="lnk" href="/author.html">作者</a>
+  <button class="round-btn" id="lobby-vol" type="button" aria-label="音量设置" title="音量"></button>
   <button class="round-btn nw-mute-btn" id="lobby-snd" type="button" aria-label="音效开关" title="音效"></button>
 </div></header>
 
@@ -55,7 +56,7 @@
 </footer>
 
 <script src="/assets/frog.js?v=lobby2"></script>
-<script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/nw.js?v=vol1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -88,6 +89,7 @@
     s.animate([{ transform: 'translate(0,0) scale(1) rotate(0)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + (Math.sin(a) * d - 30) + 'px) scale(.2) rotate(240deg)', opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.2,.8,.4,1)' }).onfinish = function () { s.remove(); };
   }
   NW.bindMuteButton && NW.bindMuteButton($('#lobby-snd'));
+  NW.bindVolButton && NW.bindVolButton($('#lobby-vol'));
   NW.prefetchAudio && NW.prefetchAudio();
   var bgmOn = false;
   function ensureBgm() { if (!bgmOn) { bgmOn = true; NW.unlockAudio && NW.unlockAudio(); NW.playBgm && NW.playBgm('lobby'); } }

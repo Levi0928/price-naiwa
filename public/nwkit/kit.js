@@ -88,7 +88,7 @@
     }
     bind('pointerdown', 'down'); bind('pointermove', 'move'); bind('pointerup', 'up'); bind('pointercancel', 'up');
     S.on = function (h) { for (var k in h) S.handlers[k] = h[k]; };
-    S.shake = function (a) { S.shakeAmt = Math.max(S.shakeAmt, a); };
+    S.shake = function (a) { if (NW.reduceMotion && NW.reduceMotion()) return; S.shakeAmt = Math.max(S.shakeAmt, a); };
     S.freeze = function (ms) { S.freezeT = Math.max(S.freezeT, ms / 1000); };
     S.run = function (update, draw) {
       var last = performance.now();

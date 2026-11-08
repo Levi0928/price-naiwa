@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙 2048 · 奶蛙小游戏"><meta property="og:description" content="滑动合并相同的奶蛙，冲击 2048！奶蛙小游戏之奶蛙 2048。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=model3">
+<link rel="stylesheet" href="/style.css?v=vol1">
 <style>
 .board { position: relative; width: min(100%, 440px); aspect-ratio: 1; border-radius: 24px; padding: 2.8%; background: linear-gradient(180deg, #f0c86a, #e0a83a); box-shadow: 0 6px 0 #b88418, 0 16px 36px rgba(126,84,44,.22), inset 0 2px 0 rgba(255,255,255,.45); touch-action: none; border: 1.5px solid rgba(26,22,18,.12); }
 .cells, .tiles { position: absolute; inset: 2.8%; }
@@ -28,9 +28,9 @@
 <div class="nw-game">
   <div id="nw-top"></div><div id="nw-hud"></div>
   <main class="nw-stage"><div class="board" id="board"><div class="cells" id="cells"></div><div class="tiles" id="tiles"></div></div></main>
-  <p class="nw-hint">上下左右滑动，相同的奶蛙会合并</p>
+  <p class="nw-hint">滑动合并 · <button type="button" id="undoBtn" class="btn small" style="padding:8px 14px;margin-left:6px;min-height:44px">撤销一步</button></p>
 </div>
-<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=sfx2"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=vol1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, N = 4, grid, tiles, uid = 0, busy = false, won = false, keepGoing = false;
@@ -39,8 +39,25 @@
   var boardEl = document.getElementById('board'), cellsEl = document.getElementById('cells'), tilesEl = document.getElementById('tiles');
   for (var i = 0; i < 16; i++) { var d = document.createElement('div'); d.className = 'cell'; d.style.left = (i % 4) * 25.6 + '%'; d.style.top = Math.floor(i / 4) * 25.6 + '%'; cellsEl.appendChild(d); }
   var fx = new NW.FX(), ov = NW.overlay(boardEl);
-  var G = NW.mount({ key: 'g2048', title: '奶蛙 2048', rules: '上下左右滑动，相同数字的奶蛙会合并。合出 2048 就赢啦，之后还能继续冲！', onStart: reset });
-  function reset() { grid = []; for (var r = 0; r < N; r++) { grid.push([null, null, null, null]); } tilesEl.innerHTML = ''; won = false; keepGoing = false; busy = false; G.setScore(0, false); add(); add(); }
+  var undoSnap = null, undoLeft = 1, mileHit = {};
+  var G = NW.mount({ key: 'g2048', title: '奶蛙 2048', extraCard: '撤销', rules: '上下左右滑动，相同数字的奶蛙会合并。合出 2048 就赢啦，之后还能继续冲！每局可撤销 1 步。', onStart: reset });
+  function snapshot() {
+    var cells = [];
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var t = grid[r][c]; cells.push(t ? t.v : 0); }
+    return { cells: cells, score: G.score, won: won };
+  }
+  function applySnap(s) {
+    tilesEl.innerHTML = ''; grid = [];
+    for (var r = 0; r < N; r++) {
+      grid.push([null, null, null, null]);
+      for (var c = 0; c < N; c++) {
+        var v = s.cells[r * N + c];
+        if (v) make(r, c, v, '');
+      }
+    }
+    G.setScore(s.score, false); won = s.won; keepGoing = !!s.won;
+  }
+  function reset() { grid = []; for (var r = 0; r < N; r++) { grid.push([null, null, null, null]); } tilesEl.innerHTML = ''; won = false; keepGoing = false; busy = false; undoSnap = null; undoLeft = 1; mileHit = {}; G.setScore(0, false); G.setExtra(undoLeft); add(); add(); }
   function empties() { var e = []; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (!grid[r][c]) e.push([r, c]); return e; }
   function add() { var e = empties(); if (!e.length) return; var p = e[Math.floor(Math.random() * e.length)]; make(p[0], p[1], Math.random() < .9 ? 2 : 4, 'new'); }
   function make(r, c, v, cls) {
@@ -70,7 +87,7 @@
       else { grid[nr][nc] = t; t.r = nr; t.c = nc; t.el.style.transform = 'translate(' + nc * 114.3 + '%,' + nr * 114.3 + '%)'; }
     }); });
     if (!moved) { NW.sfx.bad(); NW.vib(5); NW.shake(boardEl, 2, 180); return; }
-    busy = true; NW.sfx.swap(); NW.vib(8); NW.shake(boardEl, 4, 160);
+    undoSnap = snapshot(); busy = true; NW.sfx.swap(); NW.vib(8); NW.shake(boardEl, 4, 160);
     setTimeout(function () {
       var best = 0;
       merges.forEach(function (m) { var a = m[0], b = m[1]; a.el.remove(); b.v *= 2; b.el.classList.remove('new'); b.el.classList.remove('merged'); void b.el.offsetWidth; b.el.classList.add('merged'); paint(b); best = Math.max(best, b.v);
@@ -78,11 +95,30 @@
         fx.burst(x, y, { count: 10 + Math.min(18, Math.log2(b.v) * 2), speed: 230, colors: [(COL[b.v] || COL[2048])[2], '#fff', '#FFD23F'], size: 6 }); fx.text(x, y - 10, '+' + b.v, { size: 22, color: '#ff8a00' }); });
       if (merges.length) { NW.sfx.merge(Math.min(8, Math.log2(best) - 1)); NW.vib(6 + Math.min(10, Math.log2(best))); flash = best >= 256 ? .8 : .32; if (merges.length > 1) { fx.text(ov.w / 2, ov.h * .4, merges.length + ' 连合！', { size: 34, color: '#ff4a2a' }); NW.sfx.combo(merges.length); } if (best >= 128) NW.shake(boardEl, 5, 220); }
       if (gain) G.setScore(G.score + gain);
+      // milestones
+      [128, 256, 512, 1024].forEach(function (v) {
+        if (best >= v && !mileHit[v]) {
+          mileHit[v] = 1;
+          var label = { 128: '小有成就', 256: '奶香翻倍', 512: '半路女王', 1024: '千分冲刺' }[v];
+          fx.text(ov.w / 2, ov.h * .22, v + ' · ' + label, { size: 30, color: '#ff4a2a', life: 1.2 });
+          NW.sfx.fanfare(); G.toast(v + ' 达成 · ' + label);
+        }
+      });
       add(); busy = false;
       if (best >= 2048 && !won) { won = true; NW.sfx.win(); fx.burst(ov.w / 2, ov.h / 2, { count: 70, speed: 520, size: 12, life: 1.2 }); G.toast('合出 2048 了！继续冲更高'); }
-      if (!canMove()) setTimeout(function () { G.over('没有可以合并的了，最大是 ' + maxTile()); }, 250);
+      if (!canMove()) setTimeout(function () {
+        var m = maxTile();
+        var g = NW.grade(m, [[2048, '皇冠奶蛙'], [1024, '千分冲刺'], [512, '半路女王'], [256, '奶香翻倍'], [128, '小有成就'], [0, '再合合']]);
+        G.over('最大 ' + m + ' · ' + g);
+      }, 250);
     }, 125);
   }
+  function doUndo() {
+    if (!G.running || busy || !undoSnap || undoLeft <= 0) { NW.sfx.bad(); G.toast(undoLeft <= 0 ? '本局撤销已用完' : '还没有可撤销的一步'); return; }
+    undoLeft--; applySnap(undoSnap); undoSnap = null; G.setExtra(undoLeft); NW.sfx.reward(); G.toast('已撤销一步');
+  }
+  document.getElementById('undoBtn').onclick = function (e) { e.preventDefault(); doUndo(); };
+  document.addEventListener('keydown', function (e) { if (e.key === 'z' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); doUndo(); } });
   function maxTile() { var m = 0; grid.forEach(function (r) { r.forEach(function (t) { if (t) m = Math.max(m, t.v); }); }); return m; }
   function canMove() { if (empties().length) return true; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var t = grid[r][c]; if (c < 3 && grid[r][c + 1].v === t.v) return true; if (r < 3 && grid[r + 1][c].v === t.v) return true; } return false; }
   var sx, sy, st = 0;

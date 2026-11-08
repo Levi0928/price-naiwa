@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶滴接接乐 · 奶蛙小游戏"><meta property="og:description" content="拖动奶蛙接住天上掉下来的奶块，连击翻倍，别接到坏奶！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=model3">
+<link rel="stylesheet" href="/style.css?v=vol1">
 <style></style>
 </head>
 <body class="game">
@@ -18,7 +18,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">拖动屏幕，让奶蛙接住奶块</p>
 </div>
-<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=sfx2"></script><script src="/nwkit/kit.js?v=model3"></script>
+<script src="/assets/frog.js?v=model3"></script><script src="/assets/nw.js?v=vol1"></script><script src="/nwkit/kit.js?v=vol1"></script>
 <script>
 (function () {
 var G = NW.mount({ key: 'milkrain', title: '奶滴接接乐', extraCard: '接住', rules: '左右拖动奶蛙接住掉落的奶块。漏接好奶块或接到坏奶会掉一颗心，连接 3 个 ×2、5 个 ×4 并全屏吸收！', onStart: function(){ if (window.__start) window.__start(); } });
@@ -29,15 +29,26 @@ var TYPES = {
   dbl: { c1: '#ffe0ee', c2: '#ff8fb8', pts: 5, w: 1.6 }, coin: { c1: '#fff7c0', c2: '#ffc61a', pts: 10, w: 1.4 }, bad: { pts: 0, w: 0 }
 };
 var items, fx = S.fx, frogX, targetX, lives, combo, catches, t0, spawnT, slowT, sq, sqv, mood, moodT, grow, dragging, flash, banner, bannerT, lost;
-function reset() { items = []; frogX = W / 2; targetX = W / 2; lives = 3; combo = 0; catches = 0; t0 = 0; spawnT = .6; slowT = 0; sq = 0; sqv = 0; mood = 'neutral'; moodT = 0; grow = 1; flash = 0; banner = ''; bannerT = 0; lost = false; G.setScore(0, false); G.setExtra(0); }
+var starterLeft = 3, mileHit = {};
+function reset() { items = []; frogX = W / 2; targetX = W / 2; lives = 3; combo = 0; catches = 0; t0 = 0; spawnT = .6; slowT = 0; sq = 0; sqv = 0; mood = 'neutral'; moodT = 0; grow = 1; flash = 0; banner = ''; bannerT = 0; lost = false; starterLeft = 3; mileHit = {}; G.setScore(0, false); G.setExtra(0); }
 reset(); window.__start = reset;
 function pick() {
+  if (starterLeft > 0) { starterLeft--; return 'plain'; }
   var badP = Math.min(.2, .04 + t0 * .004), r = Math.random();
   if (t0 > 6 && r < badP) return 'bad';
   var tot = 0, k, o = []; for (k in TYPES) if (k !== 'bad') { tot += TYPES[k].w; o.push([k, tot]); }
   r = Math.random() * tot; for (var i = 0; i < o.length; i++) if (r <= o[i][1]) return o[i][0]; return 'plain';
 }
-function speed() { var s = t0 < 15 ? 150 + t0 * 4 : Math.min(455, 150 + G.score * 3.6 + 60); return s * (slowT > 0 ? .55 : 1); }
+function catchSfx(type, comboN) {
+  // 分型接音：频率按块类型区分（自研）
+  var map = { plain: 640, ice: 920, rich: 500, dbl: 780, coin: 1100 };
+  var f = map[type] || 640;
+  try { NW.tone(f, .09, 'sine', .22, f * 1.35); NW.tone(f * 1.5, .07, 'triangle', .12, null, .04); } catch (e) { NW.sfx.pop(Math.min(comboN, 8)); }
+  if (type === 'coin') NW.sfx.perfect();
+  else if (type === 'dbl') NW.sfx.spark();
+  else if (comboN >= 5) NW.sfx.combo(Math.floor(comboN / 3));
+}
+function speed() { var s = t0 < 15 ? (150 + t0 * 4) * 0.7 : Math.min(455, 150 + G.score * 3.6 + 60); return s * (slowT > 0 ? .55 : 1); }
 function spawn() { var x = R(28, W - 28); items.push({ type: pick(), x: x, y: -30, vy: 0, rot: R(-.3, .3), vr: R(-1.5, 1.5), born: 0, ph: R(0, 6) }); }
 function mult() { return combo >= 5 ? 4 : combo >= 3 ? 2 : 1; }
 function catchW() { return 38 * grow; }
@@ -45,22 +56,34 @@ function setLives() { var s = ''; for (var i = 0; i < 3; i++) s += i < lives ? '
 function loseLife(x, why) {
   lives--; combo = 0; setLives(); NW.sfx.bad(); NW.vib([20, 40, 20]); S.shake(10); flash = .4; mood = 'sad'; moodT = .8;
   fx.text(x, H - 190, why, { size: 26, color: '#ff4a4a' });
-  if (lives <= 0 && !lost) { lost = true; S.freeze(220); G.over('接了 ' + catches + ' 个奶块'); }
+  if (lives <= 0 && !lost) {
+    lost = true; S.freeze(220);
+    var g = NW.grade(catches, [[40, '奶海无边'], [25, '接奶达人'], [15, '稳稳接住'], [8, '小试牛刀'], [0, '再练练']]);
+    G.over('接了 ' + catches + ' 个 · ' + g);
+  }
 }
 function doCatch(it) {
   var m = mult(); catches++; combo++; G.setExtra(catches);
-  var nm = mult(), p = TYPES[it.type].pts * m; G.setScore(G.score + p);
-  NW.sfx.pop(Math.min(combo, 8)); NW.vib(8); sqv += 7; mood = 'laugh'; moodT = .25;
+  var p = TYPES[it.type].pts * m; G.setScore(G.score + p);
+  catchSfx(it.type, combo); NW.vib(8); sqv += 7; mood = 'laugh'; moodT = .25;
   fx.burst(it.x, H - 185, { count: 8, speed: 200, size: 6, colors: ['#fff', TYPES[it.type].c2, '#FFD23F'], gravity: 700 });
   fx.text(it.x, H - 205, '+' + p, { size: 22 + Math.min(10, combo), color: m > 1 ? '#ff4a2a' : '#e8a000' });
   if (it.type === 'ice') { slowT = 3.5; fx.text(W / 2, 150, '冰奶 · 减速', { size: 26, color: '#2a9ad0' }); }
-  if (it.type === 'coin') { NW.sfx.perfect(); fx.burst(it.x, H - 185, { count: 18, speed: 320, size: 8, colors: ['#FFD23F', '#fff'] }); }
+  if (it.type === 'coin') { fx.burst(it.x, H - 185, { count: 18, speed: 320, size: 8, colors: ['#FFD23F', '#fff'] }); }
   if (catches % 3 === 0 && grow < 1.45) { grow += .06; sqv += 12; fx.text(frogX, H - 130, '肚子变大了', { size: 20, color: '#3F8E1C' }); }
-  if (combo === 3 || combo === 5 || (combo > 5 && combo % 5 === 0)) { NW.sfx.combo(Math.floor(combo / 3)); banner = combo >= 5 ? '连击 ×4' : '连击 ×2'; bannerT = 1; S.shake(5); }
-  if (combo === 5 || (combo > 5 && combo % 10 === 0)) { // 全屏吸收
+  if (combo === 3 || combo === 5 || (combo > 5 && combo % 5 === 0)) { banner = combo >= 5 ? '连击 ×4' : '连击 ×2'; bannerT = 1; S.shake(5); }
+  if (combo === 5 || (combo > 5 && combo % 10 === 0)) {
     items.forEach(function (o) { if (o.type !== 'bad' && o !== it) { o.suck = 1; } else if (o.type === 'bad') { o.pop = 1; } });
     NW.sfx.win(); S.shake(9); fx.text(W / 2, 210, '全屏吸收！', { size: 36, color: '#ff4a2a', life: 1.2 });
   }
+  [10, 20, 30, 40].forEach(function (n) {
+    if (catches === n && !mileHit[n]) {
+      mileHit[n] = 1;
+      var lab = { 10: '十滴入肚', 20: '奶香四溢', 30: '接奶达人', 40: '奶海无边' }[n];
+      fx.text(W / 2, 180, lab + '！', { size: 30, color: '#ff4a2a', life: 1.15 });
+      NW.sfx.fanfare();
+    }
+  });
 }
 S.on({
   down: function (x) { if (!G.running) return; dragging = true; targetX = NWK.clamp(x, 34, W - 34); },

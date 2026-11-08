@@ -12,6 +12,7 @@
 
   /* ---------- WebAudio 音效 / BGM（原创合成 + 自研笑声采样） ---------- */
   var AC = null, master = null, sfxGain = null, bgmGain = null;
+  function reduceMotionPref() { try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
   var muted = !!store.get('mute', false);
   var volSfx = +store.get('vol_sfx', 0.95) || 0.95;
   var volBgm = +store.get('vol_bgm', 0.22) || 0.22;
@@ -57,8 +58,29 @@
     applyMuteGains();
     if (muted) stopBgm(true);
     syncMuteButtons();
+    syncVolPanel();
   }
-  function toggleMute() { setMuted(!muted); if (!muted) sfx.click(); return muted; }
+  function setVolSfx(v) {
+    volSfx = Math.max(0, Math.min(1, +v || 0));
+    store.set('vol_sfx', volSfx);
+    if (!muted && volSfx > 0.01) ctx();
+    applyMuteGains();
+    syncVolPanel();
+  }
+  function setVolBgm(v) {
+    volBgm = Math.max(0, Math.min(1, +v || 0));
+    store.set('vol_bgm', volBgm);
+    if (!muted && volBgm > 0.01) ctx();
+    applyMuteGains();
+    syncVolPanel();
+  }
+  function toggleMute() {
+    var was = muted;
+    setMuted(!muted);
+    if (muted) toast('音效已关闭 · 点右上角喇叭开启');
+    else { toast('音效已开启'); sfx.click(); }
+    return muted;
+  }
 
   function tone(f, d, type, vol, slide, delay) {
     if (muted) return; var a = ctx(); if (!a) return;
@@ -409,7 +431,9 @@
     t.textContent = msg; t.classList.add('show'); clearTimeout(t.__t); t.__t = setTimeout(function () { t.classList.remove('show'); }, 1800);
   }
   function shake(el, amp, dur) {
-    if (!el || !el.animate) return; amp = amp || 8;
+    if (!el || !el.animate) return;
+    if (reduceMotionPref()) return;
+    amp = amp || 8;
     el.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(' + -amp + 'px,' + amp / 2 + 'px)' }, { transform: 'translate(' + amp + 'px,' + -amp / 2 + 'px)' }, { transform: 'translate(' + -amp / 2 + 'px,0)' }, { transform: 'translate(0,0)' }], { duration: dur || 280, easing: 'ease-out' });
   }
   var ICON = {
@@ -419,6 +443,64 @@
     redo: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.4-5.7"/><path d="M20 4v5h-5"/></svg>'
   };
 
+  /* ---------- 音量面板 ---------- */
+  var GEAR_ICON = '<svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z"/><path d="M19.4 13a7.8 7.8 0 000-2l2-1.5-2-3.5-2.4 1a7.6 7.6 0 00-1.7-1L15 3h-6l-.3 2.9a7.6 7.6 0 00-1.7 1L4.6 6 2.6 9.5 4.6 11a7.8 7.8 0 000 2l-2 1.5 2 3.5 2.4-1a7.6 7.6 0 001.7 1L9 21h6l.3-2.9a7.6 7.6 0 001.7-1l2.4 1 2-3.5z"/></svg>';
+  function syncVolPanel() {
+    var sfx = document.getElementById('nw-vol-sfx');
+    var bgm = document.getElementById('nw-vol-bgm');
+    var sfxLab = document.getElementById('nw-vol-sfx-lab');
+    var bgmLab = document.getElementById('nw-vol-bgm-lab');
+    if (sfx) sfx.value = String(Math.round(volSfx * 100));
+    if (bgm) bgm.value = String(Math.round(volBgm * 100));
+    if (sfxLab) sfxLab.textContent = Math.round(volSfx * 100) + '%';
+    if (bgmLab) bgmLab.textContent = Math.round(volBgm * 100) + '%';
+  }
+  function ensureVolPanel() {
+    var p = document.getElementById('nw-vol-panel');
+    if (p) return p;
+    p = document.createElement('div');
+    p.id = 'nw-vol-panel';
+    p.className = 'nw-vol-panel';
+    p.setAttribute('role', 'dialog');
+    p.setAttribute('aria-label', '音量设置');
+    p.innerHTML =
+      '<div class="nw-vol-card">' +
+      '<div class="nw-vol-title">音量</div>' +
+      '<label class="nw-vol-row"><span>音效 SFX</span><input id="nw-vol-sfx" type="range" min="0" max="100" step="1" aria-label="音效音量"><b id="nw-vol-sfx-lab">95%</b></label>' +
+      '<label class="nw-vol-row"><span>背景 BGM</span><input id="nw-vol-bgm" type="range" min="0" max="100" step="1" aria-label="背景音量"><b id="nw-vol-bgm-lab">22%</b></label>' +
+      '<p class="nw-vol-hint">静音开关仍在右上角喇叭</p>' +
+      '<button type="button" class="btn small" id="nw-vol-close">完成</button>' +
+      '</div>';
+    document.body.appendChild(p);
+    p.addEventListener('click', function (e) { if (e.target === p) closeVolPanel(); });
+    document.getElementById('nw-vol-close').onclick = function () { closeVolPanel(); };
+    document.getElementById('nw-vol-sfx').oninput = function (e) {
+      setVolSfx((+e.target.value) / 100);
+      if (!muted) { unlockAudio(); sfx.click(); }
+    };
+    document.getElementById('nw-vol-bgm').oninput = function (e) {
+      setVolBgm((+e.target.value) / 100);
+      if (!muted && !bgmTimer) playBgm(bgmKey || 'lobby');
+    };
+    syncVolPanel();
+    return p;
+  }
+  function openVolPanel() {
+    var p = ensureVolPanel();
+    syncVolPanel();
+    p.classList.add('show');
+    unlockAudio();
+  }
+  function closeVolPanel() {
+    var p = document.getElementById('nw-vol-panel');
+    if (p) p.classList.remove('show');
+  }
+  function bindVolButton(el) {
+    if (!el) return;
+    el.innerHTML = GEAR_ICON;
+    el.addEventListener('click', function (e) { e.preventDefault(); openVolPanel(); });
+  }
+
   /* ---------- 游戏壳 ---------- */
   function mount(o) {
     var best = store.get('best_' + o.key, 0), score = 0, running = false;
@@ -426,6 +508,7 @@
     top.className = 'nw-top';
     top.innerHTML = '<a class="round-btn" href="/" aria-label="返回合集" id="nw-back">' + ICON.back + '</a>' +
       '<h1><img src="/assets/favicon-frog.png" alt="">' + o.title + '</h1>' +
+      '<button class="round-btn" id="nw-vol" aria-label="音量设置" title="音量">' + GEAR_ICON + '</button>' +
       '<button class="round-btn" id="nw-snd" aria-label="音效开关">' + (muted ? ICON.off : ICON.on) + '</button>' +
       '<button class="round-btn" id="nw-redo" aria-label="重新开始">' + ICON.redo + '</button>';
     hud.className = 'nw-hud';
@@ -462,8 +545,10 @@
     $('#nw-again').onclick = function () { ctl.begin(); };
     $('#nw-redo').onclick = function () { sfx.click(); ctl.begin(); };
     $('#nw-snd').onclick = function () { toggleMute(); };
+    bindVolButton($('#nw-vol'));
     if (muted) $('#nw-snd').classList.add('muted');
     syncMuteButtons();
+    ensureVolPanel();
     $('#nw-share').onclick = function () {
       var text = '我在奶蛙「' + o.title + '」拿了 ' + score + ' 分！来挑战我 👉 ' + SITE + '/' + o.key + '/';
       if (navigator.share) { navigator.share({ title: '奶蛙小游戏', text: text, url: SITE + '/' + o.key + '/' }).catch(function () {}); }
@@ -482,9 +567,9 @@
     for (var i = 0; i < tiers.length; i++) if (score >= tiers[i][0]) return tiers[i][1];
     return tiers[tiers.length - 1][1];
   }
-  function reduceMotion() { try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
-  function reducedMotion() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
-  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
+  function reduceMotion() { return reduceMotionPref(); }
+  function reducedMotion() { return reduceMotionPref(); }
+  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, bindVolButton: bindVolButton, openVolPanel: openVolPanel, closeVolPanel: closeVolPanel, setVolSfx: setVolSfx, setVolBgm: setVolBgm, getVolSfx: function () { return volSfx; }, getVolBgm: function () { return volBgm; }, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
 })(window);
 /* 叠加层 canvas（粒子特效）：自动跟随容器尺寸 */
 (function (root) {
