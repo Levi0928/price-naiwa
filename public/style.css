@@ -213,3 +213,44 @@ footer.site .fl { display: flex; gap: 18px; justify-content: center; margin-bott
   .nw-modal.show .nw-dialog { transition: none !important; }
   .cloud, .hero::before, .hero-frog { animation: none !important; }
 }
+
+
+/* ---------- 流畅网游感：闪白 / 舞台 kick / 弹窗不闪黑 ---------- */
+.nw-flash {
+  position: fixed; inset: 0; z-index: 45; pointer-events: none;
+  background: #fff; opacity: 0; transition: opacity .04s linear;
+}
+.nw-flash.on { opacity: var(--nw-flash, .16); }
+.nw-stage, .nw-game { will-change: transform; backface-visibility: hidden; }
+.nw-modal {
+  visibility: hidden;
+  transition: opacity .22s ease, visibility 0s linear .22s;
+}
+.nw-modal.show {
+  visibility: visible;
+  transition: opacity .22s ease, visibility 0s;
+}
+body.nw-playing .nw-modal:not(.show) { pointer-events: none; }
+.nw-card b { transition: transform .1s cubic-bezier(.3,1.6,.5,1); }
+.round-btn, .btn { touch-action: manipulation; }
+.cl-cell { min-width: 44px; min-height: 44px; transition: transform .12s cubic-bezier(.3,1.7,.5,1), box-shadow .12s, filter .12s; }
+.cl-cell:active { transform: scale(.92); }
+.cl-cell.ok { animation: nwpop .32s cubic-bezier(.3,1.8,.5,1); filter: brightness(1.08); }
+.cl-cell.bad { animation: nwshake .28s ease-out; }
+@keyframes nwshake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.ex-card {
+  transition: transform .14s cubic-bezier(.3,1.6,.5,1), box-shadow .14s, filter .14s;
+}
+.ex-card:active, .ex-card.play {
+  transform: translateY(-8px) scale(1.04);
+  filter: brightness(1.06);
+}
+.ex-card.play { animation: nwpop .28s cubic-bezier(.3,1.8,.5,1); }
+@media (prefers-reduced-motion: reduce) {
+  .nw-flash { display: none !important; }
+  .cl-cell, .ex-card { transition: none !important; animation: none !important; }
+}

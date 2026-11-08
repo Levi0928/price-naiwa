@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="合成大奶蛙 · 奶蛙小游戏"><meta property="og:description" content="同款奶蛙相撞升级，合出最大的金色奶蛙！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=juice3">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .jar-bar{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:8px 10px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .jar-bar .t{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:28px}
@@ -41,7 +41,7 @@
   <p id="rv-txt">清掉警戒线上方的奶蛙，继续这一局。</p>
   <div class="row"><button class="btn green" id="rv-yes">用 1 枚复活币</button><button class="btn white" id="rv-no">结束本局</button></div>
 </div></div>
-<script src="/assets/frog.js?v=merge5"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -111,7 +111,7 @@
   });
   function drop() {
     balls.push({ id: ++uid, x: clampX(aimX), y: DROPY, vx: 0, vy: 130, r: R[cur], lv: cur, age: 0, sq: 0, sa: 0, grow: 1, pop: 0, rot: 0 });
-    NW.sfx.drop(); cur = nxt; nxt = rnd(cur); canDrop = false; dropT = .36; maxSeen = Math.max(maxSeen, cur); paintChain();
+    NW.sfx.drop(); cur = nxt; nxt = rnd(cur); canDrop = false; dropT = .36; maxSeen = Math.max(maxSeen, cur); paintChain(); if (NW.hitstop) NW.hitstop(28); if (NW.camKick) NW.camKick(3, 100);
   }
   function addScore(n, x, y) {
     G.setScore(G.score + n);
@@ -179,6 +179,8 @@
           if (fx.ring) fx.ring(x, y, { maxR: 40 + lv * 8, life: 0.35, color: COL[lv + 1] });
           if (fx.ripple) fx.ripple(x, y, { maxR: 28 + lv * 4, life: 0.28 });
           NW.sfx.merge(lv); NW.vib(6 + lv + 1); flash = Math.max(flash, lv + 1 === 10 ? 1 : .32); hitstop = Math.max(hitstop, lv >= 6 ? 0.07 : 0.03);
+          if (NW.camKick && lv >= 3) NW.camKick(3 + lv, 120 + lv * 8);
+          if (NW.hitstop) NW.hitstop(lv >= 6 ? 70 : (lv >= 3 ? 45 : 30));
           if (nextLv === 10) { fx.text(W / 2, H * .35, '皇冠奶蛙！', { size: 38, color: '#ff9f00', life: 1.4 }); shakeT = .3; shakeA = 8; NW.sfx.win(); hitstop = .13; }
           else if (chain > 1) { fx.text(x, y - R[nextLv] - 14, '连锁 ×' + chain, { size: 24, color: '#ff4a2a', life: 1 }); NW.sfx.combo(chain); }
           }

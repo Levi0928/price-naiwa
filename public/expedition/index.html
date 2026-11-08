@@ -11,7 +11,7 @@
 <meta property="og:title" content="奶蛙远征 · 奶蛙小游戏">
 <meta property="og:description" content="能量、手牌、地图爬塔、遗物与构筑——全新原创卡牌肉鸽。">
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=gh1">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .ex{--ink:#4a3325;--gold:#F7C32B;--panel:#fff8e8;height:100%;display:flex;flex-direction:column;gap:8px;min-height:0}
 .ex-hud{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
@@ -75,8 +75,8 @@
   <div id="nw-top"></div>
   <div class="ex" id="app"></div>
 </div>
-<script src="/assets/frog.js?v=gh1"></script>
-<script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script>
+<script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   'use strict';
@@ -351,6 +351,8 @@
     var c=cardOf(id); if(c.cost>b.energy) return;
     b.energy-=c.cost; b.hand.splice(ix,1);
     b.anim='patk';
+    if (NW.juice) NW.juice({ sfx: c.dmg ? 'hit' : (c.blk ? 'land' : 'click'), vib: c.dmg ? 12 : 7, hitstop: c.dmg ? 48 : 30, kick: { amp: c.dmg ? 6 : 3, dur: 120 } });
+    else { NW.sfx.click(); if (c.dmg && NW.sfx.hit) NW.sfx.hit(); }
     var hits=c.hits||1;
     if(c.dmg){ for(var i=0;i<hits;i++) dealDmgToEnemy(c.dmg); }
     if(c.blk) b.blk+=c.blk;

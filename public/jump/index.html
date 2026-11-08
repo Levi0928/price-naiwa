@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙跳一跳 · 奶蛙小游戏"><meta property="og:description" content="按住蓄力，松手起跳，落在平台中心有加分！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=jump5">
+<link rel="stylesheet" href="/style.css?v=feel1">
 </head>
 <body class="game">
 <div class="nw-game">
@@ -17,7 +17,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">蓄力起跳 · 灰能踩红踩空 · 完美中心 · 移动/弹簧/冰面 · 接奶币</p>
 </div>
-<script src="/assets/frog.js?v=jump5"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -96,7 +96,9 @@
       fx.burst(frog.x, frog.y, { count: 26, speed: 320, colors: ['#FFD23F', '#fff', PC[p.ci][0]], size: 7 });
       if (fx.ring) fx.ring(frog.x, frog.y, { maxR: 70, life: 0.4, color: 'rgba(255,210,63,.7)' });
       if (combo >= 3) try { NW.sfx.ha(combo % 6, false); } catch (e) {}
-      camKick = 0.22;
+      camKick = 0.28;
+      if (NW.hitstop) NW.hitstop(combo >= 3 ? 60 : 45);
+      if (NW.camKick) NW.camKick(combo >= 3 ? 9 : 6, 160);
     } else { combo = 0; NW.sfx.land(); fx.burst(frog.x, frog.y, { count: 10, speed: 170, colors: ['#fff', PC[p.ci][0]], size: 5 }); }
     if (!fromSame) {
       jumps++;
@@ -141,7 +143,7 @@
         }
       });
       plats = plats.filter(function (p) { return !p.dead; });
-      if (charging) { charge += dt; var pw = Math.min(1, charge / 1.05); frog.sq = 1 - pw * .22; if (frog.on) frog.on.sq = Math.max(frog.on.sq, pw); frog._off = frog.x - (frog.on ? frog.on.x : 0); chargeSfxT -= dt; if (chargeSfxT <= 0) { chargeSfxT = 0.11; try { if (NW.sfx.charge) NW.sfx.charge(pw); else NW.sfx.click(); } catch (e) {} } if (pw >= 1 && !chargedMax) { chargedMax = true; try { if (NW.sfx.chargeMax) NW.sfx.chargeMax(); else NW.sfx.perfect(); } catch (e) {} fx.text(frog.x, frog.y + cam - 70, '蓄满！', { size: 18, color: '#ff6b3a', life: 0.55 }); } }
+      if (charging) { charge += dt; var pw = Math.min(1, charge / 1.05); frog.sq = 1 - pw * .22; if (frog.on) frog.on.sq = Math.max(frog.on.sq, pw); frog._off = frog.x - (frog.on ? frog.on.x : 0); chargeSfxT -= dt; if (chargeSfxT <= 0) { chargeSfxT = 0.11; try { if (NW.sfx.charge) NW.sfx.charge(pw); else NW.sfx.click(); } catch (e) {} } if (pw >= 1 && !chargedMax) { chargedMax = true; if (NW.juice) NW.juice({ sfx: 'spark', vib: 10, kick: { amp: 4, dur: 120 } }); else if (NW.sfx.spark) NW.sfx.spark(); try { if (NW.sfx.chargeMax) NW.sfx.chargeMax(); else NW.sfx.perfect(); } catch (e) {} fx.text(frog.x, frog.y + cam - 70, '蓄满！', { size: 18, color: '#ff6b3a', life: 0.55 }); } }
       else if (state === 'idle') {
         frog.sq += (1 - frog.sq) * Math.min(1, dt * 12);
         if (frog.on) {

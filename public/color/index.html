@@ -11,7 +11,7 @@
 <meta property="og:title" content="奶蛙颜色大挑战 · 奶蛙小游戏">
 <meta property="og:description" content="找不同色——考验眼力的奶蛙迷你挑战。">
 <meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=gh1">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .cl{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
 .cl-modes{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -57,8 +57,8 @@
   </div>
   <p class="nw-hint">色差会越来越小 · 看准再点 · 空格也可开始/重开</p>
 </div>
-<script src="/assets/frog.js?v=gh1"></script>
-<script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script>
+<script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   'use strict';
@@ -168,7 +168,8 @@
       streak++; maxStreak = Math.max(maxStreak, streak);
       G.setScore(G.score + gain);
       setFrog('laugh'); frogEl.classList.remove('hop'); void frogEl.offsetWidth; frogEl.classList.add('hop');
-      NW.sfx.perfect?NW.sfx.perfect():NW.sfx.pop(Math.min(8,streak));
+      if (NW.juice) NW.juice({ sfx: 'perfect', vib: 10 + Math.min(12, streak), hitstop: 45, kick: { amp: 5, dur: 130 }, squash: { el: frogEl, sx: 1.12, sy: 0.88, dur: 180 } });
+      else { NW.sfx.perfect?NW.sfx.perfect():NW.sfx.pop(Math.min(8,streak)); }
       banner(streak>=5 ? '火眼金睛 ×'+streak : '找对了！+', 550);
       setTimeout(function(){
         if(mode==='story'){
@@ -183,7 +184,8 @@
     } else {
       cells[i].classList.add('bad');
       streak = 0; setFrog('wow');
-      NW.sfx.bad(); NW.vib&&NW.vib([20,40,20]);
+      if (NW.juice) NW.juice({ sfx: 'bad', vib: 24, hitstop: 50, shake: { el: gridEl, amp: 8, dur: 220 } });
+      else { NW.sfx.bad(); NW.vib&&NW.vib([20,40,20]); }
       banner('不对哦', 500);
       if(mode==='story'){
         lives--; paintLives();

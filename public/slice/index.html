@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="切奶蛙 · 奶蛙小游戏"><meta property="og:description" content="划屏切开奶蛙，45 秒冲目标分，八关挑战。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=slice3">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .sl-lv{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:8px 12px 4px}
 .sl-lv button{min-width:44px;min-height:44px;border-radius:12px;border:2px solid #f0cf6a;background:#fff8e0;font-weight:800;color:#6a4400;cursor:pointer}
@@ -28,7 +28,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">快速滑动切开奶蛙 · 慢拖无效 · 深色坏奶别切 · 空格暂停</p>
 </div>
-<script src="/assets/frog.js?v=slice3"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   /* CFG — quality-bar §6 */
@@ -232,6 +232,8 @@ if (isBomb && !bombWarned) {
     if (combo >= 2) NW.sfx.sliceCombo && NW.sfx.sliceCombo(combo);
     if (perfect) NW.sfx.perfect && NW.sfx.perfect();
     NW.vib(perfect ? 16 : 10);
+    if (NW.camKick) NW.camKick(perfect ? 8 : (combo >= 3 ? 6 : 3), perfect ? 150 : 110);
+    if (NW.hitstop && !hitstop) NW.hitstop(perfect ? 55 : 40);
 
     var vert = Math.abs(Math.cos(ang || 0)) >= Math.abs(Math.sin(ang || 0));
     var nx = Math.cos(ang || 0), ny = Math.sin(ang || 0);
@@ -250,6 +252,7 @@ if (isBomb && !bombWarned) {
     for (var p = 0; p < (RM ? 3 : 12); p++) {
       var a = Math.random() * 6.28;
       particles.push({ x: e.x, y: e.y, vx: Math.cos(a) * (90 + Math.random() * 180), vy: Math.sin(a) * (90 + Math.random() * 180) - 70, life: 0.45 + Math.random() * 0.25, c: COLS[e.ci], s: 3 + Math.random() * 4 });
+    while (particles.length > 80) particles.shift();
     }
     if (!practice && G.score >= goal) winLevel();
   }

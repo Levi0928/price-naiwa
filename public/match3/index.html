@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙消消乐 · 奶蛙小游戏"><meta property="og:description" content="交换相邻的奶蛙，连成三个就消除！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=m3b">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .tools{display:flex;gap:8px;justify-content:center;padding:6px 10px 2px;flex-wrap:wrap}
 .tools button{appearance:none;border:0;border-radius:16px;padding:10px 12px;min-width:72px;font-weight:900;font-size:.78rem;background:#fff;color:#6a4400;box-shadow:0 3px 0 rgba(26,22,18,.12);cursor:pointer}
@@ -36,7 +36,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint" id="hint">四连→条纹 · 五连→彩虹 · L/T→炸弹 · 冰要多消一次 · 道具各 3 次</p>
 </div>
-<script src="/assets/frog.js?v=m3b"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, box = document.getElementById('box'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -190,7 +190,7 @@
     var A = cells[a.r][a.c], B = cells[b.r][b.c];
     if (A.spec || B.spec) {
       swapCells(a, b, true); NW.sfx.swap();
-      wait(235, function () {
+      wait(190, function () {
         moves--; G.setExtra(moves); combo = 0;
         var marks = {}; function mark(r, c) { if (r >= 0 && c >= 0 && r < N && c < N) marks[r + ',' + c] = 1; }
         // rainbow clears color of other piece
@@ -206,9 +206,9 @@
       return;
     }
     swapCells(a, b, true); NW.sfx.swap();
-    wait(235, function () {
+    wait(190, function () {
       var m = findMatches();
-      if (!m.length) { swapCells(a, b, true); NW.sfx.bad(); wait(235, function () { state = 'idle'; }); return; }
+      if (!m.length) { swapCells(a, b, true); NW.sfx.bad(); wait(190, function () { state = 'idle'; }); return; }
       moves--; G.setExtra(moves); combo = 0;
       spawnSpecialsFromGroups(m.groups, a, b);
       resolve(m, false);
@@ -261,6 +261,9 @@
   function goalsDone() { for (var i = 0; i < goals.length; i++) if (collected[i] < goals[i][1]) return false; return true; }
   function resolve(m, fromSpecial) {
     state = 'clear'; combo++; var pts = 0;
+    if (NW.hitstop) NW.hitstop(combo >= 3 ? 55 : 40);
+    if (NW.camKick) NW.camKick(combo >= 3 ? 7 : 4, 120);
+    if (combo >= 2 && NW.sfx.combo) NW.sfx.combo(combo);
     if (!fromSpecial && m.groups) m.groups.forEach(function (g) { pts += (g.length - 2) * 30 + (g.length >= 4 ? 40 : 0) + (g.length >= 5 ? 80 : 0); });
     else pts = m.length * 20;
     pts = Math.round(pts * (1 + (combo - 1) * .6)); var cx = 0, cy = 0;

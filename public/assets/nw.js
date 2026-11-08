@@ -329,8 +329,9 @@
   ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
     root.addEventListener(ev, function () {
       prefetchAudio();
-      if (AC) { unlockAudio().then(decodeFetched); }
-    }, { passive: true });
+      ctx();
+      unlockAudio().then(function () { decodeFetched(); });
+    }, { passive: true, capture: true });
   });
   try { prefetchAudio(); } catch (e) {}
   var canVib = null;
@@ -359,7 +360,7 @@
 
   /* ---------- 粒子 ---------- */
   function FX() { this.p = []; }
-  FX.MAX_P = 140;
+  FX.MAX_P = 110;
   FX.prototype.burst = function (x, y, o) {
     o = o || {};
     var reduce = !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -527,9 +528,9 @@
       get score() { return score; }, get best() { return best; }, get running() { return running; },
       setScore: function (n, pop) { score = n; sEl.textContent = n; if (pop !== false) { sEl.classList.remove('pop'); void sEl.offsetWidth; sEl.classList.add('pop'); } if (n > best) { best = n; bEl.textContent = n; ctl.newBest = true; } },
       setExtra: function (t) { var e = $('#nw-extra'); if (e) e.textContent = t; },
-      begin: function () { score = 0; ctl.newBest = false; sEl.textContent = '0'; running = true; $('#nw-start').classList.remove('show'); $('#nw-over').classList.remove('show'); loadAudio(); sfx.start(); playBgm(o.bgm || 'play'); o.onStart && o.onStart(); },
+      begin: function () { score = 0; ctl.newBest = false; sEl.textContent = '0'; running = true; document.body.classList.add('nw-playing'); var st=$('#nw-start'), ov=$('#nw-over'); if(st) st.classList.remove('show'); if(ov) ov.classList.remove('show'); unlockAudio(); loadAudio(); sfx.start(); playBgm(o.bgm || 'play'); o.onStart && o.onStart(); },
       over: function (sub, title) {
-        if (!running) return; running = false; var isNew = ctl.newBest && score > 0; var prev = store.get('best_' + o.key, 0);
+        if (!running) return; running = false; document.body.classList.remove('nw-playing'); var isNew = ctl.newBest && score > 0; var prev = store.get('best_' + o.key, 0);
         if (score > prev) store.set('best_' + o.key, score);
         $('#nw-over-score').textContent = score; $('#nw-over-best').textContent = Math.max(best, prev);
         $('#nw-over-title').textContent = title || (isNew ? '新纪录！' : '游戏结束'); $('#nw-over-sub').textContent = sub || '';
@@ -569,7 +570,119 @@
   }
   function reduceMotion() { return reduceMotionPref(); }
   function reducedMotion() { return reduceMotionPref(); }
-  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, bindVolButton: bindVolButton, openVolPanel: openVolPanel, closeVolPanel: closeVolPanel, setVolSfx: setVolSfx, setVolBgm: setVolBgm, getVolSfx: function () { return volSfx; }, getVolBgm: function () { return volBgm; }, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle };
+
+  /* ---------- 流畅网游感：hitstop / kick / squash / juice / 单 rAF ---------- */
+  var HS = { t: 0, flash: 0 };
+  function ensureFlashLayer() {
+    var el = document.getElementById('nw-flash');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'nw-flash';
+      el.className = 'nw-flash';
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function hitstop(ms) {
+    if (reduceMotionPref()) return;
+    var s = Math.max(0, ((ms == null ? 55 : ms) | 0) / 1000);
+    HS.t = Math.max(HS.t, s);
+    HS.flash = Math.max(HS.flash, Math.min(0.28, s * 3.2));
+    var el = ensureFlashLayer();
+    el.style.setProperty('--nw-flash', String(HS.flash * 0.55));
+    el.classList.add('on');
+  }
+  function tickHitstop(dt) {
+    if (HS.t > 0) HS.t = Math.max(0, HS.t - dt);
+    if (HS.flash > 0) {
+      HS.flash = Math.max(0, HS.flash - dt * 4.5);
+      var el = document.getElementById('nw-flash');
+      if (el) {
+        el.style.setProperty('--nw-flash', String(HS.flash * 0.55));
+        if (HS.flash <= 0.01) el.classList.remove('on');
+      }
+    }
+    return HS.t > 0;
+  }
+  function inHitstop() { return HS.t > 0; }
+  function getHitstop() { return HS.t; }
+
+  function camKick(amp, dur) {
+    if (reduceMotionPref()) return;
+    amp = amp == null ? 7 : amp; dur = dur == null ? 170 : dur;
+    var el = document.querySelector('.nw-stage') || document.querySelector('.nw-game');
+    if (!el || !el.animate) return;
+    el.animate([
+      { transform: 'translate3d(0,0,0) scale(1)' },
+      { transform: 'translate3d(0,' + (-amp) + 'px,0) scale(1.015)', offset: 0.22 },
+      { transform: 'translate3d(0,' + (amp * 0.28) + 'px,0) scale(1)', offset: 0.62 },
+      { transform: 'translate3d(0,0,0) scale(1)' }
+    ], { duration: dur, easing: 'cubic-bezier(.2,.85,.25,1)' });
+  }
+
+  function squashEl(el, opts) {
+    if (!el || !el.animate || reduceMotionPref()) return;
+    opts = opts || {};
+    var sx = opts.sx == null ? 1.14 : opts.sx;
+    var sy = opts.sy == null ? 0.84 : opts.sy;
+    var dur = opts.dur == null ? 210 : opts.dur;
+    var rot = opts.rot || 0;
+    el.animate([
+      { transform: 'scale(1,1) rotate(0deg)' },
+      { transform: 'scale(' + sx + ',' + sy + ') rotate(' + (-rot) + 'deg)', offset: 0.18 },
+      { transform: 'scale(' + (2 - sx) + ',' + (2 - sy) + ') rotate(' + rot + 'deg)', offset: 0.55 },
+      { transform: 'scale(1,1) rotate(0deg)' }
+    ], { duration: dur, easing: 'ease-out' });
+  }
+
+  function juice(opts) {
+    opts = opts || {};
+    try {
+      if (opts.unlock !== false) unlockAudio();
+      if (opts.sfx) {
+        var fn = typeof opts.sfx === 'string' ? sfx[opts.sfx] : opts.sfx;
+        if (typeof fn === 'function') fn.apply(sfx, opts.sfxArgs || []);
+      }
+      if (opts.vib) vib(opts.vib);
+      if (opts.hitstop) hitstop(opts.hitstop);
+      if (opts.kick) camKick(opts.kick.amp, opts.kick.dur);
+      if (opts.shake && opts.shake.el) shake(opts.shake.el, opts.shake.amp, opts.shake.dur);
+      if (opts.squash && opts.squash.el) squashEl(opts.squash.el, opts.squash);
+    } catch (e) {}
+  }
+
+  /* 单 rAF 总线：游戏可挂多个 tick，不会叠出第二套主循环时钟 */
+  var rafHooks = [];
+  var rafRunning = false;
+  var rafLast = 0;
+  function rafBus(t) {
+    rafRunning = true;
+    var dt = Math.min(0.033, (t - (rafLast || t)) / 1000);
+    rafLast = t;
+    tickHitstop(dt);
+    for (var i = 0; i < rafHooks.length; i++) {
+      try { rafHooks[i](dt, t); } catch (err) {}
+    }
+    if (rafHooks.length) root.requestAnimationFrame(rafBus);
+    else { rafRunning = false; rafLast = 0; }
+  }
+  function onFrame(fn) {
+    if (!fn || rafHooks.indexOf(fn) >= 0) return fn;
+    rafHooks.push(fn);
+    if (!rafRunning) root.requestAnimationFrame(rafBus);
+    return fn;
+  }
+  function offFrame(fn) {
+    var i = rafHooks.indexOf(fn);
+    if (i >= 0) rafHooks.splice(i, 1);
+  }
+  function dtClamp(t, last, max) {
+    max = max == null ? 0.033 : max;
+    return Math.min(max, (t - last) / 1000);
+  }
+
+  root.NW = { reducedMotion: reducedMotion, store: store, sfx: sfx, tone: tone, vib: vib, FX: FX, fit: fit, toast: toast, shake: shake, mount: mount, grade: grade, reduceMotion: reduceMotion, isMuted: function () { return muted; }, setMuted: setMuted, toggleMute: toggleMute, bindMuteButton: bindMuteButton, bindVolButton: bindVolButton, openVolPanel: openVolPanel, closeVolPanel: closeVolPanel, setVolSfx: setVolSfx, setVolBgm: setVolBgm, getVolSfx: function () { return volSfx; }, getVolBgm: function () { return volBgm; }, playBgm: playBgm, stopBgm: stopBgm, loadAudio: loadAudio, prefetchAudio: prefetchAudio, unlockAudio: unlockAudio, startFeverGiggle: startFeverGiggle, stopFeverGiggle: stopFeverGiggle, hitstop: hitstop, tickHitstop: tickHitstop, inHitstop: inHitstop, getHitstop: getHitstop, camKick: camKick, squashEl: squashEl, juice: juice, onFrame: onFrame, offFrame: offFrame, dtClamp: dtClamp };
 })(window);
 /* 叠加层 canvas（粒子特效）：自动跟随容器尺寸 */
 (function (root) {

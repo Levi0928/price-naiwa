@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="奶蛙神跑 · 奶蛙小游戏"><meta property="og:description" content="无尽跑酷：二段跳、滑铲、近失反馈、铜银金段位。"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=run4">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .run-modes{display:flex;gap:8px;justify-content:center;padding:4px 12px 6px;flex-wrap:wrap}
 .run-modes button{min-height:40px;padding:0 14px;border-radius:999px;border:2px solid #cde6ff;background:#fff;font-weight:800;color:#3a6a90;cursor:pointer}
@@ -23,7 +23,7 @@
   <main class="nw-stage" id="box"><canvas class="nw-canvas" id="cv"></canvas></main>
   <p class="nw-hint">←→/AD 移动 · 空格/W 二段跳 · S 滑铲 · 近失加分 · 手机滑控</p>
 </div>
-<script src="/assets/frog.js?v=lobby2"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   var CFG = {
@@ -60,7 +60,7 @@
   };
 
   var keys = { L: 0, R: 0, U: 0, D: 0 };
-  var frog, plats, coins, hazards, dust, ghosts, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, barIframe, airJumps, shakeT, clouds, hills, tRun, landCool, streak, lastSyntax, syntaxStreak, nearFlash, milestone, hitstop, nearScore, perfectRun, challengeDone, seedRand, seed;
+  var frog, plats, coins, hazards, dust, ghosts, camX, dist, coinsGot, speedMul, spawnX, dead, slideT, barIframe, airJumps, shakeT, clouds, hills, tRun, landCool, streak, lastSyntax, syntaxStreak, nearFlash, milestone, hitstop, nearScore, perfectRun, challengeDone, seedRand, seed, jumpBuf = 0, slideBuf = 0;
 
   var SYNTAX = ['flat', 'gap', 'float', 'spring', 'bar', 'spike', 'combo', 'fly'];
 
@@ -105,7 +105,7 @@
     coins = []; hazards = []; dust = []; ghosts = [];
     camX = 0; dist = 0; coinsGot = 0; speedMul = 1; spawnX = 740; dead = false;
     slideT = 0; barIframe = 0; airJumps = 2; shakeT = 0; tRun = 0; landCool = 0; streak = 0;
-    lastSyntax = 'flat'; syntaxStreak = 0; nearFlash = 0; milestone = 500; hitstop = 0;
+    lastSyntax = 'flat'; syntaxStreak = 0; nearFlash = 0; milestone = 500; hitstop = 0; jumpBuf = 0; slideBuf = 0;
     nearScore = 0; perfectRun = true; challengeDone = false;
     clouds = []; hills = [];
     for (var i = 0; i < 10; i++) clouds.push({ x: i * 160 + rnd() * 80, y: 36 + rnd() * 140, s: 0.55 + rnd() * 0.85, a: 0.5 + rnd() * 0.4 });
@@ -222,7 +222,8 @@
   box.addEventListener('pointercancel', function () { touch0 = null; swiped = false; });
 
   function tryJump() {
-    if (!G.running || dead || hitstop > 0) return;
+    if (!G.running || dead) { jumpBuf = 0.12; return; }
+    if (hitstop > 0) { jumpBuf = 0.14; return; }
     if (frog.on || airJumps > 0) {
       var first = !!frog.on;
       frog.vy = first ? CFG.JUMP_V : CFG.DJUMP_V;
@@ -252,7 +253,7 @@
   function kill(why) {
     if (dead) return;
     dead = true; perfectRun = false; frog.vy = -300; frog.vx *= 0.25; hitstop = RM ? 0 : 0.1;
-    NW.sfx.hit ? NW.sfx.hit() : NW.sfx.lose(); NW.vib(45); if (!RM) shakeT = 0.4;
+    NW.sfx.hit ? NW.sfx.hit() : NW.sfx.lose(); NW.vib(45); if (!RM) shakeT = 0.4; if (NW.camKick) NW.camKick(12, 240); if (NW.hitstop) NW.hitstop(80);
     fx.burst(frog.x - camX, frog.y - 24, { count: RM ? 8 : 28, speed: 300, colors: ['#F7C32B', '#fff', '#FF7BAC', '#FFD23F'], size: 8 });
     fx.text(W / 2, 150, why || '撞到了！', { size: 30, color: '#ff4a2a', life: 1.15 });
     var m = Math.floor(dist), rk = rankName(m);
@@ -281,7 +282,10 @@
   function frame(t) {
     var dt = Math.min(0.033, (t - last) / 1000); last = t;
     if (!frog) { requestAnimationFrame(frame); return; }
-    if (hitstop > 0) { hitstop -= dt; draw(t); fx.draw(ctx); requestAnimationFrame(frame); return; }
+    if (jumpBuf > 0) jumpBuf -= dt;
+    if (slideBuf > 0) slideBuf -= dt;
+    if (hitstop > 0) { hitstop -= dt; draw(t); fx.draw(ctx); if (hitstop <= 0 && jumpBuf > 0) { jumpBuf = 0; tryJump(); } requestAnimationFrame(frame); return; }
+    if (jumpBuf > 0) { jumpBuf = 0; tryJump(); }
     tRun += dt;
     if (shakeT > 0) shakeT -= dt;
     if (nearFlash > 0) nearFlash -= dt;
@@ -335,6 +339,7 @@
               frog.y = py; frog.vy = 0; frog.on = p; airJumps = 2;
               if (!wasOn && landCool <= 0) {
                 landCool = 0.15; frog.sq = 0.72; NW.sfx.land(); NW.vib(6);
+                if (NW.hitstop) NW.hitstop(32); if (NW.camKick) NW.camKick(4, 110);
                 fx.burst(frog.x - camX, py, { count: RM ? 3 : 8, speed: 120, colors: ['#fff', '#8FD14F'], size: 4 });
                 streak++;
                 if (streak >= 3 && streak % 3 === 0) {
@@ -381,6 +386,8 @@
           NW.sfx.coin ? NW.sfx.coin() : NW.sfx.pop(Math.min(coinsGot, 8));
           if (o.special) NW.sfx.perfect();
           NW.vib(o.special ? 14 : 7);
+          if (NW.hitstop) NW.hitstop(o.special ? 50 : 28);
+          if (o.special && NW.camKick) NW.camKick(7, 140);
           fx.burst(o.x - camX, o.y, { count: RM ? 4 : (o.special ? 16 : 10), speed: 200, colors: ['#FFD23F', '#fff', '#F7C32B'], size: o.special ? 6 : 4 });
           fx.text(o.x - camX, o.y - 22, '+' + pts, { size: o.special ? 24 : 18, color: '#e8a000' });
         }

@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon-frog.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="狂笑点按 · 奶蛙小游戏"><meta property="og:description" content="60 秒内疯狂点奶蛙，点得越快笑得越疯！"><meta property="og:image" content="https://price-naiwa.onrender.com/assets/og.png">
-<link rel="stylesheet" href="/style.css?v=vol1">
+<link rel="stylesheet" href="/style.css?v=feel1">
 <style>
 .scene { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 62%, #fff6b0, rgba(255,246,176,0) 62%), linear-gradient(180deg, #fff7ec 0%, #ffe9c2 45%, #fff1c8 100%); box-shadow: 0 14px 36px rgba(126,84,44,.18), 0 0 0 1.5px rgba(26,22,18,.12); touch-action: manipulation; }
 .scene::before { content: ""; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,.28) 0 7deg, transparent 7deg 20deg); transition: opacity .4s; opacity: .5; }
@@ -68,7 +68,7 @@
   </main>
   <p class="nw-hint" id="hint">连挠越高倍率越高 · 槽满 FEVER · 右下可切 30 秒极速</p>
 </div>
-<script src="/assets/frog.js?v=lobby2"></script><script src="/assets/nw.js?v=vol1"></script>
+<script src="/assets/frog.js?v=feel1"></script><script src="/assets/nw.js?v=feel1"></script>
 <script>
 (function () {
   var F = NaiwaFrog, $ = function (s) { return document.querySelector(s); };
@@ -147,7 +147,8 @@
     frenzy = CFG.FEVER_DUR; meter = 100; feverEntered++;
     if (NW.sfx.feverIn) NW.sfx.feverIn(); NW.sfx.win();
     NW.sfx.ha(hahaN++ % 6, { fever: true, intensity: 8 });
-    NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 16, 520);
+    if (NW.juice) NW.juice({ hitstop: 70, kick: { amp: 10, dur: 220 }, vib: 22, shake: { el: scene, amp: 14, dur: 480 } });
+    else NW.shake(scene, NW.reduceMotion && NW.reduceMotion() ? 0 : 16, 520);
     fx.burst(ov.w / 2, ov.h * .4, { count: NW.reduceMotion && NW.reduceMotion() ? 12 : 56, speed: 480, size: 12 });
     if (fx.ring) fx.ring(ov.w / 2, ov.h * .42, { maxR: 200, life: 0.65, color: 'rgba(255,90,90,.7)', line: 16 });
     fx.text(ov.w / 2, ov.h * .28, '狂笑模式！', { size: 44, color: '#ff4a2a', life: 1.35 });
@@ -163,7 +164,7 @@
     upd();
   }
   function grade(score) {
-    if (NW.grade) return NW.grade(score, [1000, 2500, 4500, 7000]) || gradeLocal(score);
+    if (NW.grade) return NW.grade(score) || gradeLocal(score);
     return gradeLocal(score);
   }
   function gradeLocal(score) {
@@ -174,6 +175,7 @@
     return '就这？';
   }
   scene.addEventListener('pointerdown', function (e) {
+    if (NW.unlockAudio) NW.unlockAudio();
     var r = scene.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (!G.running) {
       NW.sfx.ha(hahaN++ % 6, { fever: false, intensity: 1 });
@@ -208,7 +210,8 @@
     squash();
     if (!warm) { floatHaha(combo >= 10); scorePop(x, y - 12, pts, mult * feverMul); }
     NW.sfx.ha(hahaN++ % 6, { fever: frenzy > 0, intensity: Math.min(12, combo), combo: combo });
-    NW.vib(warm ? 6 : (8 + Math.min(22, combo)));
+    if (NW.juice) NW.juice({ vib: warm ? 6 : (8 + Math.min(22, combo)), hitstop: warm ? 0 : (combo >= 10 ? 55 : (combo >= 5 ? 40 : 28)), kick: combo >= 15 ? { amp: 6, dur: 140 } : null });
+    else NW.vib(warm ? 6 : (8 + Math.min(22, combo)));
     var burstN = (NW.reduceMotion && NW.reduceMotion()) ? 4 : (8 + Math.min(14, combo) + (frenzy > 0 ? 8 : 0));
     fx.burst(x, y, { count: burstN, speed: 280 + combo * 8, size: 5 + Math.min(4, combo / 4) });
     if (combo >= 5 && fx.ring) fx.ring(x, y, { maxR: 40 + combo * 2, life: 0.28, color: 'rgba(255,140,40,.55)' });
@@ -229,6 +232,7 @@
   function squash() {
     tilt = -tilt;
     var f = frenzy > 0 ? CFG.SQUASH_FEVER : 1;
+    if (NW.squashEl) { NW.squashEl(fi, { sx: 1.14 * f, sy: Math.max(0.72, 0.84 / f), dur: frenzy > 0 ? 180 : 210, rot: tilt * 4 }); return; }
     var s1x = 1.12 * f, s1y = Math.max(0.7, .86 / f);
     var s2x = Math.max(0.8, .92 / f), s2y = 1.12 * f;
     fi.animate([
